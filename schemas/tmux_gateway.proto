@@ -3,12 +3,12 @@ syntax = "proto3";
 package tmux_gateway;
 
 service TmuxGateway {
-  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+  rpc Ls(LsRequest) returns (LsResponse);
 }
 
-message ListSessionsRequest {}
+message LsRequest {}
 
-message ListSessionsResponse {
+message LsResponse {
   repeated TmuxSession sessions = 1;
 }
 

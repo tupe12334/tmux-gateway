@@ -1,17 +1,17 @@
 use tonic::{Request, Response, Status};
 
 use super::tmux_gateway_proto::tmux_gateway_server::{TmuxGateway, TmuxGatewayServer};
-use super::tmux_gateway_proto::{ListSessionsRequest, ListSessionsResponse};
+use super::tmux_gateway_proto::{LsRequest, LsResponse};
 use crate::tmux;
 
 pub struct TmuxGatewayServiceImpl;
 
 #[tonic::async_trait]
 impl TmuxGateway for TmuxGatewayServiceImpl {
-    async fn list_sessions(
+    async fn ls(
         &self,
-        _request: Request<ListSessionsRequest>,
-    ) -> Result<Response<ListSessionsResponse>, Status> {
+        _request: Request<LsRequest>,
+    ) -> Result<Response<LsResponse>, Status> {
         let sessions = tmux::list_sessions().await.map_err(Status::internal)?;
 
         let proto_sessions = sessions
@@ -24,7 +24,7 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
             })
             .collect();
 
-        Ok(Response::new(ListSessionsResponse {
+        Ok(Response::new(LsResponse {
             sessions: proto_sessions,
         }))
     }

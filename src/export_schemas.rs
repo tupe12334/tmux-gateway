@@ -24,6 +24,11 @@ pub fn export_all() {
     fs::write(schemas_dir.join("schema.graphql"), sdl).expect("Failed to write schema.graphql");
     tracing::info!("Exported schemas/schema.graphql");
 
+    // Export gRPC proto schema
+    fs::write(schemas_dir.join("tmux_gateway.proto"), grpc::PROTO_CONTENT)
+        .expect("Failed to write tmux_gateway.proto");
+    tracing::info!("Exported schemas/tmux_gateway.proto");
+
     // Export gRPC file descriptor set
     fs::write(
         schemas_dir.join("tmux_gateway_descriptor.bin"),
