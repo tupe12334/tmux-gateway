@@ -11,7 +11,8 @@
       "Bash(tmux new-session:*)",
       "Bash(cargo add:*)",
       "Bash(cargo doc:*)",
-      "Bash(git status:*)"
+      "Bash(git status:*)",
+      "Bash(cargo clippy:*)"
     ]
   },
   "hooks": {
