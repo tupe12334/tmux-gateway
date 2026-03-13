@@ -28,10 +28,10 @@
         }
       }
     },
-    "/sessions": {
+    "/ls": {
       "get": {
         "tags": [],
-        "operationId": "list_sessions",
+        "operationId": "ls",
         "responses": {
           "200": {
             "description": "List tmux sessions",
@@ -50,10 +50,12 @@
             "description": "Failed to list sessions"
           }
         }
-      },
+      }
+    },
+    "/new": {
       "post": {
         "tags": [],
-        "operationId": "create_session",
+        "operationId": "new",
         "requestBody": {
           "content": {
             "application/json": {
