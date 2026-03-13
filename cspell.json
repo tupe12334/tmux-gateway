@@ -18,6 +18,8 @@
     "rustdoc",
     "rustup",
     "serde",
-    "tmux"
+    "RUSTSEC",
+    "tmux",
+    "utoipa"
   ]
 }

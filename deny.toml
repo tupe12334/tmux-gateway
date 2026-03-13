@@ -17,3 +17,9 @@ allow = [
 [[licenses.exceptions]]
 allow = ["LGPL-2.1-or-later"]
 crate = "r-efi"
+
+[advisories]
+ignore = [
+    # paste is unmaintained but pulled in transitively by utoipa-axum; no alternative yet
+    "RUSTSEC-2024-0436",
+]

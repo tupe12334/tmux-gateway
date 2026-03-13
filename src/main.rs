@@ -4,6 +4,8 @@ mod rest;
 
 use tokio::net::TcpListener;
 use tracing_subscriber::EnvFilter;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 #[tokio::main]
 async fn main() {
@@ -15,11 +17,14 @@ async fn main() {
 
     let http_app = axum::Router::new()
         .merge(rest::router())
-        .merge(graphql::router());
+        .merge(graphql::router())
+        .merge(
+            SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", rest::ApiDoc::openapi()),
+        );
 
     let http_handle = tokio::spawn(async move {
         let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
-        tracing::info!("HTTP server (REST + GraphQL) listening on 0.0.0.0:3000");
+        tracing::info!("HTTP server (REST + GraphQL + Swagger) listening on 0.0.0.0:3000");
         axum::serve(listener, http_app).await.unwrap();
     });
 

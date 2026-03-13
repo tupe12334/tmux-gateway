@@ -1,3 +1,3 @@
 mod routes;
 
-pub use routes::router;
+pub use routes::{ApiDoc, router};
