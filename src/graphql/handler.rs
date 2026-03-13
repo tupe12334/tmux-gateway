@@ -1,0 +1,23 @@
+use async_graphql::http::GraphiQLSource;
+use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
+use axum::extract::Extension;
+use axum::response::{Html, IntoResponse};
+use axum::routing::get;
+use axum::Router;
+
+use super::schema::{build_schema, AppSchema};
+
+async fn graphql_handler(schema: Extension<AppSchema>, req: GraphQLRequest) -> GraphQLResponse {
+    schema.execute(req.into_inner()).await.into()
+}
+
+async fn graphiql() -> impl IntoResponse {
+    Html(GraphiQLSource::build().endpoint("/graphql").finish())
+}
+
+pub fn router() -> Router {
+    let schema = build_schema();
+    Router::new()
+        .route("/graphql", get(graphiql).post(graphql_handler))
+        .layer(Extension(schema))
+}
