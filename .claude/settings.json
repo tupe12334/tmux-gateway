@@ -3,5 +3,18 @@
     "allow": [
       "Bash(git add:*)"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm dlx block-no-verify"
+          }
+        ]
+      }
+    ]
   }
 }
