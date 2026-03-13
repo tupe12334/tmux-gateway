@@ -1,7 +1,7 @@
 use tonic::{Request, Response, Status};
 
 use super::tmux_gateway_proto::tmux_gateway_server::{TmuxGateway, TmuxGatewayServer};
-use super::tmux_gateway_proto::{LsRequest, LsResponse};
+use super::tmux_gateway_proto::{LsRequest, LsResponse, NewSessionRequest, NewSessionResponse};
 use crate::tmux;
 
 pub struct TmuxGatewayServiceImpl;
@@ -24,6 +24,15 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
         Ok(Response::new(LsResponse {
             sessions: proto_sessions,
         }))
+    }
+
+    async fn new_session(
+        &self,
+        request: Request<NewSessionRequest>,
+    ) -> Result<Response<NewSessionResponse>, Status> {
+        let name = &request.into_inner().name;
+        let created_name = tmux::new_session(name).await.map_err(Status::internal)?;
+        Ok(Response::new(NewSessionResponse { name: created_name }))
     }
 }
 

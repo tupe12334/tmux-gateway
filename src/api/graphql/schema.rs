@@ -1,8 +1,8 @@
-use async_graphql::{EmptyMutation, EmptySubscription, Object, Schema, SimpleObject};
+use async_graphql::{EmptySubscription, Object, Schema, SimpleObject};
 
 use crate::tmux;
 
-pub type AppSchema = Schema<QueryRoot, EmptyMutation, EmptySubscription>;
+pub type AppSchema = Schema<QueryRoot, MutationRoot, EmptySubscription>;
 
 #[derive(SimpleObject)]
 struct Session {
@@ -37,6 +37,17 @@ impl QueryRoot {
     }
 }
 
+pub struct MutationRoot;
+
+#[Object]
+impl MutationRoot {
+    async fn new_session(&self, name: String) -> async_graphql::Result<String> {
+        tmux::new_session(&name)
+            .await
+            .map_err(async_graphql::Error::new)
+    }
+}
+
 pub fn build_schema() -> AppSchema {
-    Schema::build(QueryRoot, EmptyMutation, EmptySubscription).finish()
+    Schema::build(QueryRoot, MutationRoot, EmptySubscription).finish()
 }

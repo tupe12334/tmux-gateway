@@ -1,6 +1,6 @@
 use axum::routing::get;
 use axum::{Json, Router};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use utoipa::{OpenApi, ToSchema};
 
 use crate::tmux;
@@ -57,10 +57,42 @@ async fn list_sessions() -> Result<Json<Vec<SessionResponse>>, (axum::http::Stat
     ))
 }
 
+#[derive(Deserialize, ToSchema)]
+struct NewSessionRequest {
+    name: String,
+}
+
+#[derive(Serialize, ToSchema)]
+struct NewSessionResponse {
+    name: String,
+}
+
+#[utoipa::path(
+    post,
+    path = "/sessions",
+    request_body = NewSessionRequest,
+    responses(
+        (status = 201, description = "Session created", body = NewSessionResponse),
+        (status = 500, description = "Failed to create session")
+    )
+)]
+async fn create_session(
+    Json(body): Json<NewSessionRequest>,
+) -> Result<(axum::http::StatusCode, Json<NewSessionResponse>), (axum::http::StatusCode, String)> {
+    let name = tmux::new_session(&body.name)
+        .await
+        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    Ok((
+        axum::http::StatusCode::CREATED,
+        Json(NewSessionResponse { name }),
+    ))
+}
+
 #[derive(OpenApi)]
 #[openapi(
-    paths(health, list_sessions),
-    components(schemas(HealthResponse, SessionResponse)),
+    paths(health, list_sessions, create_session),
+    components(schemas(HealthResponse, SessionResponse, NewSessionRequest, NewSessionResponse)),
     info(
         title = "tmux-gateway",
         version = "0.1.0",
@@ -72,5 +104,5 @@ pub struct ApiDoc;
 pub fn router() -> Router {
     Router::new()
         .route("/health", get(health))
-        .route("/sessions", get(list_sessions))
+        .route("/sessions", get(list_sessions).post(create_session))
 }

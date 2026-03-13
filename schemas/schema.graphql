@@ -1,3 +1,7 @@
+type MutationRoot {
+	newSession(name: String!): String!
+}
+
 type QueryRoot {
 	health: String!
 	sessions: [Session!]!
@@ -20,4 +24,5 @@ Directs the executor to skip this field or fragment when the `if` argument is tr
 directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 schema {
 	query: QueryRoot
+	mutation: MutationRoot
 }
