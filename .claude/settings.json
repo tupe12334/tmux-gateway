@@ -10,7 +10,8 @@
       "Bash(cargo fmt:*)",
       "Bash(tmux new-session:*)",
       "Bash(cargo add:*)",
-      "Bash(cargo doc:*)"
+      "Bash(cargo doc:*)",
+      "Bash(git status:*)"
     ]
   },
   "hooks": {
