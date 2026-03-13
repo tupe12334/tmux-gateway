@@ -1,9 +1,21 @@
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use utoipa::{OpenApi, ToSchema};
 
-use crate::tmux;
+use crate::tmux::{self, TmuxCommands};
+
+struct RestHandler;
+
+impl TmuxCommands for RestHandler {
+    async fn ls(&self) -> Result<Vec<tmux::TmuxSession>, String> {
+        tmux::list_sessions().await
+    }
+
+    async fn new_session(&self, name: &str) -> Result<String, String> {
+        tmux::new_session(name).await
+    }
+}
 
 #[derive(Serialize, ToSchema)]
 struct HealthResponse {
@@ -33,14 +45,15 @@ async fn health() -> Json<HealthResponse> {
 
 #[utoipa::path(
     get,
-    path = "/sessions",
+    path = "/ls",
     responses(
         (status = 200, description = "List tmux sessions", body = Vec<SessionResponse>),
         (status = 500, description = "Failed to list sessions")
     )
 )]
-async fn list_sessions() -> Result<Json<Vec<SessionResponse>>, (axum::http::StatusCode, String)> {
-    let sessions = tmux::list_sessions()
+async fn ls() -> Result<Json<Vec<SessionResponse>>, (axum::http::StatusCode, String)> {
+    let sessions = RestHandler
+        .ls()
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e))?;
 
@@ -69,17 +82,18 @@ struct NewSessionResponse {
 
 #[utoipa::path(
     post,
-    path = "/sessions",
+    path = "/new",
     request_body = NewSessionRequest,
     responses(
         (status = 201, description = "Session created", body = NewSessionResponse),
         (status = 500, description = "Failed to create session")
     )
 )]
-async fn create_session(
+async fn new(
     Json(body): Json<NewSessionRequest>,
 ) -> Result<(axum::http::StatusCode, Json<NewSessionResponse>), (axum::http::StatusCode, String)> {
-    let name = tmux::new_session(&body.name)
+    let name = RestHandler
+        .new_session(&body.name)
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e))?;
 
@@ -91,7 +105,7 @@ async fn create_session(
 
 #[derive(OpenApi)]
 #[openapi(
-    paths(health, list_sessions, create_session),
+    paths(health, ls, new),
     components(schemas(HealthResponse, SessionResponse, NewSessionRequest, NewSessionResponse)),
     info(
         title = "tmux-gateway",
@@ -104,5 +118,6 @@ pub struct ApiDoc;
 pub fn router() -> Router {
     Router::new()
         .route("/health", get(health))
-        .route("/sessions", get(list_sessions).post(create_session))
+        .route("/ls", get(ls))
+        .route("/new", post(new))
 }
