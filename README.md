@@ -79,7 +79,12 @@ RUST_LOG=tmux_gateway=debug cargo run
 ```bash
 # Health check
 curl http://localhost:8080/health
+
+# List tmux sessions
+curl http://localhost:8080/sessions
 ```
+
+Full Swagger UI available at `http://localhost:8080/swagger-ui`.
 
 ### GraphQL
 
@@ -88,7 +93,7 @@ Open the interactive GraphiQL playground at `http://localhost:8080/graphql`, or 
 ```bash
 curl -X POST http://localhost:8080/graphql \
   -H "Content-Type: application/json" \
-  -d '{"query": "{ health }"}'
+  -d '{"query": "{ sessions { name windows created attached } }"}'
 ```
 
 ### gRPC
@@ -96,7 +101,11 @@ curl -X POST http://localhost:8080/graphql \
 Using [grpcurl](https://github.com/fullstorydev/grpcurl):
 
 ```bash
-grpcurl -plaintext localhost:50051 health.Health/Check
+# Health check
+grpcurl -plaintext localhost:50051 grpc.health.v1.Health/Check
+
+# List tmux sessions
+grpcurl -plaintext localhost:50051 tmux_gateway.TmuxGateway/ListSessions
 ```
 
 ## Project Structure
@@ -112,9 +121,11 @@ tmux-gateway/
 │   ├── main.rs            # Entrypoint — spawns HTTP & gRPC servers
 │   ├── bin/
 │   │   └── export_schemas.rs  # Generates openapi.json & schema.graphql
-│   ├── rest/              # Axum REST routes + OpenAPI definitions
-│   ├── graphql/           # async-graphql schema & handler
-│   └── grpc/              # tonic gRPC service implementations
+│   ├── api/               # Network API layers
+│   │   ├── rest/          # Axum REST routes + OpenAPI definitions
+│   │   ├── graphql/       # async-graphql schema & handler
+│   │   └── grpc/          # tonic gRPC service implementations
+│   └── tmux/              # tmux command wrappers (shared business logic)
 ├── build.rs               # Protobuf code generation
 ├── Makefile               # Build orchestration (cargo build + schema export)
 └── Cargo.toml
