@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/tupe12334/tmux-gateway#readme",
   "devDependencies": {
+    "block-no-verify": "^1.1.2",
     "husky": "^9.1.7"
   }
 }

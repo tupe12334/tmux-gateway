@@ -26,11 +26,11 @@ Managing tmux programmatically typically means shelling out to `tmux` commands a
 └───────────────────────────────────────────┘
 ```
 
-| Protocol | Port  | Use case |
-|----------|-------|----------|
-| REST     | 8080  | Simple integrations, curl, scripts |
+| Protocol | Port  | Use case                                                               |
+| -------- | ----- | ---------------------------------------------------------------------- |
+| REST     | 8080  | Simple integrations, curl, scripts                                     |
 | GraphQL  | 8080  | Flexible queries, web UIs (includes GraphiQL playground at `/graphql`) |
-| gRPC     | 50051 | High-performance, typed clients, service-to-service |
+| gRPC     | 50051 | High-performance, typed clients, service-to-service                    |
 
 ## Getting Started
 
@@ -48,6 +48,7 @@ cargo run
 ```
 
 The server starts two listeners:
+
 - **HTTP** (REST + GraphQL) on `http://localhost:8080`
 - **gRPC** on `localhost:50051`
 
