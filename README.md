@@ -6,6 +6,16 @@ A Rust server that exposes a unified interface for interacting with your local [
 
 Managing tmux programmatically typically means shelling out to `tmux` commands and parsing text output. tmux-gateway wraps that complexity behind three well-defined API layers so any client — CLI tool, web dashboard, IDE plugin, or automation script — can interact with tmux using the protocol that fits best.
 
+Every API layer is **type-safe by design** — clients can generate fully typed bindings from the source-of-truth schema for their protocol:
+
+| Protocol | Schema artifact                            | Client codegen                                          |
+| -------- | ------------------------------------------ | ------------------------------------------------------- |
+| gRPC     | `.proto` files                             | `protoc` / `buf` generates typed stubs for any language |
+| GraphQL  | Introspection / exported `.graphql` schema | `graphql-codegen`, Relay, Apollo, etc.                  |
+| REST     | `openapi.json` (OpenAPI spec)              | `openapi-generator`, `orval`, `oapi-codegen`, etc.      |
+
+No hand-written DTOs on the client side — pick your protocol, point your code generator at the schema, and get compile-time guarantees end to end.
+
 ## Architecture
 
 ```

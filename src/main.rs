@@ -18,8 +18,8 @@ async fn main() {
         .merge(graphql::router());
 
     let http_handle = tokio::spawn(async move {
-        let listener = TcpListener::bind("0.0.0.0:8080").await.unwrap();
-        tracing::info!("HTTP server (REST + GraphQL) listening on 0.0.0.0:8080");
+        let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
+        tracing::info!("HTTP server (REST + GraphQL) listening on 0.0.0.0:3000");
         axum::serve(listener, http_app).await.unwrap();
     });
 
