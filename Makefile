@@ -7,7 +7,7 @@ schemas:
 	cargo run --bin export_schemas
 
 run:
-	cargo run
+	cargo run --bin tmux-gateway
 
 clean:
 	cargo clean

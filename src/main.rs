@@ -24,11 +24,12 @@ async fn main() {
 
     let swagger_url = format!("http://localhost:{}/swagger-ui", http_port_num);
     let graphql_url = format!("http://localhost:{}/graphql", http_port_num);
+    let grpcui_cmd = format!("grpcui -plaintext localhost:{}", grpc_port_num);
 
     port_table::print_port_table(&[
         ("REST", http_port_num, swagger_url.as_str()),
         ("GraphQL", http_port_num, graphql_url.as_str()),
-        ("gRPC", grpc_port_num, "reflection enabled"),
+        ("gRPC", grpc_port_num, grpcui_cmd.as_str()),
     ]);
 
     let http_app = axum::Router::new()
@@ -52,8 +53,13 @@ async fn main() {
             .register_encoded_file_descriptor_set(grpc::FILE_DESCRIPTOR_SET)
             .build_v1()
             .unwrap();
+        let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
+        health_reporter
+            .set_serving::<grpc::TmuxGatewayServer>()
+            .await;
         tracing::info!("gRPC server listening on {}", addr);
         tonic::transport::Server::builder()
+            .add_service(health_service)
             .add_service(grpc::grpc_server())
             .add_service(reflection_service)
             .serve(addr)
