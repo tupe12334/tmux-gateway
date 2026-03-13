@@ -183,7 +183,13 @@ async fn kill_pane(
 #[derive(OpenApi)]
 #[openapi(
     paths(health, ls, new, kill_session, kill_window, kill_pane),
-    components(schemas(HealthResponse, SessionResponse, NewSessionRequest, NewSessionResponse, KillTargetRequest)),
+    components(schemas(
+        HealthResponse,
+        SessionResponse,
+        NewSessionRequest,
+        NewSessionResponse,
+        KillTargetRequest
+    )),
     info(
         title = "tmux-gateway",
         version = "0.1.0",
