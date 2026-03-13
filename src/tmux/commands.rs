@@ -5,7 +5,7 @@ use super::TmuxSession;
 /// API layer that hasn't implemented it yet.
 pub trait TmuxCommands {
     fn ls(&self) -> impl std::future::Future<Output = Result<Vec<TmuxSession>, String>> + Send;
-    fn new_session(
+    fn new(
         &self,
         name: &str,
     ) -> impl std::future::Future<Output = Result<String, String>> + Send;

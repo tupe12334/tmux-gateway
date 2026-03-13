@@ -4,7 +4,7 @@ type MutationRoot {
 
 type QueryRoot {
 	health: String!
-	sessions: [Session!]!
+	ls: [Session!]!
 }
 
 type Session {

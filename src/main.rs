@@ -50,12 +50,12 @@ async fn main() {
     let grpc_handle = tokio::spawn(async move {
         let addr = grpc_addr.parse().unwrap();
         let reflection_service = tonic_reflection::server::Builder::configure()
-            .register_encoded_file_descriptor_set(grpc::FILE_DESCRIPTOR_SET)
+            .register_file_descriptor_set(grpc::file_descriptor_set())
             .build_v1()
             .unwrap();
         let (health_reporter, health_service) = tonic_health::server::health_reporter();
         health_reporter
-            .set_serving::<grpc::TmuxGatewayServer>()
+            .set_serving::<grpc::TmuxGatewayServerConcrete>()
             .await;
         tracing::info!("gRPC server listening on {}", addr);
         tonic::transport::Server::builder()

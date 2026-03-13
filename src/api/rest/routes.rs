@@ -12,7 +12,7 @@ impl TmuxCommands for RestHandler {
         tmux::list_sessions().await
     }
 
-    async fn new_session(&self, name: &str) -> Result<String, String> {
+    async fn new(&self, name: &str) -> Result<String, String> {
         tmux::new_session(name).await
     }
 }
@@ -93,7 +93,7 @@ async fn new(
     Json(body): Json<NewSessionRequest>,
 ) -> Result<(axum::http::StatusCode, Json<NewSessionResponse>), (axum::http::StatusCode, String)> {
     let name = RestHandler
-        .new_session(&body.name)
+        .new(&body.name)
         .await
         .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e))?;
 

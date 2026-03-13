@@ -7,7 +7,8 @@ service TmuxGateway {
   rpc NewSession(NewSessionRequest) returns (NewSessionResponse);
 }
 
-message LsRequest {}
+message LsRequest {
+}
 
 message LsResponse {
   repeated TmuxSession sessions = 1;

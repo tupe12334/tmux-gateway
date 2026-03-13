@@ -15,6 +15,7 @@ tonic-prost = "0.14"
 tonic-health = "0.14"
 tonic-reflection = "0.14"
 prost = "0.14"
+prost-types = "0.14"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 serde = { version = "1", features = ["derive"] }
@@ -23,9 +24,6 @@ utoipa = { version = "5", features = ["axum_extras"] }
 utoipa-axum = "0.2"
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
 dotenvy = "0.15.7"
-
-[build-dependencies]
-tonic-prost-build = "0.14"
 
 [package.metadata.cargo-machete]
 ignored = ["prost", "serde_json", "tonic-prost", "utoipa-axum"]

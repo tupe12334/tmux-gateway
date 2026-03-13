@@ -1,7 +1,7 @@
 use tonic::{Request, Response, Status};
 
-use super::tmux_gateway_proto::tmux_gateway_server::{TmuxGateway, TmuxGatewayServer};
-use super::tmux_gateway_proto::{LsRequest, LsResponse, NewSessionRequest, NewSessionResponse};
+use super::messages::{LsRequest, LsResponse, NewSessionRequest, NewSessionResponse, TmuxSession};
+use super::server::{TmuxGateway, TmuxGatewayServer};
 use crate::tmux::{self, TmuxCommands};
 
 pub struct TmuxGatewayServiceImpl;
@@ -11,7 +11,7 @@ impl TmuxCommands for TmuxGatewayServiceImpl {
         tmux::list_sessions().await
     }
 
-    async fn new_session(&self, name: &str) -> Result<String, String> {
+    async fn new(&self, name: &str) -> Result<String, String> {
         tmux::new_session(name).await
     }
 }
@@ -23,7 +23,7 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
 
         let proto_sessions = sessions
             .into_iter()
-            .map(|s| super::tmux_gateway_proto::TmuxSession {
+            .map(|s| TmuxSession {
                 name: s.name,
                 windows: s.windows,
                 created: s.created,
@@ -41,7 +41,7 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
         request: Request<NewSessionRequest>,
     ) -> Result<Response<NewSessionResponse>, Status> {
         let name = &request.into_inner().name;
-        let created_name = TmuxCommands::new_session(self, name)
+        let created_name = TmuxCommands::new(self, name)
             .await
             .map_err(Status::internal)?;
         Ok(Response::new(NewSessionResponse { name: created_name }))
