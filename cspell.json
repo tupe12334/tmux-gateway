@@ -17,6 +17,7 @@
     "oapi",
     "prost",
     "protoc",
+    "protox",
     "rustdoc",
     "rustup",
     "serde",
