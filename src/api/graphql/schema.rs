@@ -19,7 +19,7 @@ impl TmuxCommands for GraphqlHandler {
         tmux::list_sessions().await
     }
 
-    async fn new(&self, name: &str) -> Result<String, String> {
+    async fn create_session(&self, name: &str) -> Result<String, String> {
         tmux::new_session(name).await
     }
 
@@ -66,9 +66,9 @@ pub struct MutationRoot;
 
 #[Object]
 impl MutationRoot {
-    async fn new(&self, name: String) -> async_graphql::Result<String> {
+    async fn create_session(&self, name: String) -> async_graphql::Result<String> {
         GraphqlHandler
-            .new(&name)
+            .create_session(&name)
             .await
             .map_err(async_graphql::Error::new)
     }

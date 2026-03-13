@@ -14,7 +14,7 @@ impl TmuxCommands for TmuxGatewayServiceImpl {
         tmux::list_sessions().await
     }
 
-    async fn new(&self, name: &str) -> Result<String, String> {
+    async fn create_session(&self, name: &str) -> Result<String, String> {
         tmux::new_session(name).await
     }
 
@@ -56,7 +56,7 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
         request: Request<NewSessionRequest>,
     ) -> Result<Response<NewSessionResponse>, Status> {
         let name = &request.into_inner().name;
-        let created_name = TmuxCommands::new(self, name)
+        let created_name = TmuxCommands::create_session(self, name)
             .await
             .map_err(Status::internal)?;
         Ok(Response::new(NewSessionResponse { name: created_name }))
