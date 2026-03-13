@@ -23,7 +23,7 @@ impl QueryRoot {
     async fn sessions(&self) -> async_graphql::Result<Vec<Session>> {
         let sessions = tmux::list_sessions()
             .await
-            .map_err(|e| async_graphql::Error::new(e))?;
+            .map_err(async_graphql::Error::new)?;
 
         Ok(sessions
             .into_iter()

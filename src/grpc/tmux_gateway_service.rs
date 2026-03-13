@@ -14,7 +14,7 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
     ) -> Result<Response<ListSessionsResponse>, Status> {
         let sessions = tmux::list_sessions()
             .await
-            .map_err(|e| Status::internal(e))?;
+            .map_err(Status::internal)?;
 
         let proto_sessions = sessions
             .into_iter()
