@@ -3,4 +3,18 @@ syntax = "proto3";
 package tmux_gateway;
 
 service TmuxGateway {
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+}
+
+message ListSessionsRequest {}
+
+message ListSessionsResponse {
+  repeated TmuxSession sessions = 1;
+}
+
+message TmuxSession {
+  string name = 1;
+  uint32 windows = 2;
+  string created = 3;
+  bool attached = 4;
 }

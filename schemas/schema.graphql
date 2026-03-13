@@ -1,5 +1,13 @@
 type QueryRoot {
 	health: String!
+	sessions: [Session!]!
+}
+
+type Session {
+	name: String!
+	windows: Int!
+	created: String!
+	attached: Boolean!
 }
 
 """

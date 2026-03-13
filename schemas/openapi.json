@@ -27,6 +27,30 @@
           }
         }
       }
+    },
+    "/sessions": {
+      "get": {
+        "tags": [],
+        "operationId": "list_sessions",
+        "responses": {
+          "200": {
+            "description": "List tmux sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SessionResponse"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to list sessions"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -39,6 +63,31 @@
         "properties": {
           "status": {
             "type": "string"
+          }
+        }
+      },
+      "SessionResponse": {
+        "type": "object",
+        "required": [
+          "name",
+          "windows",
+          "created",
+          "attached"
+        ],
+        "properties": {
+          "attached": {
+            "type": "boolean"
+          },
+          "created": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "windows": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
           }
         }
       }

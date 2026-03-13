@@ -1,6 +1,16 @@
-use async_graphql::{EmptyMutation, EmptySubscription, Object, Schema};
+use async_graphql::{EmptyMutation, EmptySubscription, Object, Schema, SimpleObject};
+
+use crate::tmux;
 
 pub type AppSchema = Schema<QueryRoot, EmptyMutation, EmptySubscription>;
+
+#[derive(SimpleObject)]
+struct Session {
+    name: String,
+    windows: u32,
+    created: String,
+    attached: bool,
+}
 
 pub struct QueryRoot;
 
@@ -10,6 +20,21 @@ impl QueryRoot {
         "healthy"
     }
 
+    async fn sessions(&self) -> async_graphql::Result<Vec<Session>> {
+        let sessions = tmux::list_sessions()
+            .await
+            .map_err(|e| async_graphql::Error::new(e))?;
+
+        Ok(sessions
+            .into_iter()
+            .map(|s| Session {
+                name: s.name,
+                windows: s.windows,
+                created: s.created,
+                attached: s.attached,
+            })
+            .collect())
+    }
 }
 
 pub fn build_schema() -> AppSchema {
