@@ -6,7 +6,9 @@
       "Bash(cargo run:*)",
       "Bash(make build:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(tmux new-session:*)"
     ]
   },
   "hooks": {
