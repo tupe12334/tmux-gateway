@@ -1,9 +1,7 @@
 use tonic::{Request, Response, Status};
 
 use super::health_proto::health_server::{Health, HealthServer};
-use super::health_proto::{
-    HealthCheckRequest, HealthCheckResponse, HelloRequest, HelloResponse,
-};
+use super::health_proto::{HealthCheckRequest, HealthCheckResponse, HelloRequest, HelloResponse};
 
 pub struct HealthServiceImpl;
 

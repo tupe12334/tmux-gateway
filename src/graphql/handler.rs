@@ -1,11 +1,11 @@
 use async_graphql::http::GraphiQLSource;
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
+use axum::Router;
 use axum::extract::Extension;
 use axum::response::{Html, IntoResponse};
 use axum::routing::get;
-use axum::Router;
 
-use super::schema::{build_schema, AppSchema};
+use super::schema::{AppSchema, build_schema};
 
 async fn graphql_handler(schema: Extension<AppSchema>, req: GraphQLRequest) -> GraphQLResponse {
     schema.execute(req.into_inner()).await.into()

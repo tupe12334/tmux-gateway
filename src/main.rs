@@ -9,8 +9,7 @@ use tracing_subscriber::EnvFilter;
 async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(
-            EnvFilter::from_default_env()
-                .add_directive("tmux_gateway=info".parse().unwrap()),
+            EnvFilter::from_default_env().add_directive("tmux_gateway=info".parse().unwrap()),
         )
         .init();
 
