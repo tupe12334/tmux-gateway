@@ -11,7 +11,7 @@ pub type TmuxGatewayServerConcrete =
     TmuxGatewayServer<tmux_gateway_service::TmuxGatewayServiceImpl>;
 
 pub fn proto_content() -> &'static str {
-    include_str!("tmux_gateway.proto")
+    include_str!("../../../schemas/tmux_gateway.proto")
 }
 
 pub fn file_descriptor_set() -> prost_types::FileDescriptorSet {

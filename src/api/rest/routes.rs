@@ -15,6 +15,18 @@ impl TmuxCommands for RestHandler {
     async fn new(&self, name: &str) -> Result<String, String> {
         tmux::new_session(name).await
     }
+
+    async fn kill_session(&self, target: &str) -> Result<(), String> {
+        tmux::kill_session(target).await
+    }
+
+    async fn kill_window(&self, target: &str) -> Result<(), String> {
+        tmux::kill_window(target).await
+    }
+
+    async fn kill_pane(&self, target: &str) -> Result<(), String> {
+        tmux::kill_pane(target).await
+    }
 }
 
 #[derive(Serialize, ToSchema)]
@@ -103,10 +115,75 @@ async fn new(
     ))
 }
 
+#[derive(Deserialize, ToSchema)]
+struct KillTargetRequest {
+    target: String,
+}
+
+#[utoipa::path(
+    post,
+    path = "/kill-session",
+    request_body = KillTargetRequest,
+    responses(
+        (status = 200, description = "Session killed"),
+        (status = 500, description = "Failed to kill session")
+    )
+)]
+async fn kill_session(
+    Json(body): Json<KillTargetRequest>,
+) -> Result<axum::http::StatusCode, (axum::http::StatusCode, String)> {
+    RestHandler
+        .kill_session(&body.target)
+        .await
+        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    Ok(axum::http::StatusCode::OK)
+}
+
+#[utoipa::path(
+    post,
+    path = "/kill-window",
+    request_body = KillTargetRequest,
+    responses(
+        (status = 200, description = "Window killed"),
+        (status = 500, description = "Failed to kill window")
+    )
+)]
+async fn kill_window(
+    Json(body): Json<KillTargetRequest>,
+) -> Result<axum::http::StatusCode, (axum::http::StatusCode, String)> {
+    RestHandler
+        .kill_window(&body.target)
+        .await
+        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    Ok(axum::http::StatusCode::OK)
+}
+
+#[utoipa::path(
+    post,
+    path = "/kill-pane",
+    request_body = KillTargetRequest,
+    responses(
+        (status = 200, description = "Pane killed"),
+        (status = 500, description = "Failed to kill pane")
+    )
+)]
+async fn kill_pane(
+    Json(body): Json<KillTargetRequest>,
+) -> Result<axum::http::StatusCode, (axum::http::StatusCode, String)> {
+    RestHandler
+        .kill_pane(&body.target)
+        .await
+        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e))?;
+
+    Ok(axum::http::StatusCode::OK)
+}
+
 #[derive(OpenApi)]
 #[openapi(
-    paths(health, ls, new),
-    components(schemas(HealthResponse, SessionResponse, NewSessionRequest, NewSessionResponse)),
+    paths(health, ls, new, kill_session, kill_window, kill_pane),
+    components(schemas(HealthResponse, SessionResponse, NewSessionRequest, NewSessionResponse, KillTargetRequest)),
     info(
         title = "tmux-gateway",
         version = "0.1.0",
@@ -120,4 +197,7 @@ pub fn router() -> Router {
         .route("/health", get(health))
         .route("/ls", get(ls))
         .route("/new", post(new))
+        .route("/kill-session", post(kill_session))
+        .route("/kill-window", post(kill_window))
+        .route("/kill-pane", post(kill_pane))
 }

@@ -6,4 +6,16 @@ use super::TmuxSession;
 pub trait TmuxCommands {
     fn ls(&self) -> impl std::future::Future<Output = Result<Vec<TmuxSession>, String>> + Send;
     fn new(&self, name: &str) -> impl std::future::Future<Output = Result<String, String>> + Send;
+    fn kill_session(
+        &self,
+        target: &str,
+    ) -> impl std::future::Future<Output = Result<(), String>> + Send;
+    fn kill_window(
+        &self,
+        target: &str,
+    ) -> impl std::future::Future<Output = Result<(), String>> + Send;
+    fn kill_pane(
+        &self,
+        target: &str,
+    ) -> impl std::future::Future<Output = Result<(), String>> + Send;
 }

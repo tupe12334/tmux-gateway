@@ -1,6 +1,9 @@
 use tonic::{Request, Response, Status};
 
-use super::messages::{LsRequest, LsResponse, NewSessionRequest, NewSessionResponse, TmuxSession};
+use super::messages::{
+    KillPaneRequest, KillPaneResponse, KillSessionRequest, KillSessionResponse, KillWindowRequest,
+    KillWindowResponse, LsRequest, LsResponse, NewSessionRequest, NewSessionResponse, TmuxSession,
+};
 use super::server::{TmuxGateway, TmuxGatewayServer};
 use crate::tmux::{self, TmuxCommands};
 
@@ -13,6 +16,18 @@ impl TmuxCommands for TmuxGatewayServiceImpl {
 
     async fn new(&self, name: &str) -> Result<String, String> {
         tmux::new_session(name).await
+    }
+
+    async fn kill_session(&self, target: &str) -> Result<(), String> {
+        tmux::kill_session(target).await
+    }
+
+    async fn kill_window(&self, target: &str) -> Result<(), String> {
+        tmux::kill_window(target).await
+    }
+
+    async fn kill_pane(&self, target: &str) -> Result<(), String> {
+        tmux::kill_pane(target).await
     }
 }
 
@@ -45,6 +60,39 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
             .await
             .map_err(Status::internal)?;
         Ok(Response::new(NewSessionResponse { name: created_name }))
+    }
+
+    async fn kill_session(
+        &self,
+        request: Request<KillSessionRequest>,
+    ) -> Result<Response<KillSessionResponse>, Status> {
+        let target = &request.into_inner().target;
+        TmuxCommands::kill_session(self, target)
+            .await
+            .map_err(Status::internal)?;
+        Ok(Response::new(KillSessionResponse {}))
+    }
+
+    async fn kill_window(
+        &self,
+        request: Request<KillWindowRequest>,
+    ) -> Result<Response<KillWindowResponse>, Status> {
+        let target = &request.into_inner().target;
+        TmuxCommands::kill_window(self, target)
+            .await
+            .map_err(Status::internal)?;
+        Ok(Response::new(KillWindowResponse {}))
+    }
+
+    async fn kill_pane(
+        &self,
+        request: Request<KillPaneRequest>,
+    ) -> Result<Response<KillPaneResponse>, Status> {
+        let target = &request.into_inner().target;
+        TmuxCommands::kill_pane(self, target)
+            .await
+            .map_err(Status::internal)?;
+        Ok(Response::new(KillPaneResponse {}))
     }
 }
 

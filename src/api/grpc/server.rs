@@ -124,5 +124,8 @@ grpc_service! {
     service TmuxGateway (TmuxGatewayServer) {
         rpc Ls / ls(super::messages::LsRequest) -> super::messages::LsResponse;
         rpc NewSession / new_session(super::messages::NewSessionRequest) -> super::messages::NewSessionResponse;
+        rpc KillSession / kill_session(super::messages::KillSessionRequest) -> super::messages::KillSessionResponse;
+        rpc KillWindow / kill_window(super::messages::KillWindowRequest) -> super::messages::KillWindowResponse;
+        rpc KillPane / kill_pane(super::messages::KillPaneRequest) -> super::messages::KillPaneResponse;
     }
 }

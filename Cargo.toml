@@ -24,6 +24,7 @@ utoipa-axum = "0.2"
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
 dotenvy = "0.15.7"
 protox = "0.9.1"
+prost-types = "0.14"
 
 [package.metadata.cargo-machete]
 ignored = ["prost", "serde_json", "tonic-prost", "utoipa-axum"]

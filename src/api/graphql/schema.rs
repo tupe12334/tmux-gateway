@@ -22,6 +22,18 @@ impl TmuxCommands for GraphqlHandler {
     async fn new(&self, name: &str) -> Result<String, String> {
         tmux::new_session(name).await
     }
+
+    async fn kill_session(&self, target: &str) -> Result<(), String> {
+        tmux::kill_session(target).await
+    }
+
+    async fn kill_window(&self, target: &str) -> Result<(), String> {
+        tmux::kill_window(target).await
+    }
+
+    async fn kill_pane(&self, target: &str) -> Result<(), String> {
+        tmux::kill_pane(target).await
+    }
 }
 
 pub struct QueryRoot;
@@ -59,6 +71,30 @@ impl MutationRoot {
             .new(&name)
             .await
             .map_err(async_graphql::Error::new)
+    }
+
+    async fn kill_session(&self, target: String) -> async_graphql::Result<bool> {
+        GraphqlHandler
+            .kill_session(&target)
+            .await
+            .map_err(async_graphql::Error::new)?;
+        Ok(true)
+    }
+
+    async fn kill_window(&self, target: String) -> async_graphql::Result<bool> {
+        GraphqlHandler
+            .kill_window(&target)
+            .await
+            .map_err(async_graphql::Error::new)?;
+        Ok(true)
+    }
+
+    async fn kill_pane(&self, target: String) -> async_graphql::Result<bool> {
+        GraphqlHandler
+            .kill_pane(&target)
+            .await
+            .map_err(async_graphql::Error::new)?;
+        Ok(true)
     }
 }
 

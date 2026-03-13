@@ -30,3 +30,30 @@ pub struct NewSessionResponse {
     #[prost(string, tag = "1")]
     pub name: String,
 }
+
+#[derive(Clone, PartialEq, Eq, Hash, prost::Message)]
+pub struct KillSessionRequest {
+    #[prost(string, tag = "1")]
+    pub target: String,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, prost::Message)]
+pub struct KillSessionResponse {}
+
+#[derive(Clone, PartialEq, Eq, Hash, prost::Message)]
+pub struct KillWindowRequest {
+    #[prost(string, tag = "1")]
+    pub target: String,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, prost::Message)]
+pub struct KillWindowResponse {}
+
+#[derive(Clone, PartialEq, Eq, Hash, prost::Message)]
+pub struct KillPaneRequest {
+    #[prost(string, tag = "1")]
+    pub target: String,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, prost::Message)]
+pub struct KillPaneResponse {}
