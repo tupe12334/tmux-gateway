@@ -1,5 +1,6 @@
 mod graphql;
 mod grpc;
+mod port_table;
 mod rest;
 
 use std::env;
@@ -21,6 +22,11 @@ async fn main() {
 
     let http_port = env::var("HTTP_PORT").expect("HTTP_PORT must be set");
     let grpc_port = env::var("GRPC_PORT").expect("GRPC_PORT must be set");
+
+    port_table::print_port_table(&[
+        ("HTTP", http_port.parse().expect("HTTP_PORT must be a number")),
+        ("gRPC", grpc_port.parse().expect("GRPC_PORT must be a number")),
+    ]);
 
     let http_app = axum::Router::new()
         .merge(rest::router())
