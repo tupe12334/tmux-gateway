@@ -1,12 +1,14 @@
 use tonic::{Request, Response, Status};
 
-use super::health_proto::health_server::{Health, HealthServer};
-use super::health_proto::{HealthCheckRequest, HealthCheckResponse, HelloRequest, HelloResponse};
+use super::tmux_gateway_proto::tmux_gateway_server::{TmuxGateway, TmuxGatewayServer};
+use super::tmux_gateway_proto::{
+    HealthCheckRequest, HealthCheckResponse, HelloRequest, HelloResponse,
+};
 
-pub struct HealthServiceImpl;
+pub struct TmuxGatewayServiceImpl;
 
 #[tonic::async_trait]
-impl Health for HealthServiceImpl {
+impl TmuxGateway for TmuxGatewayServiceImpl {
     async fn check(
         &self,
         _request: Request<HealthCheckRequest>,
@@ -28,6 +30,6 @@ impl Health for HealthServiceImpl {
     }
 }
 
-pub fn health_server() -> HealthServer<HealthServiceImpl> {
-    HealthServer::new(HealthServiceImpl)
+pub fn grpc_server() -> TmuxGatewayServer<TmuxGatewayServiceImpl> {
+    TmuxGatewayServer::new(TmuxGatewayServiceImpl)
 }

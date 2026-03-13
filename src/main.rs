@@ -28,7 +28,7 @@ async fn main() {
     port_table::print_port_table(&[
         ("REST", http_port_num, swagger_url.as_str()),
         ("GraphQL", http_port_num, graphql_url.as_str()),
-        ("gRPC", grpc_port_num, ""),
+        ("gRPC", grpc_port_num, "reflection enabled"),
     ]);
 
     let http_app = axum::Router::new()
@@ -48,9 +48,14 @@ async fn main() {
     let grpc_addr = format!("0.0.0.0:{grpc_port_num}");
     let grpc_handle = tokio::spawn(async move {
         let addr = grpc_addr.parse().unwrap();
+        let reflection_service = tonic_reflection::server::Builder::configure()
+            .register_encoded_file_descriptor_set(grpc::FILE_DESCRIPTOR_SET)
+            .build_v1()
+            .unwrap();
         tracing::info!("gRPC server listening on {}", addr);
         tonic::transport::Server::builder()
-            .add_service(grpc::health_server())
+            .add_service(grpc::grpc_server())
+            .add_service(reflection_service)
             .serve(addr)
             .await
             .unwrap();

@@ -22,9 +22,4 @@ fn main() {
     let sdl = schema.sdl_with_options(SDLExportOptions::new());
     fs::write(schemas_dir.join("schema.graphql"), sdl).expect("Failed to write schema.graphql");
     println!("Exported schemas/schema.graphql");
-
-    // Copy proto file
-    let proto_src = Path::new("proto/health.proto");
-    fs::copy(proto_src, schemas_dir.join("health.proto")).expect("Failed to copy health.proto");
-    println!("Exported schemas/health.proto");
 }

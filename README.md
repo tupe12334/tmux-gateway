@@ -104,8 +104,8 @@ grpcurl -plaintext localhost:50051 health.Health/Check
 
 ```
 tmux-gateway/
-├── proto/              # Protocol Buffer definitions
-│   └── health.proto
+├── schemas/            # API schema definitions (proto, OpenAPI, GraphQL)
+│   └── tmux_gateway.proto
 ├── src/
 │   ├── main.rs         # Entrypoint — spawns HTTP & gRPC servers
 │   ├── rest/           # Axum REST routes

@@ -1,4 +1,9 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tonic_prost_build::compile_protos("proto/health.proto")?;
+    let out_dir = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap());
+
+    tonic_prost_build::configure()
+        .file_descriptor_set_path(out_dir.join("tmux_gateway_descriptor.bin"))
+        .compile_protos(&["schemas/tmux_gateway.proto"], &["schemas/"])?;
+
     Ok(())
 }
