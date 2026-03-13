@@ -71,14 +71,14 @@ pub fn run() -> ServerConfig {
     check_port_env("GRPC_PORT", &mut checks, &mut grpc_port);
 
     // ── port conflict ────────────────────────────────────────────
-    if let (Some(h), Some(g)) = (http_port, grpc_port) {
-        if h == g {
-            checks.push(Check {
-                name: "port conflict".into(),
-                status: Status::Fail,
-                message: format!("HTTP_PORT and GRPC_PORT are both {h} — they must differ"),
-            });
-        }
+    if let (Some(h), Some(g)) = (http_port, grpc_port)
+        && h == g
+    {
+        checks.push(Check {
+            name: "port conflict".into(),
+            status: Status::Fail,
+            message: format!("HTTP_PORT and GRPC_PORT are both {h} — they must differ"),
+        });
     }
 
     // ── port availability ────────────────────────────────────────
