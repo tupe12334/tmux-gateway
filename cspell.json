@@ -8,8 +8,16 @@
     "pnpm-lock.yaml"
   ],
   "words": [
-    "tmux",
+    "clippy",
+    "codegen",
+    "graphiql",
+    "grpcurl",
+    "oapi",
+    "prost",
+    "protoc",
     "rustdoc",
-    "clippy"
+    "rustup",
+    "serde",
+    "tmux"
   ]
 }
