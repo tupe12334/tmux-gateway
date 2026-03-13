@@ -8,10 +8,7 @@ pub struct TmuxGatewayServiceImpl;
 
 #[tonic::async_trait]
 impl TmuxGateway for TmuxGatewayServiceImpl {
-    async fn ls(
-        &self,
-        _request: Request<LsRequest>,
-    ) -> Result<Response<LsResponse>, Status> {
+    async fn ls(&self, _request: Request<LsRequest>) -> Result<Response<LsResponse>, Status> {
         let sessions = tmux::list_sessions().await.map_err(Status::internal)?;
 
         let proto_sessions = sessions
