@@ -12,6 +12,7 @@
     "codegen",
     "dotenvy",
     "graphiql",
+    "grpcui",
     "grpcurl",
     "oapi",
     "prost",
@@ -19,6 +20,7 @@
     "rustdoc",
     "rustup",
     "serde",
+    "splitn",
     "RUSTSEC",
     "tmux",
     "utoipa"
