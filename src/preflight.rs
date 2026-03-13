@@ -2,7 +2,7 @@ use std::env;
 use std::fmt;
 use std::net::TcpListener;
 use std::path::Path;
-use tmux_interface::Tmux;
+use tmux_gateway_core::tmux_interface::Tmux;
 
 pub struct ServerConfig {
     pub http_port: u16,

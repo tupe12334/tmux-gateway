@@ -1,59 +1,130 @@
-#[derive(Clone, Copy, PartialEq, Eq, Hash, prost::Message)]
-pub struct LsRequest {}
+// ── Helper: generate a single struct from proto-like field definitions ────────
 
-#[derive(Clone, PartialEq, prost::Message)]
-pub struct LsResponse {
-    #[prost(message, repeated, tag = "1")]
-    pub sessions: Vec<TmuxSession>,
+macro_rules! define_proto_struct {
+    ($name:ident {}) => {
+        #[derive(Clone, Copy, PartialEq, Eq, Hash, prost::Message)]
+        pub struct $name {}
+    };
+    ($name:ident { $($fields:tt)+ }) => {
+        define_proto_struct!(@build $name [] $($fields)*);
+    };
+    (@build $name:ident [$($acc:tt)*] string $field:ident = $tag:literal; $($rest:tt)*) => {
+        define_proto_struct!(@build $name [
+            $($acc)* #[prost(string, tag = $tag)] pub $field: String,
+        ] $($rest)*);
+    };
+    (@build $name:ident [$($acc:tt)*] uint32 $field:ident = $tag:literal; $($rest:tt)*) => {
+        define_proto_struct!(@build $name [
+            $($acc)* #[prost(uint32, tag = $tag)] pub $field: u32,
+        ] $($rest)*);
+    };
+    (@build $name:ident [$($acc:tt)*] bool $field:ident = $tag:literal; $($rest:tt)*) => {
+        define_proto_struct!(@build $name [
+            $($acc)* #[prost(bool, tag = $tag)] pub $field: bool,
+        ] $($rest)*);
+    };
+    (@build $name:ident [$($acc:tt)*] repeated $msg:ident $field:ident = $tag:literal; $($rest:tt)*) => {
+        define_proto_struct!(@build $name [
+            $($acc)* #[prost(message, repeated, tag = $tag)] pub $field: Vec<$msg>,
+        ] $($rest)*);
+    };
+    (@build $name:ident [$($acc:tt)*]) => {
+        #[derive(Clone, PartialEq, prost::Message)]
+        pub struct $name { $($acc)* }
+    };
 }
 
-#[derive(Clone, PartialEq, Eq, Hash, prost::Message)]
-pub struct TmuxSession {
-    #[prost(string, tag = "1")]
-    pub name: String,
-    #[prost(uint32, tag = "2")]
-    pub windows: u32,
-    #[prost(string, tag = "3")]
-    pub created: String,
-    #[prost(bool, tag = "4")]
-    pub attached: bool,
+// ── Helper: generate proto text for a single message ─────────────────────────
+
+macro_rules! message_proto_text {
+    ($name:ident {}) => {
+        concat!("message ", stringify!($name), " {}\n\n")
+    };
+    ($name:ident { $($fields:tt)+ }) => {
+        message_proto_text!(@build $name [] $($fields)*)
+    };
+    (@build $name:ident [$($acc:tt)*] string $field:ident = $tag:literal; $($rest:tt)*) => {
+        message_proto_text!(@build $name [
+            $($acc)* "  string ", stringify!($field), " = ", $tag, ";\n",
+        ] $($rest)*)
+    };
+    (@build $name:ident [$($acc:tt)*] uint32 $field:ident = $tag:literal; $($rest:tt)*) => {
+        message_proto_text!(@build $name [
+            $($acc)* "  uint32 ", stringify!($field), " = ", $tag, ";\n",
+        ] $($rest)*)
+    };
+    (@build $name:ident [$($acc:tt)*] bool $field:ident = $tag:literal; $($rest:tt)*) => {
+        message_proto_text!(@build $name [
+            $($acc)* "  bool ", stringify!($field), " = ", $tag, ";\n",
+        ] $($rest)*)
+    };
+    (@build $name:ident [$($acc:tt)*] repeated $msg:ident $field:ident = $tag:literal; $($rest:tt)*) => {
+        message_proto_text!(@build $name [
+            $($acc)* "  repeated ", stringify!($msg), " ", stringify!($field), " = ", $tag, ";\n",
+        ] $($rest)*)
+    };
+    (@build $name:ident [$($acc:tt)*]) => {
+        concat!("message ", stringify!($name), " {\n", $($acc)* "}\n\n")
+    };
 }
 
-#[derive(Clone, PartialEq, Eq, Hash, prost::Message)]
-pub struct NewSessionRequest {
-    #[prost(string, tag = "1")]
-    pub name: String,
+// ── Main macro: defines all message structs + messages_proto() ───────────────
+
+macro_rules! proto_messages {
+    ($(message $name:ident { $($fields:tt)* })*) => {
+        $(
+            define_proto_struct!($name { $($fields)* });
+        )*
+
+        pub fn messages_proto() -> String {
+            let mut s = String::new();
+            $(
+                s.push_str(message_proto_text!($name { $($fields)* }));
+            )*
+            s
+        }
+    };
 }
 
-#[derive(Clone, PartialEq, Eq, Hash, prost::Message)]
-pub struct NewSessionResponse {
-    #[prost(string, tag = "1")]
-    pub name: String,
+// ── Message definitions (source of truth) ────────────────────────────────────
+
+proto_messages! {
+    message LsRequest {}
+
+    message LsResponse {
+        repeated TmuxSession sessions = "1";
+    }
+
+    message TmuxSession {
+        string name = "1";
+        uint32 windows = "2";
+        string created = "3";
+        bool attached = "4";
+    }
+
+    message NewSessionRequest {
+        string name = "1";
+    }
+
+    message NewSessionResponse {
+        string name = "1";
+    }
+
+    message KillSessionRequest {
+        string target = "1";
+    }
+
+    message KillSessionResponse {}
+
+    message KillWindowRequest {
+        string target = "1";
+    }
+
+    message KillWindowResponse {}
+
+    message KillPaneRequest {
+        string target = "1";
+    }
+
+    message KillPaneResponse {}
 }
-
-#[derive(Clone, PartialEq, Eq, Hash, prost::Message)]
-pub struct KillSessionRequest {
-    #[prost(string, tag = "1")]
-    pub target: String,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Hash, prost::Message)]
-pub struct KillSessionResponse {}
-
-#[derive(Clone, PartialEq, Eq, Hash, prost::Message)]
-pub struct KillWindowRequest {
-    #[prost(string, tag = "1")]
-    pub target: String,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Hash, prost::Message)]
-pub struct KillWindowResponse {}
-
-#[derive(Clone, PartialEq, Eq, Hash, prost::Message)]
-pub struct KillPaneRequest {
-    #[prost(string, tag = "1")]
-    pub target: String,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Hash, prost::Message)]
-pub struct KillPaneResponse {}

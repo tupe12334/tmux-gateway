@@ -11,7 +11,7 @@ macro_rules! grpc_service {
     (
         package = $package:literal;
         service $trait_name:ident ($server_name:ident) {
-            $(rpc $rpc_name:ident / $method:ident ( $req:ty ) -> $res:ty;)*
+            $(rpc $rpc_name:ident / $method:ident ( $req:ident ) -> $res:ident;)*
         }
     ) => {
         #[tonic::async_trait]
@@ -19,8 +19,8 @@ macro_rules! grpc_service {
             $(
                 async fn $method(
                     &self,
-                    request: tonic::Request<$req>,
-                ) -> Result<tonic::Response<$res>, tonic::Status>;
+                    request: tonic::Request<super::messages::$req>,
+                ) -> Result<tonic::Response<super::messages::$res>, tonic::Status>;
             )*
         }
 
@@ -72,15 +72,15 @@ macro_rules! grpc_service {
                     $(
                         concat!("/", $package, ".", stringify!($trait_name), "/", stringify!($rpc_name)) => {
                             struct Svc<T: $trait_name>(Arc<T>);
-                            impl<T: $trait_name> tonic::server::UnaryService<$req> for Svc<T> {
-                                type Response = $res;
+                            impl<T: $trait_name> tonic::server::UnaryService<super::messages::$req> for Svc<T> {
+                                type Response = super::messages::$res;
                                 type Future = BoxFuture<
                                     tonic::Response<Self::Response>,
                                     tonic::Status,
                                 >;
                                 fn call(
                                     &mut self,
-                                    request: tonic::Request<$req>,
+                                    request: tonic::Request<super::messages::$req>,
                                 ) -> Self::Future {
                                     let inner = Arc::clone(&self.0);
                                     Box::pin(async move {
@@ -116,16 +116,31 @@ macro_rules! grpc_service {
                 }
             }
         }
+
+        pub fn package_name() -> &'static str {
+            $package
+        }
+
+        pub fn service_proto() -> &'static str {
+            concat!(
+                "service ", stringify!($trait_name), " {\n",
+                $(
+                    "  rpc ", stringify!($rpc_name),
+                    "(", stringify!($req), ") returns (", stringify!($res), ");\n",
+                )*
+                "}\n",
+            )
+        }
     };
 }
 
 grpc_service! {
     package = "tmux_gateway";
     service TmuxGateway (TmuxGatewayServer) {
-        rpc Ls / ls(super::messages::LsRequest) -> super::messages::LsResponse;
-        rpc NewSession / new_session(super::messages::NewSessionRequest) -> super::messages::NewSessionResponse;
-        rpc KillSession / kill_session(super::messages::KillSessionRequest) -> super::messages::KillSessionResponse;
-        rpc KillWindow / kill_window(super::messages::KillWindowRequest) -> super::messages::KillWindowResponse;
-        rpc KillPane / kill_pane(super::messages::KillPaneRequest) -> super::messages::KillPaneResponse;
+        rpc Ls / ls(LsRequest) -> LsResponse;
+        rpc NewSession / new_session(NewSessionRequest) -> NewSessionResponse;
+        rpc KillSession / kill_session(KillSessionRequest) -> KillSessionResponse;
+        rpc KillWindow / kill_window(KillWindowRequest) -> KillWindowResponse;
+        rpc KillPane / kill_pane(KillPaneRequest) -> KillPaneResponse;
     }
 }

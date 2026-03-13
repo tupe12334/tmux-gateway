@@ -10,61 +10,42 @@ pub use tmux_gateway_service::grpc_server;
 pub type TmuxGatewayServerConcrete =
     TmuxGatewayServer<tmux_gateway_service::TmuxGatewayServiceImpl>;
 
-pub fn proto_content() -> &'static str {
-    concat!(
-        "syntax = \"proto3\";\n",
-        "\n",
-        "package tmux_gateway;\n",
-        "\n",
-        "service TmuxGateway {\n",
-        "  rpc Ls(LsRequest) returns (LsResponse);\n",
-        "  rpc NewSession(NewSessionRequest) returns (NewSessionResponse);\n",
-        "  rpc KillSession(KillSessionRequest) returns (KillSessionResponse);\n",
-        "  rpc KillWindow(KillWindowRequest) returns (KillWindowResponse);\n",
-        "  rpc KillPane(KillPaneRequest) returns (KillPaneResponse);\n",
-        "}\n",
-        "\n",
-        "message LsRequest {}\n",
-        "\n",
-        "message LsResponse {\n",
-        "  repeated TmuxSession sessions = 1;\n",
-        "}\n",
-        "\n",
-        "message TmuxSession {\n",
-        "  string name = 1;\n",
-        "  uint32 windows = 2;\n",
-        "  string created = 3;\n",
-        "  bool attached = 4;\n",
-        "}\n",
-        "\n",
-        "message NewSessionRequest {\n",
-        "  string name = 1;\n",
-        "}\n",
-        "\n",
-        "message NewSessionResponse {\n",
-        "  string name = 1;\n",
-        "}\n",
-        "\n",
-        "message KillSessionRequest {\n",
-        "  string target = 1;\n",
-        "}\n",
-        "\n",
-        "message KillSessionResponse {}\n",
-        "\n",
-        "message KillWindowRequest {\n",
-        "  string target = 1;\n",
-        "}\n",
-        "\n",
-        "message KillWindowResponse {}\n",
-        "\n",
-        "message KillPaneRequest {\n",
-        "  string target = 1;\n",
-        "}\n",
-        "\n",
-        "message KillPaneResponse {}\n",
+pub fn proto_content() -> String {
+    format!(
+        "syntax = \"proto3\";\n\npackage {};\n\n{}\n{}",
+        server::package_name(),
+        server::service_proto(),
+        messages::messages_proto(),
     )
 }
 
 pub fn file_descriptor_set() -> prost_types::FileDescriptorSet {
-    schema::compile_proto(proto_content())
+    schema::compile_proto(&proto_content())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn proto_content_is_valid() {
+        let proto = proto_content();
+        assert!(proto.contains("syntax = \"proto3\";"));
+        assert!(proto.contains("package tmux_gateway;"));
+        assert!(proto.contains("service TmuxGateway {"));
+        assert!(proto.contains("rpc Ls(LsRequest) returns (LsResponse);"));
+        assert!(proto.contains("rpc KillPane(KillPaneRequest) returns (KillPaneResponse);"));
+        assert!(proto.contains("message LsRequest {}"));
+        assert!(proto.contains("repeated TmuxSession sessions = 1;"));
+        assert!(proto.contains("message TmuxSession {"));
+        assert!(proto.contains("string name = 1;"));
+        assert!(proto.contains("uint32 windows = 2;"));
+        assert!(proto.contains("bool attached = 4;"));
+    }
+
+    #[test]
+    fn proto_compiles_with_protox() {
+        // Verifies the generated proto is valid protobuf
+        let _ = file_descriptor_set();
+    }
 }

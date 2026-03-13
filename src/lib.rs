@@ -1,5 +1,8 @@
+#![recursion_limit = "1024"]
+
 pub mod api;
 pub mod export_schemas;
 pub mod port_table;
 pub mod preflight;
-pub mod tmux;
+
+pub use tmux_gateway_core as tmux;

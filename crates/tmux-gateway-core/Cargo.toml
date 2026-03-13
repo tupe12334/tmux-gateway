@@ -1,0 +1,11 @@
+[package]
+name = "tmux-gateway-core"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Core tmux session management library — no networking"
+
+[dependencies]
+tokio = { version = "1", features = ["rt"] }
+serde = { version = "1", features = ["derive"] }
+tmux_interface = "0.4"

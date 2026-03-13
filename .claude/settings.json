@@ -12,7 +12,8 @@
       "Bash(cargo add:*)",
       "Bash(cargo doc:*)",
       "Bash(git status:*)",
-      "Bash(cargo clippy:*)"
+      "Bash(cargo clippy:*)",
+      "Bash(cargo check:*)"
     ]
   },
   "hooks": {

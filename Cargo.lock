@@ -1868,7 +1868,7 @@ dependencies = [
  "protox",
  "serde",
  "serde_json",
- "tmux_interface",
+ "tmux-gateway-core",
  "tokio",
  "tonic",
  "tonic-health",
@@ -1879,6 +1879,15 @@ dependencies = [
  "utoipa",
  "utoipa-axum",
  "utoipa-swagger-ui",
+]
+
+[[package]]
+name = "tmux-gateway-core"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "tmux_interface",
+ "tokio",
 ]
 
 [[package]]
