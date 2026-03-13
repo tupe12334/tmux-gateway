@@ -2,7 +2,7 @@ use std::env;
 use std::fmt;
 use std::net::TcpListener;
 use std::path::Path;
-use std::process::Command;
+use tmux_interface::Tmux;
 
 pub struct ServerConfig {
     pub http_port: u16,
@@ -38,22 +38,24 @@ pub fn run() -> ServerConfig {
     let mut grpc_port: Option<u16> = None;
 
     // ── tmux binary ──────────────────────────────────────────────
-    match Command::new("tmux").arg("-V").output() {
-        Ok(output) if output.status.success() => {
-            let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            checks.push(Check {
-                name: "tmux binary".into(),
-                status: Status::Pass,
-                message: version,
-            });
-        }
+    match Tmux::new().version().output() {
         Ok(output) => {
-            let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-            checks.push(Check {
-                name: "tmux binary".into(),
-                status: Status::Fail,
-                message: format!("tmux returned error: {stderr}"),
-            });
+            let raw = output.into_inner();
+            if raw.status.success() {
+                let version = String::from_utf8_lossy(&raw.stdout).trim().to_string();
+                checks.push(Check {
+                    name: "tmux binary".into(),
+                    status: Status::Pass,
+                    message: version,
+                });
+            } else {
+                let stderr = String::from_utf8_lossy(&raw.stderr).trim().to_string();
+                checks.push(Check {
+                    name: "tmux binary".into(),
+                    status: Status::Fail,
+                    message: format!("tmux returned error: {stderr}"),
+                });
+            }
         }
         Err(_) => {
             checks.push(Check {
