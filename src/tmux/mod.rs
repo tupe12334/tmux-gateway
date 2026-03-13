@@ -1,3 +1,3 @@
 mod sessions;
 
-pub use sessions::{list_sessions, TmuxSession};
+pub use sessions::{TmuxSession, list_sessions};

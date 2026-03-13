@@ -11,7 +11,11 @@ pub struct TmuxSession {
 
 pub async fn list_sessions() -> Result<Vec<TmuxSession>, String> {
     let output = Command::new("tmux")
-        .args(["ls", "-F", "#{session_name}\t#{session_windows}\t#{session_created_string}\t#{session_attached}"])
+        .args([
+            "ls",
+            "-F",
+            "#{session_name}\t#{session_windows}\t#{session_created_string}\t#{session_attached}",
+        ])
         .output()
         .await
         .map_err(|e| format!("failed to run tmux: {e}"))?;
