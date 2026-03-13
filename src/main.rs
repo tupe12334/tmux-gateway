@@ -1,6 +1,7 @@
 use std::env;
 
-use tmux_gateway::{export_schemas, graphql, grpc, port_table, rest};
+use tmux_gateway::api::{graphql, grpc, rest};
+use tmux_gateway::{export_schemas, port_table};
 use tokio::net::TcpListener;
 use tracing_subscriber::EnvFilter;
 use utoipa::OpenApi;

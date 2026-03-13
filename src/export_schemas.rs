@@ -4,7 +4,7 @@ use std::path::Path;
 use async_graphql::SDLExportOptions;
 use utoipa::OpenApi;
 
-use crate::{graphql, grpc, rest};
+use crate::api::{graphql, grpc, rest};
 
 pub fn export_all() {
     let schemas_dir = Path::new("schemas");
