@@ -27,35 +27,6 @@
           }
         }
       }
-    },
-    "/hello/{name}": {
-      "get": {
-        "tags": [],
-        "operationId": "hello",
-        "parameters": [
-          {
-            "name": "name",
-            "in": "path",
-            "description": "Name to greet",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Greeting message",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HelloResponse"
-                }
-              }
-            }
-          }
-        }
-      }
     }
   },
   "components": {
@@ -67,17 +38,6 @@
         ],
         "properties": {
           "status": {
-            "type": "string"
-          }
-        }
-      },
-      "HelloResponse": {
-        "type": "object",
-        "required": [
-          "message"
-        ],
-        "properties": {
-          "message": {
             "type": "string"
           }
         }

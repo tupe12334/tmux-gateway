@@ -10,9 +10,6 @@ impl QueryRoot {
         "healthy"
     }
 
-    async fn hello(&self, #[graphql(default = "World")] name: String) -> String {
-        format!("Hello, {}!", name)
-    }
 }
 
 pub fn build_schema() -> AppSchema {

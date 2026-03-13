@@ -53,7 +53,7 @@ async fn main() {
             .register_encoded_file_descriptor_set(grpc::FILE_DESCRIPTOR_SET)
             .build_v1()
             .unwrap();
-        let (mut health_reporter, health_service) = tonic_health::server::health_reporter();
+        let (health_reporter, health_service) = tonic_health::server::health_reporter();
         health_reporter
             .set_serving::<grpc::TmuxGatewayServer>()
             .await;

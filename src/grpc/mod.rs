@@ -8,3 +8,6 @@ pub const FILE_DESCRIPTOR_SET: &[u8] =
     tonic::include_file_descriptor_set!("tmux_gateway_descriptor");
 
 pub use tmux_gateway_service::grpc_server;
+
+pub type TmuxGatewayServer =
+    tmux_gateway_proto::tmux_gateway_server::TmuxGatewayServer<tmux_gateway_service::TmuxGatewayServiceImpl>;

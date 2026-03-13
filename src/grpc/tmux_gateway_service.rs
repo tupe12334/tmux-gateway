@@ -1,5 +1,4 @@
 use super::tmux_gateway_proto::tmux_gateway_server::{TmuxGateway, TmuxGatewayServer};
-use tonic::{Request, Response, Status};
 
 pub struct TmuxGatewayServiceImpl;
 

@@ -1,4 +1,3 @@
-use axum::extract::Path;
 use axum::routing::get;
 use axum::{Json, Router};
 use serde::Serialize;
@@ -7,11 +6,6 @@ use utoipa::{OpenApi, ToSchema};
 #[derive(Serialize, ToSchema)]
 struct HealthResponse {
     status: String,
-}
-
-#[derive(Serialize, ToSchema)]
-struct HelloResponse {
-    message: String,
 }
 
 #[utoipa::path(
@@ -27,26 +21,10 @@ async fn health() -> Json<HealthResponse> {
     })
 }
 
-#[utoipa::path(
-    get,
-    path = "/hello/{name}",
-    params(
-        ("name" = String, Path, description = "Name to greet")
-    ),
-    responses(
-        (status = 200, description = "Greeting message", body = HelloResponse)
-    )
-)]
-async fn hello(Path(name): Path<String>) -> Json<HelloResponse> {
-    Json(HelloResponse {
-        message: format!("Hello, {}!", name),
-    })
-}
-
 #[derive(OpenApi)]
 #[openapi(
-    paths(health, hello),
-    components(schemas(HealthResponse, HelloResponse)),
+    paths(health),
+    components(schemas(HealthResponse)),
     info(
         title = "tmux-gateway",
         version = "0.1.0",
@@ -58,5 +36,4 @@ pub struct ApiDoc;
 pub fn router() -> Router {
     Router::new()
         .route("/health", get(health))
-        .route("/hello/{name}", get(hello))
 }

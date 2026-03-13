@@ -1,6 +1,5 @@
 type QueryRoot {
 	health: String!
-	hello(name: String! = "World"): String!
 }
 
 """
