@@ -1,4 +1,5 @@
 cargo fmt --all -- --check
+cargo fmt --all
 cargo build --workspace
 cargo test --workspace
 cargo clippy --workspace -- -D warnings
