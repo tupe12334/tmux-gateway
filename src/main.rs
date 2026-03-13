@@ -2,6 +2,8 @@ mod graphql;
 mod grpc;
 mod rest;
 
+use std::env;
+
 use tokio::net::TcpListener;
 use tracing_subscriber::EnvFilter;
 use utoipa::OpenApi;
@@ -9,11 +11,16 @@ use utoipa_swagger_ui::SwaggerUi;
 
 #[tokio::main]
 async fn main() {
+    dotenvy::dotenv().ok();
+
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::from_default_env().add_directive("tmux_gateway=info".parse().unwrap()),
         )
         .init();
+
+    let http_port = env::var("HTTP_PORT").expect("HTTP_PORT must be set");
+    let grpc_port = env::var("GRPC_PORT").expect("GRPC_PORT must be set");
 
     let http_app = axum::Router::new()
         .merge(rest::router())
@@ -22,14 +29,16 @@ async fn main() {
             SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", rest::ApiDoc::openapi()),
         );
 
+    let http_addr = format!("0.0.0.0:{http_port}");
     let http_handle = tokio::spawn(async move {
-        let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
-        tracing::info!("HTTP server (REST + GraphQL + Swagger) listening on 0.0.0.0:3000");
+        let listener = TcpListener::bind(&http_addr).await.unwrap();
+        tracing::info!("HTTP server (REST + GraphQL + Swagger) listening on {http_addr}");
         axum::serve(listener, http_app).await.unwrap();
     });
 
+    let grpc_addr = format!("0.0.0.0:{grpc_port}");
     let grpc_handle = tokio::spawn(async move {
-        let addr = "0.0.0.0:50051".parse().unwrap();
+        let addr = grpc_addr.parse().unwrap();
         tracing::info!("gRPC server listening on {}", addr);
         tonic::transport::Server::builder()
             .add_service(grpc::health_server())
