@@ -1,6 +1,6 @@
 use std::env;
 
-use tmux_gateway::{graphql, grpc, port_table, rest};
+use tmux_gateway::{export_schemas, graphql, grpc, port_table, rest};
 use tokio::net::TcpListener;
 use tracing_subscriber::EnvFilter;
 use utoipa::OpenApi;
@@ -15,6 +15,8 @@ async fn main() {
             EnvFilter::from_default_env().add_directive("tmux_gateway=info".parse().unwrap()),
         )
         .init();
+
+    export_schemas::export_all();
 
     let http_port = env::var("HTTP_PORT").expect("HTTP_PORT must be set");
     let grpc_port = env::var("GRPC_PORT").expect("GRPC_PORT must be set");
