@@ -79,9 +79,6 @@ RUST_LOG=tmux_gateway=debug cargo run
 ```bash
 # Health check
 curl http://localhost:8080/health
-
-# Hello
-curl http://localhost:8080/hello/world
 ```
 
 ### GraphQL
