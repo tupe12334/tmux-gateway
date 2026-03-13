@@ -11,11 +11,9 @@ pub struct TmuxSession {
 
 pub async fn list_sessions() -> Result<Vec<TmuxSession>, String> {
     tokio::task::spawn_blocking(|| {
-        let output = Tmux::with_command(
-            ListSessions::new().format(
-                "#{session_name}\t#{session_windows}\t#{session_created_string}\t#{session_attached}",
-            ),
-        )
+        let output = Tmux::with_command(ListSessions::new().format(
+            "#{session_name}\t#{session_windows}\t#{session_created_string}\t#{session_attached}",
+        ))
         .output()
         .map_err(|e| format!("failed to run tmux: {e}"))?
         .into_inner();
