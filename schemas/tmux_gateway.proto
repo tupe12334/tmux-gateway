@@ -10,8 +10,7 @@ service TmuxGateway {
   rpc KillPane(KillPaneRequest) returns (KillPaneResponse);
 }
 
-message LsRequest {
-}
+message LsRequest {}
 
 message LsResponse {
   repeated TmuxSession sessions = 1;
@@ -36,19 +35,16 @@ message KillSessionRequest {
   string target = 1;
 }
 
-message KillSessionResponse {
-}
+message KillSessionResponse {}
 
 message KillWindowRequest {
   string target = 1;
 }
 
-message KillWindowResponse {
-}
+message KillWindowResponse {}
 
 message KillPaneRequest {
   string target = 1;
 }
 
-message KillPaneResponse {
-}
+message KillPaneResponse {}

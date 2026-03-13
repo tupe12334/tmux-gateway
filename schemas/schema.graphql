@@ -1,5 +1,8 @@
 type MutationRoot {
-	newSession(name: String!): String!
+	createSession(name: String!): String!
+	killSession(target: String!): Boolean!
+	killWindow(target: String!): Boolean!
+	killPane(target: String!): Boolean!
 }
 
 type QueryRoot {

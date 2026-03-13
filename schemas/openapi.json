@@ -28,6 +28,78 @@
         }
       }
     },
+    "/kill-pane": {
+      "post": {
+        "tags": [],
+        "operationId": "kill_pane",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KillTargetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Pane killed"
+          },
+          "500": {
+            "description": "Failed to kill pane"
+          }
+        }
+      }
+    },
+    "/kill-session": {
+      "post": {
+        "tags": [],
+        "operationId": "kill_session",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KillTargetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Session killed"
+          },
+          "500": {
+            "description": "Failed to kill session"
+          }
+        }
+      }
+    },
+    "/kill-window": {
+      "post": {
+        "tags": [],
+        "operationId": "kill_window",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KillTargetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Window killed"
+          },
+          "500": {
+            "description": "Failed to kill window"
+          }
+        }
+      }
+    },
     "/ls": {
       "get": {
         "tags": [],
@@ -93,6 +165,17 @@
         ],
         "properties": {
           "status": {
+            "type": "string"
+          }
+        }
+      },
+      "KillTargetRequest": {
+        "type": "object",
+        "required": [
+          "target"
+        ],
+        "properties": {
+          "target": {
             "type": "string"
           }
         }
