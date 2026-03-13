@@ -1,1 +1,10 @@
-cargo build
+cargo fmt --all -- --check
+cargo build --workspace
+cargo test --workspace
+cargo clippy --workspace -- -D warnings
+cargo doc --workspace --no-deps
+cargo deny check
+cargo audit
+cargo machete
+cargo outdated --root-deps-only
+cspell --no-progress "**"
