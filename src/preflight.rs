@@ -7,6 +7,7 @@ use tmux_gateway_core::tmux_interface::Tmux;
 pub struct ServerConfig {
     pub http_port: u16,
     pub grpc_port: u16,
+    pub tmux_version: String,
 }
 
 enum Status {
@@ -36,6 +37,7 @@ pub fn run() -> ServerConfig {
     let mut checks: Vec<Check> = Vec::new();
     let mut http_port: Option<u16> = None;
     let mut grpc_port: Option<u16> = None;
+    let mut tmux_version = String::new();
 
     // ── tmux binary ──────────────────────────────────────────────
     match Tmux::new().version().output() {
@@ -43,6 +45,7 @@ pub fn run() -> ServerConfig {
             let raw = output.into_inner();
             if raw.status.success() {
                 let version = String::from_utf8_lossy(&raw.stdout).trim().to_string();
+                tmux_version = version.clone();
                 checks.push(Check {
                     name: "tmux binary".into(),
                     status: Status::Pass,
@@ -113,6 +116,7 @@ pub fn run() -> ServerConfig {
     ServerConfig {
         http_port: http_port.unwrap(),
         grpc_port: grpc_port.unwrap(),
+        tmux_version,
     }
 }
 
