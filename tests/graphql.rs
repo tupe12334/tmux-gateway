@@ -36,11 +36,14 @@ async fn create_session_mutation() {
     }
     let name = common::unique_session_name();
     let schema = graphql::build_schema();
-    let query = format!(r#"mutation {{ createSession(name: "{}") }}"#, name);
+    let query = format!(
+        r#"mutation {{ createSession(name: "{}") {{ name }} }}"#,
+        name
+    );
     let result = schema.execute(&query).await;
     assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
     let v = to_json(&result.data);
-    assert_eq!(v["createSession"], name);
+    assert_eq!(v["createSession"]["name"], name);
     common::cleanup_session(&name);
 }
 
@@ -51,7 +54,10 @@ async fn kill_session_mutation() {
     }
     let name = common::unique_session_name();
     let schema = graphql::build_schema();
-    let query = format!(r#"mutation {{ createSession(name: "{}") }}"#, name);
+    let query = format!(
+        r#"mutation {{ createSession(name: "{}") {{ name }} }}"#,
+        name
+    );
     schema.execute(&query).await;
     let query = format!(r#"mutation {{ killSession(target: "{}") }}"#, name);
     let result = schema.execute(&query).await;
@@ -67,7 +73,10 @@ async fn kill_window_mutation() {
     }
     let name = common::unique_session_name();
     let schema = graphql::build_schema();
-    let query = format!(r#"mutation {{ createSession(name: "{}") }}"#, name);
+    let query = format!(
+        r#"mutation {{ createSession(name: "{}") {{ name }} }}"#,
+        name
+    );
     schema.execute(&query).await;
     let query = format!(r#"mutation {{ killWindow(target: "{}:0") }}"#, name);
     let result = schema.execute(&query).await;
@@ -82,7 +91,10 @@ async fn kill_pane_mutation() {
     }
     let name = common::unique_session_name();
     let schema = graphql::build_schema();
-    let query = format!(r#"mutation {{ createSession(name: "{}") }}"#, name);
+    let query = format!(
+        r#"mutation {{ createSession(name: "{}") {{ name }} }}"#,
+        name
+    );
     schema.execute(&query).await;
     let query = format!(r#"mutation {{ killPane(target: "{}:0.0") }}"#, name);
     let result = schema.execute(&query).await;
@@ -99,7 +111,7 @@ async fn list_windows_query() {
     let schema = graphql::build_schema();
     schema
         .execute(&format!(
-            r#"mutation {{ createSession(name: "{}") }}"#,
+            r#"mutation {{ createSession(name: "{}") {{ name }} }}"#,
             name
         ))
         .await;
@@ -124,7 +136,7 @@ async fn list_panes_query() {
     let schema = graphql::build_schema();
     schema
         .execute(&format!(
-            r#"mutation {{ createSession(name: "{}") }}"#,
+            r#"mutation {{ createSession(name: "{}") {{ name }} }}"#,
             name
         ))
         .await;
@@ -146,7 +158,7 @@ async fn send_keys_mutation() {
     let schema = graphql::build_schema();
     schema
         .execute(&format!(
-            r#"mutation {{ createSession(name: "{}") }}"#,
+            r#"mutation {{ createSession(name: "{}") {{ name }} }}"#,
             name
         ))
         .await;
@@ -170,7 +182,7 @@ async fn rename_session_mutation() {
     let schema = graphql::build_schema();
     schema
         .execute(&format!(
-            r#"mutation {{ createSession(name: "{}") }}"#,
+            r#"mutation {{ createSession(name: "{}") {{ name }} }}"#,
             name
         ))
         .await;
@@ -192,12 +204,12 @@ async fn new_window_mutation() {
     let schema = graphql::build_schema();
     schema
         .execute(&format!(
-            r#"mutation {{ createSession(name: "{}") }}"#,
+            r#"mutation {{ createSession(name: "{}") {{ name }} }}"#,
             name
         ))
         .await;
     let query = format!(
-        r#"mutation {{ newWindow(session: "{}", name: "mywin") }}"#,
+        r#"mutation {{ newWindow(session: "{}", name: "mywin") {{ name }} }}"#,
         name
     );
     let result = schema.execute(&query).await;
@@ -214,7 +226,7 @@ async fn rename_window_mutation() {
     let schema = graphql::build_schema();
     schema
         .execute(&format!(
-            r#"mutation {{ createSession(name: "{}") }}"#,
+            r#"mutation {{ createSession(name: "{}") {{ name }} }}"#,
             name
         ))
         .await;
@@ -236,12 +248,12 @@ async fn split_window_mutation() {
     let schema = graphql::build_schema();
     schema
         .execute(&format!(
-            r#"mutation {{ createSession(name: "{}") }}"#,
+            r#"mutation {{ createSession(name: "{}") {{ name }} }}"#,
             name
         ))
         .await;
     let query = format!(
-        r#"mutation {{ splitWindow(target: "{}:0.0", horizontal: false) }}"#,
+        r#"mutation {{ splitWindow(target: "{}:0.0", horizontal: false) {{ id }} }}"#,
         name
     );
     let result = schema.execute(&query).await;
@@ -258,7 +270,7 @@ async fn capture_pane_query() {
     let schema = graphql::build_schema();
     schema
         .execute(&format!(
-            r#"mutation {{ createSession(name: "{}") }}"#,
+            r#"mutation {{ createSession(name: "{}") {{ name }} }}"#,
             name
         ))
         .await;
@@ -296,7 +308,7 @@ async fn ls_includes_created_session() {
     let schema = graphql::build_schema();
     schema
         .execute(&format!(
-            r#"mutation {{ createSession(name: "{}") }}"#,
+            r#"mutation {{ createSession(name: "{}") {{ name }} }}"#,
             name
         ))
         .await;

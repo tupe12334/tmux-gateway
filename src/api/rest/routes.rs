@@ -14,7 +14,7 @@ impl TmuxCommands for RestHandler {
         tmux::list_sessions().await
     }
 
-    async fn create_session(&self, name: &str) -> Result<String, TmuxError> {
+    async fn create_session(&self, name: &str) -> Result<tmux::TmuxSession, TmuxError> {
         tmux::new_session(name).await
     }
 
@@ -50,11 +50,15 @@ impl TmuxCommands for RestHandler {
         tmux::rename_window(target, new_name).await
     }
 
-    async fn new_window(&self, session: &str, name: &str) -> Result<String, TmuxError> {
+    async fn new_window(&self, session: &str, name: &str) -> Result<tmux::TmuxWindow, TmuxError> {
         tmux::new_window(session, name).await
     }
 
-    async fn split_window(&self, target: &str, horizontal: bool) -> Result<(), TmuxError> {
+    async fn split_window(
+        &self,
+        target: &str,
+        horizontal: bool,
+    ) -> Result<tmux::TmuxPane, TmuxError> {
         tmux::split_window(target, horizontal).await
     }
 
@@ -178,6 +182,9 @@ struct NewSessionRequest {
 #[derive(Serialize, ToSchema)]
 struct NewSessionResponse {
     name: String,
+    windows: u32,
+    created: String,
+    attached: bool,
 }
 
 #[utoipa::path(
@@ -193,12 +200,22 @@ struct NewSessionResponse {
 async fn new(
     Json(body): Json<NewSessionRequest>,
 ) -> Result<(StatusCode, Json<NewSessionResponse>), (StatusCode, String)> {
-    let name = RestHandler
+    let session = RestHandler
         .create_session(&body.name)
         .await
         .map_err(tmux_err_to_http)?;
 
-    Ok((StatusCode::CREATED, Json(NewSessionResponse { name })))
+    Ok((
+        StatusCode::CREATED,
+        Json(NewSessionResponse {
+            name: session.name,
+            windows: session.windows,
+            created: DateTime::<Utc>::from_timestamp(session.created, 0)
+                .map(|dt| dt.to_rfc3339())
+                .unwrap_or_else(|| session.created.to_string()),
+            attached: session.attached,
+        }),
+    ))
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -427,7 +444,10 @@ struct NewWindowRequest {
 
 #[derive(Serialize, ToSchema)]
 struct NewWindowResponse {
+    index: u32,
     name: String,
+    panes: u32,
+    active: bool,
 }
 
 #[utoipa::path(
@@ -443,14 +463,19 @@ struct NewWindowResponse {
 async fn new_window(
     Json(body): Json<NewWindowRequest>,
 ) -> Result<(axum::http::StatusCode, Json<NewWindowResponse>), (axum::http::StatusCode, String)> {
-    let name = RestHandler
+    let window = RestHandler
         .new_window(&body.session, &body.name)
         .await
         .map_err(tmux_err_to_http)?;
 
     Ok((
         axum::http::StatusCode::CREATED,
-        Json(NewWindowResponse { name }),
+        Json(NewWindowResponse {
+            index: window.index,
+            name: window.name,
+            panes: window.panes,
+            active: window.active,
+        }),
     ))
 }
 
@@ -460,25 +485,38 @@ struct SplitWindowRequest {
     horizontal: bool,
 }
 
+#[derive(Serialize, ToSchema)]
+struct SplitWindowResponse {
+    id: String,
+    width: u32,
+    height: u32,
+    active: bool,
+}
+
 #[utoipa::path(
     post,
     path = "/split-window",
     request_body = SplitWindowRequest,
     responses(
-        (status = 200, description = "Window split"),
+        (status = 200, description = "Window split", body = SplitWindowResponse),
         (status = 404, description = "Target not found"),
         (status = 500, description = "Failed to split window")
     )
 )]
 async fn split_window(
     Json(body): Json<SplitWindowRequest>,
-) -> Result<axum::http::StatusCode, (axum::http::StatusCode, String)> {
-    RestHandler
+) -> Result<Json<SplitWindowResponse>, (axum::http::StatusCode, String)> {
+    let pane = RestHandler
         .split_window(&body.target, body.horizontal)
         .await
         .map_err(tmux_err_to_http)?;
 
-    Ok(axum::http::StatusCode::OK)
+    Ok(Json(SplitWindowResponse {
+        id: pane.id,
+        width: pane.width,
+        height: pane.height,
+        active: pane.active,
+    }))
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -650,6 +688,7 @@ async fn capture_pane(
         NewWindowRequest,
         NewWindowResponse,
         SplitWindowRequest,
+        SplitWindowResponse,
         CapturePaneRequest,
         CapturePaneResponse,
         CreateSessionWithWindowsRequest,

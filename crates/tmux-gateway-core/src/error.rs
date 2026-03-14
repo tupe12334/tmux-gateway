@@ -150,7 +150,11 @@ mod tests {
 
     #[test]
     fn from_stderr_no_server_running() {
-        let err = TmuxError::from_stderr("list-sessions", "no server running on /tmp/tmux-1000/default", "");
+        let err = TmuxError::from_stderr(
+            "list-sessions",
+            "no server running on /tmp/tmux-1000/default",
+            "",
+        );
         assert!(matches!(err, TmuxError::TmuxNotRunning));
     }
 
@@ -251,7 +255,9 @@ mod tests {
     #[test]
     fn from_stderr_empty_stderr_falls_through() {
         let err = TmuxError::from_stderr("cmd", "", "target");
-        assert!(matches!(err, TmuxError::CommandFailed { ref command, ref stderr } if command == "cmd" && stderr.is_empty()));
+        assert!(
+            matches!(err, TmuxError::CommandFailed { ref command, ref stderr } if command == "cmd" && stderr.is_empty())
+        );
     }
 
     #[test]

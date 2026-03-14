@@ -128,6 +128,9 @@ proto_messages! {
 
     message NewSessionResponse {
         string name = "1";
+        uint32 windows = "2";
+        int64 created = "3";
+        bool attached = "4";
     }
 
     message KillSessionRequest {
@@ -205,7 +208,10 @@ proto_messages! {
     }
 
     message NewWindowResponse {
-        string name = "1";
+        uint32 index = "1";
+        string name = "2";
+        uint32 panes = "3";
+        bool active = "4";
     }
 
     message SplitWindowRequest {
@@ -213,7 +219,12 @@ proto_messages! {
         bool horizontal = "2";
     }
 
-    message SplitWindowResponse {}
+    message SplitWindowResponse {
+        string id = "1";
+        uint32 width = "2";
+        uint32 height = "3";
+        bool active = "4";
+    }
 
     message CapturePaneRequest {
         string target = "1";

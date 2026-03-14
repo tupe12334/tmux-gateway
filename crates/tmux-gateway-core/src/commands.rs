@@ -8,7 +8,7 @@ pub trait TmuxCommands {
     fn create_session(
         &self,
         name: &str,
-    ) -> impl std::future::Future<Output = Result<String, TmuxError>> + Send;
+    ) -> impl std::future::Future<Output = Result<TmuxSession, TmuxError>> + Send;
     fn kill_session(
         &self,
         target: &str,
@@ -48,12 +48,12 @@ pub trait TmuxCommands {
         &self,
         session: &str,
         name: &str,
-    ) -> impl std::future::Future<Output = Result<String, TmuxError>> + Send;
+    ) -> impl std::future::Future<Output = Result<TmuxWindow, TmuxError>> + Send;
     fn split_window(
         &self,
         target: &str,
         horizontal: bool,
-    ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send;
+    ) -> impl std::future::Future<Output = Result<TmuxPane, TmuxError>> + Send;
     fn capture_pane(
         &self,
         target: &str,

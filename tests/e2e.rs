@@ -145,7 +145,7 @@ async fn cross_protocol_create_graphql_verify_grpc_kill_rest() {
     let schema = graphql::build_schema();
     let result = schema
         .execute(&format!(
-            r#"mutation {{ createSession(name: "{}") }}"#,
+            r#"mutation {{ createSession(name: "{}") {{ name }} }}"#,
             name
         ))
         .await;
@@ -231,7 +231,7 @@ async fn all_apis_return_consistent_session_list() {
     let schema = graphql::build_schema();
     let result = schema
         .execute(&format!(
-            r#"mutation {{ createSession(name: "{}") }}"#,
+            r#"mutation {{ createSession(name: "{}") {{ name }} }}"#,
             name
         ))
         .await;
