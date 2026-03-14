@@ -33,5 +33,3 @@ pub use server_info::{TmuxServerInfo, is_available, server_info, server_info_blo
 pub use sessions::{TmuxSession, get_session, list_sessions, session_exists};
 pub use split_window::split_window;
 pub use validation::ValidationError;
-
-pub use tmux_interface;
