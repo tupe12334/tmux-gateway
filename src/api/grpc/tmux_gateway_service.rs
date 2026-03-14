@@ -2,16 +2,18 @@ use tonic::{Request, Response, Status};
 
 use super::messages::{
     CapturePaneRequest, CapturePaneResponse, CreateSessionWithWindowsRequest,
-    CreateSessionWithWindowsResponse, KillPaneRequest, KillPaneResponse, KillSessionRequest,
-    KillSessionResponse, KillWindowRequest, KillWindowResponse, ListPanesRequest,
-    ListPanesResponse, ListWindowsRequest, ListWindowsResponse, LsRequest, LsResponse,
-    MoveWindowRequest, MoveWindowResponse, NewSessionRequest, NewSessionResponse, NewWindowRequest,
-    NewWindowResponse, RenameSessionRequest, RenameSessionResponse, RenameWindowRequest,
-    RenameWindowResponse, SendKeysRequest, SendKeysResponse, SplitWindowRequest,
-    SplitWindowResponse, SwapPanesRequest, SwapPanesResponse, TmuxPaneMsg, TmuxSession, TmuxWindow,
+    CreateSessionWithWindowsResponse, GetOptionRequest, GetOptionResponse, KillPaneRequest,
+    KillPaneResponse, KillSessionRequest, KillSessionResponse, KillWindowRequest,
+    KillWindowResponse, ListOptionsRequest, ListOptionsResponse, ListPanesRequest, ListPanesResponse,
+    ListWindowsRequest, ListWindowsResponse, LsRequest, LsResponse, MoveWindowRequest,
+    MoveWindowResponse, NewSessionRequest, NewSessionResponse, NewWindowRequest, NewWindowResponse,
+    RenameSessionRequest, RenameSessionResponse, RenameWindowRequest, RenameWindowResponse,
+    SendKeysRequest, SendKeysResponse, SetOptionRequest, SetOptionResponse, SplitWindowRequest,
+    SplitWindowResponse, SwapPanesRequest, SwapPanesResponse, TmuxOptionMsg, TmuxPaneMsg,
+    TmuxSession, TmuxWindow,
 };
 use super::server::{TmuxGateway, TmuxGatewayServer};
-use crate::tmux::{self, GrpcCode, RealTmuxExecutor, TmuxCommands, TmuxError};
+use crate::tmux::{self, GrpcCode, OptionScope, RealTmuxExecutor, TmuxCommands, TmuxError, TmuxOption};
 
 pub struct TmuxGatewayServiceImpl;
 
@@ -86,6 +88,52 @@ impl TmuxCommands for TmuxGatewayServiceImpl {
 
     async fn move_window(&self, source: &str, destination_session: &str) -> Result<(), TmuxError> {
         tmux::move_window(&RealTmuxExecutor, source, destination_session).await
+    }
+
+    async fn get_option(
+        &self,
+        target: &str,
+        name: &str,
+        scope: OptionScope,
+    ) -> Result<String, TmuxError> {
+        tmux::get_option(&RealTmuxExecutor, target, name, scope).await
+    }
+
+    async fn set_option(
+        &self,
+        target: &str,
+        name: &str,
+        value: &str,
+        scope: OptionScope,
+    ) -> Result<(), TmuxError> {
+        tmux::set_option(&RealTmuxExecutor, target, name, value, scope).await
+    }
+
+    async fn list_options(
+        &self,
+        target: &str,
+        scope: OptionScope,
+    ) -> Result<Vec<TmuxOption>, TmuxError> {
+        tmux::list_options(&RealTmuxExecutor, target, scope).await
+    }
+}
+
+fn parse_scope(scope: &str) -> Result<OptionScope, Status> {
+    match scope {
+        "global" => Ok(OptionScope::Global),
+        "session" => Ok(OptionScope::Session),
+        "window" => Ok(OptionScope::Window),
+        _ => Err(Status::invalid_argument(
+            "scope must be one of: global, session, window",
+        )),
+    }
+}
+
+fn scope_to_str(scope: OptionScope) -> &'static str {
+    match scope {
+        OptionScope::Global => "global",
+        OptionScope::Session => "session",
+        OptionScope::Window => "window",
     }
 }
 
@@ -327,6 +375,54 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
             .await
             .map_err(tmux_err_to_status)?;
         Ok(Response::new(MoveWindowResponse {}))
+    }
+
+    async fn get_option(
+        &self,
+        request: Request<GetOptionRequest>,
+    ) -> Result<Response<GetOptionResponse>, Status> {
+        let inner = request.into_inner();
+        let scope = parse_scope(&inner.scope)?;
+        let value = TmuxCommands::get_option(self, &inner.target, &inner.name, scope)
+            .await
+            .map_err(tmux_err_to_status)?;
+        Ok(Response::new(GetOptionResponse { value }))
+    }
+
+    async fn set_option(
+        &self,
+        request: Request<SetOptionRequest>,
+    ) -> Result<Response<SetOptionResponse>, Status> {
+        let inner = request.into_inner();
+        let scope = parse_scope(&inner.scope)?;
+        TmuxCommands::set_option(self, &inner.target, &inner.name, &inner.value, scope)
+            .await
+            .map_err(tmux_err_to_status)?;
+        Ok(Response::new(SetOptionResponse {}))
+    }
+
+    async fn list_options(
+        &self,
+        request: Request<ListOptionsRequest>,
+    ) -> Result<Response<ListOptionsResponse>, Status> {
+        let inner = request.into_inner();
+        let scope = parse_scope(&inner.scope)?;
+        let options = TmuxCommands::list_options(self, &inner.target, scope)
+            .await
+            .map_err(tmux_err_to_status)?;
+
+        let proto_options = options
+            .into_iter()
+            .map(|o| TmuxOptionMsg {
+                name: o.name,
+                value: o.value,
+                scope: scope_to_str(o.scope).to_string(),
+            })
+            .collect();
+
+        Ok(Response::new(ListOptionsResponse {
+            options: proto_options,
+        }))
     }
 }
 

@@ -153,5 +153,8 @@ grpc_service! {
         rpc CreateSessionWithWindows / create_session_with_windows(CreateSessionWithWindowsRequest) -> CreateSessionWithWindowsResponse;
         rpc SwapPanes / swap_panes(SwapPanesRequest) -> SwapPanesResponse;
         rpc MoveWindow / move_window(MoveWindowRequest) -> MoveWindowResponse;
+        rpc GetOption / get_option(GetOptionRequest) -> GetOptionResponse;
+        rpc SetOption / set_option(SetOptionRequest) -> SetOptionResponse;
+        rpc ListOptions / list_options(ListOptionsRequest) -> ListOptionsResponse;
     }
 }

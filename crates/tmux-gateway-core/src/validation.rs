@@ -1,6 +1,9 @@
 use std::fmt;
 
+use crate::options::OptionScope;
+
 const MAX_SESSION_NAME_LEN: usize = 128;
+const MAX_OPTION_NAME_LEN: usize = 128;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValidationError {
@@ -8,6 +11,7 @@ pub enum ValidationError {
     InvalidSessionName { reason: String },
     InvalidWindowName { reason: String },
     InvalidTarget { reason: String },
+    InvalidOptionName { reason: String },
 }
 
 impl fmt::Display for ValidationError {
@@ -21,6 +25,7 @@ impl fmt::Display for ValidationError {
                 write!(f, "invalid window name: {reason}")
             }
             Self::InvalidTarget { reason } => write!(f, "invalid target: {reason}"),
+            Self::InvalidOptionName { reason } => write!(f, "invalid option name: {reason}"),
         }
     }
 }
@@ -159,6 +164,59 @@ fn validate_target_chars(target: &str) -> Result<(), ValidationError> {
         });
     }
     Ok(())
+}
+
+/// Validate a tmux option name.
+/// Allowed: alphanumeric, hyphens, underscores, `@` prefix for user options. 1-128 chars.
+pub fn validate_option_name(name: &str) -> Result<(), ValidationError> {
+    if name.is_empty() {
+        return Err(ValidationError::EmptyInput { field: "option name" });
+    }
+    if name.len() > MAX_OPTION_NAME_LEN {
+        return Err(ValidationError::InvalidOptionName {
+            reason: format!(
+                "must be at most {MAX_OPTION_NAME_LEN} characters, got {}",
+                name.len()
+            ),
+        });
+    }
+    if !name
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '@')
+    {
+        return Err(ValidationError::InvalidOptionName {
+            reason: "must contain only alphanumeric characters, hyphens, underscores, or '@'"
+                .to_string(),
+        });
+    }
+    Ok(())
+}
+
+/// Validate the target for an option scope.
+/// Global scope requires an empty target; Session and Window scopes require a non-empty target.
+pub fn validate_option_scope_target(target: &str, scope: OptionScope) -> Result<(), ValidationError> {
+    match scope {
+        OptionScope::Global => {
+            // Global scope should not have a target
+            Ok(())
+        }
+        OptionScope::Session => {
+            if target.is_empty() {
+                return Err(ValidationError::InvalidTarget {
+                    reason: "session scope requires a non-empty target".to_string(),
+                });
+            }
+            validate_session_target(target)
+        }
+        OptionScope::Window => {
+            if target.is_empty() {
+                return Err(ValidationError::InvalidTarget {
+                    reason: "window scope requires a non-empty target".to_string(),
+                });
+            }
+            validate_target_chars(target)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -343,5 +401,62 @@ mod tests {
         assert!(validate_session_target("$(whoami)").is_err());
         assert!(validate_window_target("sess;rm -rf:0").is_err());
         assert!(validate_pane_target("s:w.0 && echo").is_err());
+    }
+
+    // ── Option name validation ──
+
+    #[test]
+    fn valid_option_names() {
+        assert!(validate_option_name("mouse").is_ok());
+        assert!(validate_option_name("history-limit").is_ok());
+        assert!(validate_option_name("status-left").is_ok());
+        assert!(validate_option_name("@my-user-option").is_ok());
+        assert!(validate_option_name("default-terminal").is_ok());
+    }
+
+    #[test]
+    fn empty_option_name() {
+        assert_eq!(
+            validate_option_name(""),
+            Err(ValidationError::EmptyInput {
+                field: "option name"
+            })
+        );
+    }
+
+    #[test]
+    fn option_name_too_long() {
+        let long = "a".repeat(129);
+        assert!(matches!(
+            validate_option_name(&long),
+            Err(ValidationError::InvalidOptionName { .. })
+        ));
+    }
+
+    #[test]
+    fn option_name_with_special_chars() {
+        assert!(validate_option_name("foo;bar").is_err());
+        assert!(validate_option_name("$(cmd)").is_err());
+        assert!(validate_option_name("foo bar").is_err());
+        assert!(validate_option_name("foo\nbar").is_err());
+    }
+
+    // ── Option scope target validation ──
+
+    #[test]
+    fn global_scope_allows_empty_target() {
+        assert!(validate_option_scope_target("", OptionScope::Global).is_ok());
+    }
+
+    #[test]
+    fn session_scope_requires_target() {
+        assert!(validate_option_scope_target("", OptionScope::Session).is_err());
+        assert!(validate_option_scope_target("my-session", OptionScope::Session).is_ok());
+    }
+
+    #[test]
+    fn window_scope_requires_target() {
+        assert!(validate_option_scope_target("", OptionScope::Window).is_err());
+        assert!(validate_option_scope_target("sess:0", OptionScope::Window).is_ok());
     }
 }

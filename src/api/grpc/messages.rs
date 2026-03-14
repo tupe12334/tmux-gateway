@@ -259,4 +259,38 @@ proto_messages! {
     }
 
     message MoveWindowResponse {}
+
+    message GetOptionRequest {
+        string target = "1";
+        string name = "2";
+        string scope = "3";
+    }
+
+    message GetOptionResponse {
+        string value = "1";
+    }
+
+    message SetOptionRequest {
+        string target = "1";
+        string name = "2";
+        string value = "3";
+        string scope = "4";
+    }
+
+    message SetOptionResponse {}
+
+    message ListOptionsRequest {
+        string target = "1";
+        string scope = "2";
+    }
+
+    message TmuxOptionMsg {
+        string name = "1";
+        string value = "2";
+        string scope = "3";
+    }
+
+    message ListOptionsResponse {
+        repeated TmuxOptionMsg options = "1";
+    }
 }

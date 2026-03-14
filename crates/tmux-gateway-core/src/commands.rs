@@ -1,4 +1,4 @@
-use super::{TmuxError, TmuxPane, TmuxSession, TmuxWindow};
+use super::{OptionScope, TmuxError, TmuxOption, TmuxPane, TmuxSession, TmuxWindow};
 
 /// All API layers (REST, gRPC, GraphQL) must implement this trait.
 /// Adding a new command here will cause a compile error in any
@@ -73,4 +73,22 @@ pub trait TmuxCommands {
         source: &str,
         destination_session: &str,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send;
+    fn get_option(
+        &self,
+        target: &str,
+        name: &str,
+        scope: OptionScope,
+    ) -> impl std::future::Future<Output = Result<String, TmuxError>> + Send;
+    fn set_option(
+        &self,
+        target: &str,
+        name: &str,
+        value: &str,
+        scope: OptionScope,
+    ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send;
+    fn list_options(
+        &self,
+        target: &str,
+        scope: OptionScope,
+    ) -> impl std::future::Future<Output = Result<Vec<TmuxOption>, TmuxError>> + Send;
 }

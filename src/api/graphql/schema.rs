@@ -1,7 +1,7 @@
-use async_graphql::{EmptySubscription, Object, Schema, SimpleObject};
+use async_graphql::{EmptySubscription, Enum, Object, Schema, SimpleObject};
 use chrono::{DateTime, Utc};
 
-use crate::tmux::{self, RealTmuxExecutor, TmuxCommands, TmuxError};
+use crate::tmux::{self, OptionScope, RealTmuxExecutor, TmuxCommands, TmuxError, TmuxOption};
 
 pub type AppSchema = Schema<QueryRoot, MutationRoot, EmptySubscription>;
 
@@ -27,6 +27,40 @@ struct Pane {
     width: u32,
     height: u32,
     active: bool,
+}
+
+#[derive(Enum, Copy, Clone, Eq, PartialEq)]
+enum GqlOptionScope {
+    Global,
+    Session,
+    Window,
+}
+
+impl From<GqlOptionScope> for OptionScope {
+    fn from(s: GqlOptionScope) -> Self {
+        match s {
+            GqlOptionScope::Global => OptionScope::Global,
+            GqlOptionScope::Session => OptionScope::Session,
+            GqlOptionScope::Window => OptionScope::Window,
+        }
+    }
+}
+
+impl From<OptionScope> for GqlOptionScope {
+    fn from(s: OptionScope) -> Self {
+        match s {
+            OptionScope::Global => GqlOptionScope::Global,
+            OptionScope::Session => GqlOptionScope::Session,
+            OptionScope::Window => GqlOptionScope::Window,
+        }
+    }
+}
+
+#[derive(SimpleObject)]
+struct TmuxOptionGql {
+    name: String,
+    value: String,
+    scope: GqlOptionScope,
 }
 
 struct GraphqlHandler;
@@ -103,6 +137,33 @@ impl TmuxCommands for GraphqlHandler {
     async fn move_window(&self, source: &str, destination_session: &str) -> Result<(), TmuxError> {
         tmux::move_window(&RealTmuxExecutor, source, destination_session).await
     }
+
+    async fn get_option(
+        &self,
+        target: &str,
+        name: &str,
+        scope: OptionScope,
+    ) -> Result<String, TmuxError> {
+        tmux::get_option(&RealTmuxExecutor, target, name, scope).await
+    }
+
+    async fn set_option(
+        &self,
+        target: &str,
+        name: &str,
+        value: &str,
+        scope: OptionScope,
+    ) -> Result<(), TmuxError> {
+        tmux::set_option(&RealTmuxExecutor, target, name, value, scope).await
+    }
+
+    async fn list_options(
+        &self,
+        target: &str,
+        scope: OptionScope,
+    ) -> Result<Vec<TmuxOption>, TmuxError> {
+        tmux::list_options(&RealTmuxExecutor, target, scope).await
+    }
 }
 
 pub struct QueryRoot;
@@ -171,6 +232,38 @@ impl QueryRoot {
             .capture_pane(&target)
             .await
             .map_err(|e| async_graphql::Error::new(e.to_string()))
+    }
+
+    async fn get_option(
+        &self,
+        #[graphql(default)] target: String,
+        name: String,
+        scope: GqlOptionScope,
+    ) -> async_graphql::Result<String> {
+        GraphqlHandler
+            .get_option(&target, &name, scope.into())
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))
+    }
+
+    async fn list_options(
+        &self,
+        #[graphql(default)] target: String,
+        scope: GqlOptionScope,
+    ) -> async_graphql::Result<Vec<TmuxOptionGql>> {
+        let options = GraphqlHandler
+            .list_options(&target, scope.into())
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+
+        Ok(options
+            .into_iter()
+            .map(|o| TmuxOptionGql {
+                name: o.name,
+                value: o.value,
+                scope: o.scope.into(),
+            })
+            .collect())
     }
 }
 
@@ -306,6 +399,20 @@ impl MutationRoot {
     ) -> async_graphql::Result<bool> {
         GraphqlHandler
             .move_window(&source, &destination_session)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+        Ok(true)
+    }
+
+    async fn set_option(
+        &self,
+        #[graphql(default)] target: String,
+        name: String,
+        value: String,
+        scope: GqlOptionScope,
+    ) -> async_graphql::Result<bool> {
+        GraphqlHandler
+            .set_option(&target, &name, &value, scope.into())
             .await
             .map_err(|e| async_graphql::Error::new(e.to_string()))?;
         Ok(true)
