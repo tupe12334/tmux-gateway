@@ -23,6 +23,7 @@ type Pane {
 	active: Boolean!
 	currentPath: String!
 	currentCommand: String!
+	pid: Int!
 }
 
 type PaneOutputEvent {
