@@ -442,6 +442,17 @@
   },
   "components": {
     "schemas": {
+      "CapturePaneRequest": {
+        "type": "object",
+        "required": [
+          "target"
+        ],
+        "properties": {
+          "target": {
+            "type": "string"
+          }
+        }
+      },
       "CapturePaneResponse": {
         "type": "object",
         "required": [
