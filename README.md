@@ -67,8 +67,8 @@ make docker-down  # stops and removes containers
 ```
 
 This starts:
-- **tmux-gateway** on ports `3020` (HTTP) and `50251` (gRPC), with a health check on `/health`
-- **grpcui** on port `8080` for interactive gRPC exploration
+- **tmux-gateway** on ports `8080` (HTTP) and `50051` (gRPC), with a health check on `/health`
+- **grpcui** on port `9090` for interactive gRPC exploration
 
 Configure ports and settings via `.env.dev`.
 
