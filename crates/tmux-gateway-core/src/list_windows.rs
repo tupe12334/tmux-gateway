@@ -5,7 +5,7 @@ use super::TmuxError;
 use super::validation::validate_session_target;
 use crate::executor::{exec_tmux, run_tmux};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct TmuxWindow {
     pub index: u32,
     pub name: String,

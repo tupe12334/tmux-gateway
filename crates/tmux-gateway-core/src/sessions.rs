@@ -4,7 +4,7 @@ use tmux_interface::{ListSessions, Tmux};
 use super::TmuxError;
 use crate::executor::run_tmux;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct TmuxSession {
     pub name: String,
     pub windows: u32,
