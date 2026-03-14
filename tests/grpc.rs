@@ -142,7 +142,7 @@ async fn send_keys_after_create() {
         .unwrap();
     let resp = service
         .send_keys(Request::new(SendKeysRequest {
-            target: name.clone(),
+            target: format!("{}:0.0", name),
             keys: vec!["echo".into(), "Enter".into()],
         }))
         .await;
@@ -207,7 +207,7 @@ async fn split_window_after_create() {
         .unwrap();
     let resp = service
         .split_window(Request::new(SplitWindowRequest {
-            target: format!("{}:0", name),
+            target: format!("{}:0.0", name),
             horizontal: false,
         }))
         .await;
