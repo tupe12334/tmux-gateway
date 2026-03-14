@@ -1,19 +1,22 @@
-use crate::executor::{exec_tmux, run_tmux};
+use crate::executor::TmuxExecutor;
 use crate::validation::validate_window_target;
-use tmux_interface::SelectWindow as TmuxSelectWindow;
 
 use super::TmuxError;
 
-pub async fn select_window(target: &str) -> Result<(), TmuxError> {
+pub async fn select_window(
+    executor: &(impl TmuxExecutor + ?Sized),
+    target: &str,
+) -> Result<(), TmuxError> {
     validate_window_target(target)?;
-    let target = target.to_string();
-    run_tmux("select-window", move || {
-        exec_tmux(
+    let output = executor
+        .execute(&["select-window", "-t", target])
+        .await?;
+    if !output.success {
+        return Err(TmuxError::from_stderr(
             "select-window",
-            &target,
-            TmuxSelectWindow::new().target_window(target.as_str()),
-        )?;
-        Ok(())
-    })
-    .await
+            &output.stderr,
+            target,
+        ));
+    }
+    Ok(())
 }

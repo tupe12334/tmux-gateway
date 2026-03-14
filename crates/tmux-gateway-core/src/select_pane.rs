@@ -1,19 +1,20 @@
-use crate::executor::{exec_tmux, run_tmux};
+use crate::executor::TmuxExecutor;
 use crate::validation::validate_pane_target;
-use tmux_interface::SelectPane as TmuxSelectPane;
 
 use super::TmuxError;
 
-pub async fn select_pane(target: &str) -> Result<(), TmuxError> {
+pub async fn select_pane(
+    executor: &(impl TmuxExecutor + ?Sized),
+    target: &str,
+) -> Result<(), TmuxError> {
     validate_pane_target(target)?;
-    let target = target.to_string();
-    run_tmux("select-pane", move || {
-        exec_tmux(
+    let output = executor.execute(&["select-pane", "-t", target]).await?;
+    if !output.success {
+        return Err(TmuxError::from_stderr(
             "select-pane",
-            &target,
-            TmuxSelectPane::new().target_pane(target.as_str()),
-        )?;
-        Ok(())
-    })
-    .await
+            &output.stderr,
+            target,
+        ));
+    }
+    Ok(())
 }

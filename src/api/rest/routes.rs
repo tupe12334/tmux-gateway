@@ -5,53 +5,53 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::{OpenApi, ToSchema};
 
-use crate::tmux::{self, TmuxCommands, TmuxError};
+use crate::tmux::{self, RealTmuxExecutor, TmuxCommands, TmuxError};
 
 struct RestHandler;
 
 impl TmuxCommands for RestHandler {
     async fn ls(&self) -> Result<Vec<tmux::TmuxSession>, TmuxError> {
-        tmux::list_sessions().await
+        tmux::list_sessions(&RealTmuxExecutor).await
     }
 
     async fn create_session(&self, name: &str) -> Result<tmux::TmuxSession, TmuxError> {
-        tmux::new_session(name).await
+        tmux::new_session(&RealTmuxExecutor, name).await
     }
 
     async fn kill_session(&self, target: &str) -> Result<(), TmuxError> {
-        tmux::kill_session(target).await
+        tmux::kill_session(&RealTmuxExecutor, target).await
     }
 
     async fn kill_window(&self, target: &str) -> Result<(), TmuxError> {
-        tmux::kill_window(target).await
+        tmux::kill_window(&RealTmuxExecutor, target).await
     }
 
     async fn kill_pane(&self, target: &str) -> Result<(), TmuxError> {
-        tmux::kill_pane(target).await
+        tmux::kill_pane(&RealTmuxExecutor, target).await
     }
 
     async fn list_windows(&self, session: &str) -> Result<Vec<tmux::TmuxWindow>, TmuxError> {
-        tmux::list_windows(session).await
+        tmux::list_windows(&RealTmuxExecutor, session).await
     }
 
     async fn list_panes(&self, target: &str) -> Result<Vec<tmux::TmuxPane>, TmuxError> {
-        tmux::list_panes(target).await
+        tmux::list_panes(&RealTmuxExecutor, target).await
     }
 
     async fn send_keys(&self, target: &str, keys: &[String]) -> Result<(), TmuxError> {
-        tmux::send_keys(target, keys).await
+        tmux::send_keys(&RealTmuxExecutor, target, keys).await
     }
 
     async fn rename_session(&self, target: &str, new_name: &str) -> Result<(), TmuxError> {
-        tmux::rename_session(target, new_name).await
+        tmux::rename_session(&RealTmuxExecutor, target, new_name).await
     }
 
     async fn rename_window(&self, target: &str, new_name: &str) -> Result<(), TmuxError> {
-        tmux::rename_window(target, new_name).await
+        tmux::rename_window(&RealTmuxExecutor, target, new_name).await
     }
 
     async fn new_window(&self, session: &str, name: &str) -> Result<tmux::TmuxWindow, TmuxError> {
-        tmux::new_window(session, name).await
+        tmux::new_window(&RealTmuxExecutor, session, name).await
     }
 
     async fn split_window(
@@ -59,11 +59,11 @@ impl TmuxCommands for RestHandler {
         target: &str,
         horizontal: bool,
     ) -> Result<tmux::TmuxPane, TmuxError> {
-        tmux::split_window(target, horizontal).await
+        tmux::split_window(&RealTmuxExecutor, target, horizontal).await
     }
 
     async fn capture_pane(&self, target: &str) -> Result<String, TmuxError> {
-        tmux::capture_pane(target).await
+        tmux::capture_pane(&RealTmuxExecutor, target).await
     }
 
     async fn create_session_with_windows(
@@ -71,23 +71,23 @@ impl TmuxCommands for RestHandler {
         name: &str,
         window_names: &[String],
     ) -> Result<tmux::TmuxSession, TmuxError> {
-        tmux::create_session_with_windows(name, window_names).await
+        tmux::create_session_with_windows(&RealTmuxExecutor, name, window_names).await
     }
 
     async fn swap_panes(&self, src: &str, dst: &str) -> Result<(), TmuxError> {
-        tmux::swap_panes(src, dst).await
+        tmux::swap_panes(&RealTmuxExecutor, src, dst).await
     }
 
     async fn move_window(&self, source: &str, destination_session: &str) -> Result<(), TmuxError> {
-        tmux::move_window(source, destination_session).await
+        tmux::move_window(&RealTmuxExecutor, source, destination_session).await
     }
 
     async fn select_window(&self, target: &str) -> Result<(), TmuxError> {
-        tmux::select_window(target).await
+        tmux::select_window(&RealTmuxExecutor, target).await
     }
 
     async fn select_pane(&self, target: &str) -> Result<(), TmuxError> {
-        tmux::select_pane(target).await
+        tmux::select_pane(&RealTmuxExecutor, target).await
     }
 }
 
@@ -137,7 +137,7 @@ struct PaneResponse {
     )
 )]
 async fn health() -> (axum::http::StatusCode, Json<HealthResponse>) {
-    if tmux::is_available().await {
+    if tmux::is_available(&RealTmuxExecutor).await {
         (
             axum::http::StatusCode::OK,
             Json(HealthResponse {

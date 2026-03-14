@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::Path;
 
+use anyhow::Context;
 use async_graphql::SDLExportOptions;
 use utoipa::OpenApi;
 
@@ -17,21 +18,27 @@ pub fn graphql_sdl() -> String {
 }
 
 pub fn export_all() {
+    if let Err(e) = try_export_all() {
+        tracing::error!("Schema export failed: {e:#}");
+    }
+}
+
+fn try_export_all() -> anyhow::Result<()> {
     let schemas_dir = Path::new("schemas");
-    fs::create_dir_all(schemas_dir).expect("Failed to create schemas directory");
+    fs::create_dir_all(schemas_dir).context("failed to create schemas directory")?;
 
     // Export OpenAPI JSON
     let openapi = rest::ApiDoc::openapi();
     let openapi_json =
-        serde_json::to_string_pretty(&openapi).expect("Failed to serialize OpenAPI spec");
+        serde_json::to_string_pretty(&openapi).context("failed to serialize OpenAPI spec")?;
     fs::write(schemas_dir.join("openapi.json"), openapi_json)
-        .expect("Failed to write openapi.json");
+        .context("failed to write openapi.json")?;
     tracing::info!("Exported schemas/openapi.json");
 
     // Export GraphQL SDL
     let schema = graphql::build_schema();
     let sdl = schema.sdl_with_options(SDLExportOptions::new());
-    fs::write(schemas_dir.join("schema.graphql"), sdl).expect("Failed to write schema.graphql");
+    fs::write(schemas_dir.join("schema.graphql"), sdl).context("failed to write schema.graphql")?;
     tracing::info!("Exported schemas/schema.graphql");
 
     // Export gRPC proto schema
@@ -39,15 +46,17 @@ pub fn export_all() {
         schemas_dir.join("tmux_gateway.proto"),
         grpc::proto_content(),
     )
-    .expect("Failed to write tmux_gateway.proto");
+    .context("failed to write tmux_gateway.proto")?;
     tracing::info!("Exported schemas/tmux_gateway.proto");
 
     // Export gRPC file descriptor set
     let fds = grpc::file_descriptor_set();
     let fds_bytes = prost::Message::encode_to_vec(&fds);
     fs::write(schemas_dir.join("tmux_gateway_descriptor.bin"), fds_bytes)
-        .expect("Failed to write tmux_gateway_descriptor.bin");
+        .context("failed to write tmux_gateway_descriptor.bin")?;
     tracing::info!("Exported schemas/tmux_gateway_descriptor.bin");
+
+    Ok(())
 }
 
 #[cfg(test)]
