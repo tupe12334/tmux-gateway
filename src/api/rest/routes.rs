@@ -653,6 +653,52 @@ async fn resize_pane(
 }
 
 #[derive(Deserialize, ToSchema)]
+struct SelectLayoutRequest {
+    target: String,
+    layout: String,
+}
+
+#[utoipa::path(
+    post,
+    path = "/select-layout",
+    request_body = SelectLayoutRequest,
+    responses(
+        (status = 200, description = "Layout applied"),
+        (status = 400, description = "Invalid target or layout"),
+        (status = 404, description = "Window not found"),
+        (status = 500, description = "Failed to select layout")
+    )
+)]
+async fn select_layout(
+    Json(body): Json<SelectLayoutRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    let layout = parse_layout(&body.layout).map_err(|e| (StatusCode::BAD_REQUEST, e))?;
+    RestHandler
+        .select_layout(&body.target, layout)
+        .await
+        .map_err(tmux_err_to_http)?;
+
+    Ok(StatusCode::OK)
+}
+
+fn parse_layout(s: &str) -> Result<tmux::PaneLayout, String> {
+    match s {
+        "even-horizontal" => Ok(tmux::PaneLayout::EvenHorizontal),
+        "even-vertical" => Ok(tmux::PaneLayout::EvenVertical),
+        "main-horizontal" => Ok(tmux::PaneLayout::MainHorizontal),
+        "main-vertical" => Ok(tmux::PaneLayout::MainVertical),
+        "tiled" => Ok(tmux::PaneLayout::Tiled),
+        other => {
+            if other.is_empty() {
+                Err("layout must not be empty".to_string())
+            } else {
+                Ok(tmux::PaneLayout::Custom(other.to_string()))
+            }
+        }
+    }
+}
+
+#[derive(Deserialize, ToSchema)]
 struct CapturePaneRequest {
     target: String,
 }
@@ -743,7 +789,8 @@ async fn capture_pane_with_options(
         move_window,
         select_window,
         select_pane,
-        resize_pane
+        resize_pane,
+        select_layout
     ),
     components(schemas(
         HealthResponse,
@@ -768,7 +815,8 @@ async fn capture_pane_with_options(
         CreateSessionWithWindowsResponse,
         SwapPanesRequest,
         MoveWindowRequest,
-        ResizePaneRequest
+        ResizePaneRequest,
+        SelectLayoutRequest
     )),
     info(
         title = "tmux-gateway",
@@ -813,6 +861,7 @@ pub fn write_router() -> Router {
         .route("/select-window", post(select_window))
         .route("/select-pane", post(select_pane))
         .route("/resize-pane", post(resize_pane))
+        .route("/select-layout", post(select_layout))
 }
 
 pub fn router() -> Router {

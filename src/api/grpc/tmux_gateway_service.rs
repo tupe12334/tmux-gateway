@@ -11,11 +11,11 @@ use super::messages::{
     ListPanesResponse, ListWindowsRequest, ListWindowsResponse, LsRequest, LsResponse,
     MoveWindowRequest, MoveWindowResponse, NewSessionRequest, NewSessionResponse, NewWindowRequest,
     NewWindowResponse, RenameSessionRequest, RenameSessionResponse, RenameWindowRequest,
-    RenameWindowResponse, ResizePaneRequest, ResizePaneResponse, SelectPaneRequest,
-    SelectPaneResponse, SelectWindowRequest, SelectWindowResponse, SendKeysRequest,
-    SendKeysResponse, SplitWindowRequest, SplitWindowResponse, StreamPaneOutputRequest,
-    StreamPaneOutputResponse, SwapPanesRequest, SwapPanesResponse, TmuxPaneMsg, TmuxSession,
-    TmuxWindow,
+    RenameWindowResponse, ResizePaneRequest, ResizePaneResponse, SelectLayoutRequest,
+    SelectLayoutResponse, SelectPaneRequest, SelectPaneResponse, SelectWindowRequest,
+    SelectWindowResponse, SendKeysRequest, SendKeysResponse, SplitWindowRequest,
+    SplitWindowResponse, StreamPaneOutputRequest, StreamPaneOutputResponse, SwapPanesRequest,
+    SwapPanesResponse, TmuxPaneMsg, TmuxSession, TmuxWindow,
 };
 use super::server::{TmuxGateway, TmuxGatewayServer};
 use crate::tmux::{self, RealTmuxExecutor, TmuxCommands, TmuxError};
@@ -342,6 +342,28 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
             .await
             .map_err(tmux_err_to_status)?;
         Ok(Response::new(ResizePaneResponse {}))
+    }
+
+    async fn select_layout(
+        &self,
+        request: Request<SelectLayoutRequest>,
+    ) -> Result<Response<SelectLayoutResponse>, Status> {
+        let inner = request.into_inner();
+        let layout = match inner.layout.as_str() {
+            "even-horizontal" => tmux::PaneLayout::EvenHorizontal,
+            "even-vertical" => tmux::PaneLayout::EvenVertical,
+            "main-horizontal" => tmux::PaneLayout::MainHorizontal,
+            "main-vertical" => tmux::PaneLayout::MainVertical,
+            "tiled" => tmux::PaneLayout::Tiled,
+            other if other.is_empty() => {
+                return Err(Status::invalid_argument("layout must not be empty"));
+            }
+            other => tmux::PaneLayout::Custom(other.to_string()),
+        };
+        TmuxCommands::select_layout(self, &inner.target, layout)
+            .await
+            .map_err(tmux_err_to_status)?;
+        Ok(Response::new(SelectLayoutResponse {}))
     }
 
     async fn stream_pane_output(

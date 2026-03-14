@@ -280,6 +280,25 @@ impl MutationRoot {
         Ok(true)
     }
 
+    async fn select_layout(&self, target: String, layout: String) -> async_graphql::Result<bool> {
+        let l = match layout.as_str() {
+            "even-horizontal" => tmux::PaneLayout::EvenHorizontal,
+            "even-vertical" => tmux::PaneLayout::EvenVertical,
+            "main-horizontal" => tmux::PaneLayout::MainHorizontal,
+            "main-vertical" => tmux::PaneLayout::MainVertical,
+            "tiled" => tmux::PaneLayout::Tiled,
+            other if other.is_empty() => {
+                return Err(async_graphql::Error::new("layout must not be empty"));
+            }
+            other => tmux::PaneLayout::Custom(other.to_string()),
+        };
+        GraphqlHandler
+            .select_layout(&target, l)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+        Ok(true)
+    }
+
     async fn resize_pane(
         &self,
         target: String,

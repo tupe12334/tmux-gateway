@@ -307,6 +307,13 @@ proto_messages! {
 
     message ResizePaneResponse {}
 
+    message SelectLayoutRequest {
+        string target = "1";
+        string layout = "2";
+    }
+
+    message SelectLayoutResponse {}
+
     message StreamPaneOutputRequest {
         string target = "1";
         uint32 interval_ms = "2";
