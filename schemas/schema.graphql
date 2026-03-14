@@ -26,6 +26,7 @@ type QueryRoot {
 }
 
 type Session {
+	id: String!
 	name: String!
 	windows: Int!
 	created: String!
@@ -33,6 +34,7 @@ type Session {
 }
 
 type Window {
+	id: String!
 	index: Int!
 	name: String!
 	panes: Int!

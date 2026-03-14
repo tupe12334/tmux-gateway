@@ -11,7 +11,7 @@ run:
 
 clean:
 	cargo clean
-	rm -f schemas/openapi.json schemas/schema.graphql
+	rm -f schemas/openapi.json schemas/schema.graphql schemas/tmux_gateway.proto schemas/tmux_gateway_descriptor.bin
 
 docker-up:
 	docker compose up --build -d
