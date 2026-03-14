@@ -33,6 +33,11 @@
     "tmux",
     "utoipa",
     "mywin",
-    "oneshot"
+    "mysess",
+    "mysession",
+    "oneshot",
+    "tbadts",
+    "tnotanum",
+    "txyz"
   ]
 }
