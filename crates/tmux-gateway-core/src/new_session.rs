@@ -1,20 +1,28 @@
 use tmux_interface::{NewSession, Tmux};
 
-pub async fn new_session(name: &str) -> Result<String, String> {
+use super::TmuxError;
+
+pub async fn new_session(name: &str) -> Result<String, TmuxError> {
     let name = name.to_string();
     tokio::task::spawn_blocking(move || {
         let output = Tmux::with_command(NewSession::new().detached().session_name(name.as_str()))
             .output()
-            .map_err(|e| format!("failed to run tmux: {e}"))?
+            .map_err(|e| TmuxError::CommandFailed {
+                command: "new-session".to_string(),
+                stderr: e.to_string(),
+            })?
             .into_inner();
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(format!("tmux new-session failed: {stderr}"));
+            return Err(TmuxError::from_stderr("new-session", &stderr, &name));
         }
 
         Ok(name)
     })
     .await
-    .map_err(|e| format!("task join error: {e}"))?
+    .map_err(|e| TmuxError::CommandFailed {
+        command: "new-session".to_string(),
+        stderr: format!("task join error: {e}"),
+    })?
 }

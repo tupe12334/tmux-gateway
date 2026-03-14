@@ -3,30 +3,36 @@ use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use utoipa::{OpenApi, ToSchema};
 
-use crate::tmux::{self, TmuxCommands};
+use crate::tmux::{self, TmuxCommands, TmuxError};
 
 struct RestHandler;
 
 impl TmuxCommands for RestHandler {
-    async fn ls(&self) -> Result<Vec<tmux::TmuxSession>, String> {
+    async fn ls(&self) -> Result<Vec<tmux::TmuxSession>, TmuxError> {
         tmux::list_sessions().await
     }
 
-    async fn create_session(&self, name: &str) -> Result<String, String> {
+    async fn create_session(&self, name: &str) -> Result<String, TmuxError> {
         tmux::new_session(name).await
     }
 
-    async fn kill_session(&self, target: &str) -> Result<(), String> {
+    async fn kill_session(&self, target: &str) -> Result<(), TmuxError> {
         tmux::kill_session(target).await
     }
 
-    async fn kill_window(&self, target: &str) -> Result<(), String> {
+    async fn kill_window(&self, target: &str) -> Result<(), TmuxError> {
         tmux::kill_window(target).await
     }
 
-    async fn kill_pane(&self, target: &str) -> Result<(), String> {
+    async fn kill_pane(&self, target: &str) -> Result<(), TmuxError> {
         tmux::kill_pane(target).await
     }
+}
+
+fn tmux_err_to_http(e: TmuxError) -> (axum::http::StatusCode, String) {
+    let status = axum::http::StatusCode::from_u16(e.http_status_code())
+        .unwrap_or(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
+    (status, e.to_string())
 }
 
 #[derive(Serialize, ToSchema)]
@@ -64,10 +70,7 @@ async fn health() -> Json<HealthResponse> {
     )
 )]
 async fn ls() -> Result<Json<Vec<SessionResponse>>, (axum::http::StatusCode, String)> {
-    let sessions = RestHandler
-        .ls()
-        .await
-        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e))?;
+    let sessions = RestHandler.ls().await.map_err(tmux_err_to_http)?;
 
     Ok(Json(
         sessions
@@ -107,7 +110,7 @@ async fn new(
     let name = RestHandler
         .create_session(&body.name)
         .await
-        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e))?;
+        .map_err(tmux_err_to_http)?;
 
     Ok((
         axum::http::StatusCode::CREATED,
@@ -126,6 +129,7 @@ struct KillTargetRequest {
     request_body = KillTargetRequest,
     responses(
         (status = 200, description = "Session killed"),
+        (status = 404, description = "Session not found"),
         (status = 500, description = "Failed to kill session")
     )
 )]
@@ -135,7 +139,7 @@ async fn kill_session(
     RestHandler
         .kill_session(&body.target)
         .await
-        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e))?;
+        .map_err(tmux_err_to_http)?;
 
     Ok(axum::http::StatusCode::OK)
 }
@@ -146,6 +150,7 @@ async fn kill_session(
     request_body = KillTargetRequest,
     responses(
         (status = 200, description = "Window killed"),
+        (status = 404, description = "Window not found"),
         (status = 500, description = "Failed to kill window")
     )
 )]
@@ -155,7 +160,7 @@ async fn kill_window(
     RestHandler
         .kill_window(&body.target)
         .await
-        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e))?;
+        .map_err(tmux_err_to_http)?;
 
     Ok(axum::http::StatusCode::OK)
 }
@@ -166,6 +171,7 @@ async fn kill_window(
     request_body = KillTargetRequest,
     responses(
         (status = 200, description = "Pane killed"),
+        (status = 404, description = "Pane not found"),
         (status = 500, description = "Failed to kill pane")
     )
 )]
@@ -175,7 +181,7 @@ async fn kill_pane(
     RestHandler
         .kill_pane(&body.target)
         .await
-        .map_err(|e| (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e))?;
+        .map_err(tmux_err_to_http)?;
 
     Ok(axum::http::StatusCode::OK)
 }
