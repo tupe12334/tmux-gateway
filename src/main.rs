@@ -5,6 +5,7 @@ use tmux_gateway::{export_schemas, port_table, preflight};
 use tokio::net::TcpListener;
 use tokio::signal;
 use tokio::sync::watch;
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use tracing_subscriber::EnvFilter;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -46,12 +47,30 @@ async fn main() {
     let mut http_shutdown_rx = shutdown_tx.subscribe();
     let mut grpc_shutdown_rx = shutdown_tx.subscribe();
 
+    let cors = {
+        let origins = env::var("CORS_ORIGINS").unwrap_or_else(|_| {
+            format!(
+                "http://localhost:{},http://localhost:{}",
+                http_port, grpc_port
+            )
+        });
+        let origins: Vec<_> = origins
+            .split(',')
+            .filter_map(|s| s.trim().parse().ok())
+            .collect();
+        CorsLayer::new()
+            .allow_origin(AllowOrigin::list(origins))
+            .allow_methods(tower_http::cors::Any)
+            .allow_headers(tower_http::cors::Any)
+    };
+
     let http_app = axum::Router::new()
         .merge(rest::router())
         .merge(graphql::router())
         .merge(
             SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", rest::ApiDoc::openapi()),
-        );
+        )
+        .layer(cors);
 
     let http_addr = format!("0.0.0.0:{http_port}");
     let http_handle = tokio::spawn(async move {
