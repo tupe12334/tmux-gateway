@@ -50,10 +50,7 @@ async fn kill_session_mutation() {
         session.name
     );
     schema.execute(&query).await;
-    let query = format!(
-        r#"mutation {{ killSession(target: "{}") }}"#,
-        session.name
-    );
+    let query = format!(r#"mutation {{ killSession(target: "{}") }}"#, session.name);
     let result = schema.execute(&query).await;
     assert!(result.errors.is_empty());
     let v = to_json(&result.data);
@@ -69,10 +66,7 @@ async fn kill_window_mutation() {
         session.name
     );
     schema.execute(&query).await;
-    let query = format!(
-        r#"mutation {{ killWindow(target: "{}:0") }}"#,
-        session.name
-    );
+    let query = format!(r#"mutation {{ killWindow(target: "{}:0") }}"#, session.name);
     let result = schema.execute(&query).await;
     assert!(result.errors.is_empty());
     assert_eq!(to_json(&result.data)["killWindow"], true);
@@ -87,10 +81,7 @@ async fn kill_pane_mutation() {
         session.name
     );
     schema.execute(&query).await;
-    let query = format!(
-        r#"mutation {{ killPane(target: "{}:0.0") }}"#,
-        session.name
-    );
+    let query = format!(r#"mutation {{ killPane(target: "{}:0.0") }}"#, session.name);
     let result = schema.execute(&query).await;
     assert!(result.errors.is_empty());
     assert_eq!(to_json(&result.data)["killPane"], true);
