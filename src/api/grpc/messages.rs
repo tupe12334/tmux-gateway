@@ -28,6 +28,11 @@ macro_rules! define_proto_struct {
             $($acc)* #[prost(message, repeated, tag = $tag)] pub $field: Vec<$msg>,
         ] $($rest)*);
     };
+    (@build $name:ident [$($acc:tt)*] repeated_string $field:ident = $tag:literal; $($rest:tt)*) => {
+        define_proto_struct!(@build $name [
+            $($acc)* #[prost(string, repeated, tag = $tag)] pub $field: Vec<String>,
+        ] $($rest)*);
+    };
     (@build $name:ident [$($acc:tt)*]) => {
         #[derive(Clone, PartialEq, prost::Message)]
         pub struct $name { $($acc)* }
@@ -61,6 +66,11 @@ macro_rules! message_proto_text {
     (@build $name:ident [$($acc:tt)*] repeated $msg:ident $field:ident = $tag:literal; $($rest:tt)*) => {
         message_proto_text!(@build $name [
             $($acc)* "  repeated ", stringify!($msg), " ", stringify!($field), " = ", $tag, ";\n",
+        ] $($rest)*)
+    };
+    (@build $name:ident [$($acc:tt)*] repeated_string $field:ident = $tag:literal; $($rest:tt)*) => {
+        message_proto_text!(@build $name [
+            $($acc)* "  repeated string ", stringify!($field), " = ", $tag, ";\n",
         ] $($rest)*)
     };
     (@build $name:ident [$($acc:tt)*]) => {
@@ -127,4 +137,79 @@ proto_messages! {
     }
 
     message KillPaneResponse {}
+
+    message ListWindowsRequest {
+        string session = "1";
+    }
+
+    message ListWindowsResponse {
+        repeated TmuxWindow windows = "1";
+    }
+
+    message TmuxWindow {
+        uint32 index = "1";
+        string name = "2";
+        uint32 panes = "3";
+        bool active = "4";
+    }
+
+    message ListPanesRequest {
+        string target = "1";
+    }
+
+    message ListPanesResponse {
+        repeated TmuxPaneMsg panes = "1";
+    }
+
+    message TmuxPaneMsg {
+        string id = "1";
+        uint32 width = "2";
+        uint32 height = "3";
+        bool active = "4";
+    }
+
+    message SendKeysRequest {
+        string target = "1";
+        repeated_string keys = "2";
+    }
+
+    message SendKeysResponse {}
+
+    message RenameSessionRequest {
+        string target = "1";
+        string new_name = "2";
+    }
+
+    message RenameSessionResponse {}
+
+    message RenameWindowRequest {
+        string target = "1";
+        string new_name = "2";
+    }
+
+    message RenameWindowResponse {}
+
+    message NewWindowRequest {
+        string session = "1";
+        string name = "2";
+    }
+
+    message NewWindowResponse {
+        string name = "1";
+    }
+
+    message SplitWindowRequest {
+        string target = "1";
+        bool horizontal = "2";
+    }
+
+    message SplitWindowResponse {}
+
+    message CapturePaneRequest {
+        string target = "1";
+    }
+
+    message CapturePaneResponse {
+        string content = "1";
+    }
 }
