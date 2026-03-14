@@ -1,5 +1,3 @@
-use std::fmt;
-
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
 pub enum TmuxError {
     #[error("session not found: {0}")]
@@ -58,53 +56,11 @@ impl TmuxError {
             stderr: stderr.trim().to_string(),
         }
     }
-
-    /// Returns the appropriate HTTP status code for this error.
-    pub fn http_status_code(&self) -> u16 {
-        match self {
-            Self::SessionNotFound(_) | Self::WindowNotFound(_) | Self::PaneNotFound(_) => 404,
-            Self::SessionAlreadyExists(_) => 409,
-            Self::InvalidTarget(_) | Self::ParseError { .. } => 400,
-            Self::TmuxNotRunning | Self::CommandFailed { .. } => 500,
-        }
-    }
-
-    /// Returns a string suitable for use as a gRPC status code.
-    pub fn grpc_code(&self) -> GrpcCode {
-        match self {
-            Self::SessionNotFound(_) | Self::WindowNotFound(_) | Self::PaneNotFound(_) => {
-                GrpcCode::NotFound
-            }
-            Self::SessionAlreadyExists(_) => GrpcCode::AlreadyExists,
-            Self::InvalidTarget(_) | Self::ParseError { .. } => GrpcCode::InvalidArgument,
-            Self::TmuxNotRunning | Self::CommandFailed { .. } => GrpcCode::Internal,
-        }
-    }
 }
 
 impl From<crate::validation::ValidationError> for TmuxError {
     fn from(e: crate::validation::ValidationError) -> Self {
         Self::InvalidTarget(e.to_string())
-    }
-}
-
-/// Subset of gRPC status codes relevant to tmux errors.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum GrpcCode {
-    NotFound,
-    AlreadyExists,
-    InvalidArgument,
-    Internal,
-}
-
-impl fmt::Display for GrpcCode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::NotFound => write!(f, "NOT_FOUND"),
-            Self::AlreadyExists => write!(f, "ALREADY_EXISTS"),
-            Self::InvalidArgument => write!(f, "INVALID_ARGUMENT"),
-            Self::Internal => write!(f, "INTERNAL"),
-        }
     }
 }
 
@@ -123,19 +79,6 @@ mod tests {
     fn from_stderr_duplicate_session_case_insensitive() {
         let err = TmuxError::from_stderr("new-session", "Duplicate Session: bar", "bar");
         assert!(matches!(err, TmuxError::SessionAlreadyExists(ref name) if name == "bar"));
-    }
-
-    #[test]
-    fn session_already_exists_http_status() {
-        let err = TmuxError::SessionAlreadyExists("test".to_string());
-        assert_eq!(err.http_status_code(), 409);
-    }
-
-    #[test]
-    fn session_already_exists_grpc_code() {
-        let err = TmuxError::SessionAlreadyExists("test".to_string());
-        assert_eq!(err.grpc_code(), GrpcCode::AlreadyExists);
-        assert_eq!(GrpcCode::AlreadyExists.to_string(), "ALREADY_EXISTS");
     }
 
     #[test]

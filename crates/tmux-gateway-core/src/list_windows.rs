@@ -1,11 +1,8 @@
-use serde::Serialize;
-use tmux_interface::ListWindows;
-
 use super::TmuxError;
 use super::validation::validate_session_target;
-use crate::executor::{exec_tmux, run_tmux};
+use crate::executor::TmuxExecutor;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TmuxWindow {
     pub index: u32,
     pub name: String,
@@ -45,21 +42,28 @@ pub(crate) fn parse_windows(stdout: &str) -> Result<Vec<TmuxWindow>, TmuxError> 
         .collect()
 }
 
-pub async fn list_windows(session: &str) -> Result<Vec<TmuxWindow>, TmuxError> {
+pub async fn list_windows(
+    executor: &(impl TmuxExecutor + ?Sized),
+    session: &str,
+) -> Result<Vec<TmuxWindow>, TmuxError> {
     validate_session_target(session)?;
-    let session = session.to_string();
-    run_tmux("list-windows", move || {
-        let output = exec_tmux(
+    let output = executor
+        .execute(&[
             "list-windows",
-            &session,
-            ListWindows::new()
-                .target_session(session.as_str())
-                .format("#{window_index}\t#{window_name}\t#{window_panes}\t#{window_active}"),
-        )?;
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        parse_windows(&stdout)
-    })
-    .await
+            "-t",
+            session,
+            "-F",
+            "#{window_index}\t#{window_name}\t#{window_panes}\t#{window_active}",
+        ])
+        .await?;
+    if !output.success {
+        return Err(TmuxError::from_stderr(
+            "list-windows",
+            &output.stderr,
+            session,
+        ));
+    }
+    parse_windows(&output.stdout)
 }
 
 #[cfg(test)]

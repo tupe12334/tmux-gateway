@@ -6,7 +6,7 @@ use axum::Router;
 use serde::Deserialize;
 use std::time::Duration;
 
-use crate::tmux;
+use crate::tmux::{self, RealTmuxExecutor};
 
 #[derive(Deserialize)]
 struct WsParams {
@@ -34,7 +34,7 @@ async fn handle_pane_stream(mut socket: WebSocket, target: String, interval: Dur
     loop {
         tokio::select! {
             _ = ticker.tick() => {
-                match tmux::capture_pane(&target).await {
+                match tmux::capture_pane(&RealTmuxExecutor, &target).await {
                     Ok(content) => {
                         if content != last_content {
                             last_content = content.clone();

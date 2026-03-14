@@ -4,7 +4,8 @@ use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
 
 use super::messages::{
-    CapturePaneRequest, CapturePaneResponse, CreateSessionWithWindowsRequest,
+    CapturePaneRequest, CapturePaneResponse, CapturePaneWithOptionsRequest,
+    CapturePaneWithOptionsResponse, CreateSessionWithWindowsRequest,
     CreateSessionWithWindowsResponse, KillPaneRequest, KillPaneResponse, KillSessionRequest,
     KillSessionResponse, KillWindowRequest, KillWindowResponse, ListPanesRequest,
     ListPanesResponse, ListWindowsRequest, ListWindowsResponse, LsRequest, LsResponse,
@@ -15,53 +16,53 @@ use super::messages::{
     SwapPanesResponse, TmuxPaneMsg, TmuxSession, TmuxWindow,
 };
 use super::server::{TmuxGateway, TmuxGatewayServer};
-use crate::tmux::{self, GrpcCode, TmuxCommands, TmuxError};
+use crate::tmux::{self, RealTmuxExecutor, TmuxCommands, TmuxError};
 
 pub struct TmuxGatewayServiceImpl;
 
 impl TmuxCommands for TmuxGatewayServiceImpl {
     async fn ls(&self) -> Result<Vec<tmux::TmuxSession>, TmuxError> {
-        tmux::list_sessions().await
+        tmux::list_sessions(&RealTmuxExecutor).await
     }
 
     async fn create_session(&self, name: &str) -> Result<tmux::TmuxSession, TmuxError> {
-        tmux::new_session(name).await
+        tmux::new_session(&RealTmuxExecutor, name).await
     }
 
     async fn kill_session(&self, target: &str) -> Result<(), TmuxError> {
-        tmux::kill_session(target).await
+        tmux::kill_session(&RealTmuxExecutor, target).await
     }
 
     async fn kill_window(&self, target: &str) -> Result<(), TmuxError> {
-        tmux::kill_window(target).await
+        tmux::kill_window(&RealTmuxExecutor, target).await
     }
 
     async fn kill_pane(&self, target: &str) -> Result<(), TmuxError> {
-        tmux::kill_pane(target).await
+        tmux::kill_pane(&RealTmuxExecutor, target).await
     }
 
     async fn list_windows(&self, session: &str) -> Result<Vec<tmux::TmuxWindow>, TmuxError> {
-        tmux::list_windows(session).await
+        tmux::list_windows(&RealTmuxExecutor, session).await
     }
 
     async fn list_panes(&self, target: &str) -> Result<Vec<tmux::TmuxPane>, TmuxError> {
-        tmux::list_panes(target).await
+        tmux::list_panes(&RealTmuxExecutor, target).await
     }
 
     async fn send_keys(&self, target: &str, keys: &[String]) -> Result<(), TmuxError> {
-        tmux::send_keys(target, keys).await
+        tmux::send_keys(&RealTmuxExecutor, target, keys).await
     }
 
     async fn rename_session(&self, target: &str, new_name: &str) -> Result<(), TmuxError> {
-        tmux::rename_session(target, new_name).await
+        tmux::rename_session(&RealTmuxExecutor, target, new_name).await
     }
 
     async fn rename_window(&self, target: &str, new_name: &str) -> Result<(), TmuxError> {
-        tmux::rename_window(target, new_name).await
+        tmux::rename_window(&RealTmuxExecutor, target, new_name).await
     }
 
     async fn new_window(&self, session: &str, name: &str) -> Result<tmux::TmuxWindow, TmuxError> {
-        tmux::new_window(session, name).await
+        tmux::new_window(&RealTmuxExecutor, session, name).await
     }
 
     async fn split_window(
@@ -69,11 +70,19 @@ impl TmuxCommands for TmuxGatewayServiceImpl {
         target: &str,
         horizontal: bool,
     ) -> Result<tmux::TmuxPane, TmuxError> {
-        tmux::split_window(target, horizontal).await
+        tmux::split_window(&RealTmuxExecutor, target, horizontal).await
     }
 
     async fn capture_pane(&self, target: &str) -> Result<String, TmuxError> {
-        tmux::capture_pane(target).await
+        tmux::capture_pane(&RealTmuxExecutor, target).await
+    }
+
+    async fn capture_pane_with_options(
+        &self,
+        target: &str,
+        opts: &tmux::CaptureOptions,
+    ) -> Result<String, TmuxError> {
+        tmux::capture_pane_with_options(&RealTmuxExecutor, target, opts).await
     }
 
     async fn create_session_with_windows(
@@ -81,25 +90,29 @@ impl TmuxCommands for TmuxGatewayServiceImpl {
         name: &str,
         window_names: &[String],
     ) -> Result<tmux::TmuxSession, TmuxError> {
-        tmux::create_session_with_windows(name, window_names).await
+        tmux::create_session_with_windows(&RealTmuxExecutor, name, window_names).await
     }
 
     async fn swap_panes(&self, src: &str, dst: &str) -> Result<(), TmuxError> {
-        tmux::swap_panes(src, dst).await
+        tmux::swap_panes(&RealTmuxExecutor, src, dst).await
     }
 
     async fn move_window(&self, source: &str, destination_session: &str) -> Result<(), TmuxError> {
-        tmux::move_window(source, destination_session).await
+        tmux::move_window(&RealTmuxExecutor, source, destination_session).await
     }
 }
 
 fn tmux_err_to_status(e: TmuxError) -> Status {
     let msg = e.to_string();
-    match e.grpc_code() {
-        GrpcCode::NotFound => Status::not_found(msg),
-        GrpcCode::AlreadyExists => Status::already_exists(msg),
-        GrpcCode::InvalidArgument => Status::invalid_argument(msg),
-        GrpcCode::Internal => Status::internal(msg),
+    match e {
+        TmuxError::SessionNotFound(_)
+        | TmuxError::WindowNotFound(_)
+        | TmuxError::PaneNotFound(_) => Status::not_found(msg),
+        TmuxError::SessionAlreadyExists(_) => Status::already_exists(msg),
+        TmuxError::InvalidTarget(_) | TmuxError::ParseError { .. } => {
+            Status::invalid_argument(msg)
+        }
+        TmuxError::TmuxNotRunning | TmuxError::CommandFailed { .. } => Status::internal(msg),
     }
 }
 
@@ -296,6 +309,30 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
         Ok(Response::new(CapturePaneResponse { content }))
     }
 
+    async fn capture_pane_with_options(
+        &self,
+        request: Request<CapturePaneWithOptionsRequest>,
+    ) -> Result<Response<CapturePaneWithOptionsResponse>, Status> {
+        let inner = request.into_inner();
+        let opts = tmux::CaptureOptions {
+            start_line: if inner.has_start_line {
+                Some(inner.start_line)
+            } else {
+                None
+            },
+            end_line: if inner.has_end_line {
+                Some(inner.end_line)
+            } else {
+                None
+            },
+            escape_sequences: inner.escape_sequences,
+        };
+        let content = TmuxCommands::capture_pane_with_options(self, &inner.target, &opts)
+            .await
+            .map_err(tmux_err_to_status)?;
+        Ok(Response::new(CapturePaneWithOptionsResponse { content }))
+    }
+
     async fn create_session_with_windows(
         &self,
         request: Request<CreateSessionWithWindowsRequest>,
@@ -344,7 +381,7 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
         let interval_ms = inner.interval_ms.max(100);
 
         // Validate target by doing an initial capture
-        tmux::capture_pane(&target)
+        tmux::capture_pane(&RealTmuxExecutor, &target)
             .await
             .map_err(tmux_err_to_status)?;
 
@@ -356,7 +393,7 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
 
             loop {
                 ticker.tick().await;
-                match tmux::capture_pane(&target).await {
+                match tmux::capture_pane(&RealTmuxExecutor, &target).await {
                     Ok(content) => {
                         if content != last_content {
                             last_content = content.clone();
