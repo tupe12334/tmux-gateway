@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::TmuxError;
 use super::validation::validate_session_target;
 use crate::executor::TmuxExecutor;
@@ -8,6 +10,19 @@ pub struct TmuxWindow {
     pub name: String,
     pub panes: u32,
     pub active: bool,
+}
+
+impl fmt::Display for TmuxWindow {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}:{} ({} panes{})",
+            self.index,
+            self.name,
+            self.panes,
+            if self.active { ", active" } else { "" }
+        )
+    }
 }
 
 pub(crate) fn parse_window_line(line: &str) -> Result<TmuxWindow, TmuxError> {
@@ -70,6 +85,28 @@ pub async fn list_windows(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn display_active_window() {
+        let window = TmuxWindow {
+            index: 0,
+            name: "bash".to_string(),
+            panes: 2,
+            active: true,
+        };
+        assert_eq!(window.to_string(), "0:bash (2 panes, active)");
+    }
+
+    #[test]
+    fn display_inactive_window() {
+        let window = TmuxWindow {
+            index: 1,
+            name: "vim".to_string(),
+            panes: 1,
+            active: false,
+        };
+        assert_eq!(window.to_string(), "1:vim (1 panes)");
+    }
 
     #[test]
     fn parse_window_line_valid() {

@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::TmuxError;
 use super::validation::validate_window_target;
 use crate::executor::TmuxExecutor;
@@ -10,6 +12,20 @@ pub struct TmuxPane {
     pub active: bool,
     pub current_path: String,
     pub current_command: String,
+}
+
+impl fmt::Display for TmuxPane {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} ({}x{}{}, {})",
+            self.id,
+            self.width,
+            self.height,
+            if self.active { ", active" } else { "" },
+            self.current_command
+        )
+    }
 }
 
 pub(crate) fn parse_pane_line(line: &str) -> Result<TmuxPane, TmuxError> {
@@ -70,6 +86,32 @@ pub async fn list_panes(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn display_active_pane() {
+        let pane = TmuxPane {
+            id: "%0".to_string(),
+            width: 80,
+            height: 24,
+            active: true,
+            current_path: "/home/user".to_string(),
+            current_command: "bash".to_string(),
+        };
+        assert_eq!(pane.to_string(), "%0 (80x24, active, bash)");
+    }
+
+    #[test]
+    fn display_inactive_pane() {
+        let pane = TmuxPane {
+            id: "%1".to_string(),
+            width: 120,
+            height: 40,
+            active: false,
+            current_path: "/tmp".to_string(),
+            current_command: "vim".to_string(),
+        };
+        assert_eq!(pane.to_string(), "%1 (120x40, vim)");
+    }
 
     #[test]
     fn parse_pane_line_valid() {
