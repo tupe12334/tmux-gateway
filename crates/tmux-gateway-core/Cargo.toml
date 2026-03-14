@@ -6,6 +6,6 @@ license = "MIT"
 description = "Core tmux session management library — no networking"
 
 [dependencies]
-tokio = { version = "1", features = ["rt", "macros"] }
+tokio = { version = "1", features = ["rt", "macros", "sync"] }
 thiserror = "2"
 tracing = "0.1"
