@@ -9,9 +9,7 @@ pub async fn select_window(
     target: &str,
 ) -> Result<(), TmuxError> {
     validate_window_target(target)?;
-    let output = executor
-        .execute(&["select-window", "-t", target])
-        .await?;
+    let output = executor.execute(&["select-window", "-t", target]).await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
             "select-window",

@@ -335,7 +335,7 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
                 return Err(Status::invalid_argument(format!(
                     "invalid direction: {}",
                     inner.direction
-                )))
+                )));
             }
         };
         TmuxCommands::resize_pane(self, &inner.target, direction)

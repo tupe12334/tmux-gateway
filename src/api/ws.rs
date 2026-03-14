@@ -1,8 +1,8 @@
+use axum::Router;
 use axum::extract::ws::{CloseFrame, Message, WebSocket, WebSocketUpgrade};
 use axum::extract::{Path, Query};
 use axum::response::IntoResponse;
 use axum::routing::get;
-use axum::Router;
 use serde::Deserialize;
 use std::time::Duration;
 

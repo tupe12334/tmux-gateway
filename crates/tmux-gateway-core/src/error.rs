@@ -240,9 +240,7 @@ mod tests {
         let err: TmuxError = ve.into();
         assert!(matches!(
             err,
-            TmuxError::Validation(crate::validation::ValidationError::EmptyInput {
-                field: "name"
-            })
+            TmuxError::Validation(crate::validation::ValidationError::EmptyInput { field: "name" })
         ));
         assert_eq!(err.to_string(), "validation error: name must not be empty");
     }
