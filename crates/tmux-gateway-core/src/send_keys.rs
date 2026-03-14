@@ -3,6 +3,7 @@ use crate::validation::{ValidationError, validate_pane_target};
 
 use super::TmuxError;
 
+#[tracing::instrument(skip(executor))]
 pub async fn send_keys(
     executor: &(impl TmuxExecutor + ?Sized),
     target: &str,

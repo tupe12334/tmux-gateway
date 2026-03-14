@@ -35,9 +35,12 @@
     "mywin",
     "mysess",
     "mysession",
+    "nosession",
     "oneshot",
     "tbadts",
     "tnotanum",
-    "txyz"
+    "txyz",
+    "dylint",
+    "dylints"
   ]
 }

@@ -1,19 +1,21 @@
 use tonic::{Request, Response, Status};
 
 use super::messages::{
-    CapturePaneRequest, CapturePaneResponse, CreateSessionWithWindowsRequest,
+    CapturePaneRequest, CapturePaneResponse, CapturePaneWithOptionsRequest,
+    CapturePaneWithOptionsResponse, CreateSessionWithWindowsRequest,
     CreateSessionWithWindowsResponse, GetOptionRequest, GetOptionResponse, KillPaneRequest,
     KillPaneResponse, KillSessionRequest, KillSessionResponse, KillWindowRequest,
-    KillWindowResponse, ListOptionsRequest, ListOptionsResponse, ListPanesRequest, ListPanesResponse,
-    ListWindowsRequest, ListWindowsResponse, LsRequest, LsResponse, MoveWindowRequest,
-    MoveWindowResponse, NewSessionRequest, NewSessionResponse, NewWindowRequest, NewWindowResponse,
-    RenameSessionRequest, RenameSessionResponse, RenameWindowRequest, RenameWindowResponse,
-    SendKeysRequest, SendKeysResponse, SetOptionRequest, SetOptionResponse, SplitWindowRequest,
-    SplitWindowResponse, SwapPanesRequest, SwapPanesResponse, TmuxOptionMsg, TmuxPaneMsg,
-    TmuxSession, TmuxWindow,
+    KillWindowResponse, ListOptionsRequest, ListOptionsResponse, ListPanesRequest,
+    ListPanesResponse, ListWindowsRequest, ListWindowsResponse, LsRequest, LsResponse,
+    MoveWindowRequest, MoveWindowResponse, NewSessionRequest, NewSessionResponse, NewWindowRequest,
+    NewWindowResponse, RenameSessionRequest, RenameSessionResponse, RenameWindowRequest,
+    RenameWindowResponse, ResizePaneRequest, ResizePaneResponse, SelectPaneRequest,
+    SelectPaneResponse, SelectWindowRequest, SelectWindowResponse, SendKeysRequest,
+    SendKeysResponse, SetOptionRequest, SetOptionResponse, SplitWindowRequest, SplitWindowResponse,
+    SwapPanesRequest, SwapPanesResponse, TmuxOptionMsg, TmuxPaneMsg, TmuxSession, TmuxWindow,
 };
 use super::server::{TmuxGateway, TmuxGatewayServer};
-use crate::tmux::{self, GrpcCode, OptionScope, RealTmuxExecutor, TmuxCommands, TmuxError, TmuxOption};
+use crate::tmux::{self, OptionScope, RealTmuxExecutor, TmuxCommands, TmuxError, TmuxOption};
 
 pub struct TmuxGatewayServiceImpl;
 
@@ -74,6 +76,14 @@ impl TmuxCommands for TmuxGatewayServiceImpl {
         tmux::capture_pane(&RealTmuxExecutor, target).await
     }
 
+    async fn capture_pane_with_options(
+        &self,
+        target: &str,
+        opts: &tmux::CaptureOptions,
+    ) -> Result<String, TmuxError> {
+        tmux::capture_pane_with_options(&RealTmuxExecutor, target, opts).await
+    }
+
     async fn create_session_with_windows(
         &self,
         name: &str,
@@ -88,6 +98,22 @@ impl TmuxCommands for TmuxGatewayServiceImpl {
 
     async fn move_window(&self, source: &str, destination_session: &str) -> Result<(), TmuxError> {
         tmux::move_window(&RealTmuxExecutor, source, destination_session).await
+    }
+
+    async fn select_window(&self, target: &str) -> Result<(), TmuxError> {
+        tmux::select_window(&RealTmuxExecutor, target).await
+    }
+
+    async fn select_pane(&self, target: &str) -> Result<(), TmuxError> {
+        tmux::select_pane(&RealTmuxExecutor, target).await
+    }
+
+    async fn resize_pane(
+        &self,
+        target: &str,
+        direction: tmux::ResizeDirection,
+    ) -> Result<(), TmuxError> {
+        tmux::resize_pane(&RealTmuxExecutor, target, direction).await
     }
 
     async fn get_option(
@@ -139,11 +165,15 @@ fn scope_to_str(scope: OptionScope) -> &'static str {
 
 fn tmux_err_to_status(e: TmuxError) -> Status {
     let msg = e.to_string();
-    match e.grpc_code() {
-        GrpcCode::NotFound => Status::not_found(msg),
-        GrpcCode::AlreadyExists => Status::already_exists(msg),
-        GrpcCode::InvalidArgument => Status::invalid_argument(msg),
-        GrpcCode::Internal => Status::internal(msg),
+    match e {
+        TmuxError::SessionNotFound(_)
+        | TmuxError::WindowNotFound(_)
+        | TmuxError::PaneNotFound(_) => Status::not_found(msg),
+        TmuxError::SessionAlreadyExists(_) => Status::already_exists(msg),
+        TmuxError::InvalidTarget(_) | TmuxError::Validation(_) | TmuxError::ParseError { .. } => {
+            Status::invalid_argument(msg)
+        }
+        TmuxError::TmuxNotRunning | TmuxError::CommandFailed { .. } => Status::internal(msg),
     }
 }
 
@@ -256,6 +286,8 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
                 width: p.width,
                 height: p.height,
                 active: p.active,
+                current_path: p.current_path,
+                current_command: p.current_command,
             })
             .collect();
 
@@ -324,6 +356,8 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
             width: pane.width,
             height: pane.height,
             active: pane.active,
+            current_path: pane.current_path,
+            current_command: pane.current_command,
         }))
     }
 
@@ -336,6 +370,30 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
             .await
             .map_err(tmux_err_to_status)?;
         Ok(Response::new(CapturePaneResponse { content }))
+    }
+
+    async fn capture_pane_with_options(
+        &self,
+        request: Request<CapturePaneWithOptionsRequest>,
+    ) -> Result<Response<CapturePaneWithOptionsResponse>, Status> {
+        let inner = request.into_inner();
+        let opts = tmux::CaptureOptions {
+            start_line: if inner.has_start_line {
+                Some(inner.start_line)
+            } else {
+                None
+            },
+            end_line: if inner.has_end_line {
+                Some(inner.end_line)
+            } else {
+                None
+            },
+            escape_sequences: inner.escape_sequences,
+        };
+        let content = TmuxCommands::capture_pane_with_options(self, &inner.target, &opts)
+            .await
+            .map_err(tmux_err_to_status)?;
+        Ok(Response::new(CapturePaneWithOptionsResponse { content }))
     }
 
     async fn create_session_with_windows(
@@ -375,6 +433,46 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
             .await
             .map_err(tmux_err_to_status)?;
         Ok(Response::new(MoveWindowResponse {}))
+    }
+
+    async fn select_window(
+        &self,
+        request: Request<SelectWindowRequest>,
+    ) -> Result<Response<SelectWindowResponse>, Status> {
+        let target = &request.into_inner().target;
+        TmuxCommands::select_window(self, target)
+            .await
+            .map_err(tmux_err_to_status)?;
+        Ok(Response::new(SelectWindowResponse {}))
+    }
+
+    async fn select_pane(
+        &self,
+        request: Request<SelectPaneRequest>,
+    ) -> Result<Response<SelectPaneResponse>, Status> {
+        let target = &request.into_inner().target;
+        TmuxCommands::select_pane(self, target)
+            .await
+            .map_err(tmux_err_to_status)?;
+        Ok(Response::new(SelectPaneResponse {}))
+    }
+
+    async fn resize_pane(
+        &self,
+        request: Request<ResizePaneRequest>,
+    ) -> Result<Response<ResizePaneResponse>, Status> {
+        let inner = request.into_inner();
+        let direction = match inner.direction.as_str() {
+            "up" | "Up" | "U" => tmux::ResizeDirection::Up(inner.amount),
+            "down" | "Down" | "D" => tmux::ResizeDirection::Down(inner.amount),
+            "left" | "Left" | "L" => tmux::ResizeDirection::Left(inner.amount),
+            "right" | "Right" | "R" => tmux::ResizeDirection::Right(inner.amount),
+            _ => return Err(Status::invalid_argument(format!("invalid direction: {}", inner.direction))),
+        };
+        TmuxCommands::resize_pane(self, &inner.target, direction)
+            .await
+            .map_err(tmux_err_to_status)?;
+        Ok(Response::new(ResizePaneResponse {}))
     }
 
     async fn get_option(

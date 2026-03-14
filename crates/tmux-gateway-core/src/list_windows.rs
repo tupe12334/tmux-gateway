@@ -1,10 +1,8 @@
-use serde::Serialize;
-
 use super::TmuxError;
 use super::validation::validate_session_target;
 use crate::executor::TmuxExecutor;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TmuxWindow {
     pub index: u32,
     pub name: String,
@@ -44,6 +42,7 @@ pub(crate) fn parse_windows(stdout: &str) -> Result<Vec<TmuxWindow>, TmuxError> 
         .collect()
 }
 
+#[tracing::instrument(skip(executor))]
 pub async fn list_windows(
     executor: &(impl TmuxExecutor + ?Sized),
     session: &str,

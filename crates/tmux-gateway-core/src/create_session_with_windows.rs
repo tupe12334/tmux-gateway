@@ -9,6 +9,7 @@ use crate::validation::{validate_session_name, validate_window_name};
 /// window created by tmux is renamed to the first window name if provided.
 /// On partial failure (session created but a window fails), the session is
 /// killed to maintain atomicity.
+#[tracing::instrument(skip(executor))]
 pub async fn create_session_with_windows(
     executor: &(impl TmuxExecutor + ?Sized),
     name: &str,

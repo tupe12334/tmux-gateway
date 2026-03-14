@@ -1,5 +1,3 @@
-use std::fmt;
-
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
 pub enum TmuxError {
     #[error("session not found: {0}")]
@@ -22,6 +20,9 @@ pub enum TmuxError {
 
     #[error("invalid target: {0}")]
     InvalidTarget(String),
+
+    #[error("validation error: {0}")]
+    Validation(#[from] crate::validation::ValidationError),
 
     #[error("failed to parse tmux output for {command}: {details}")]
     ParseError { command: String, details: String },
@@ -58,54 +59,6 @@ impl TmuxError {
             stderr: stderr.trim().to_string(),
         }
     }
-
-    /// Returns the appropriate HTTP status code for this error.
-    pub fn http_status_code(&self) -> u16 {
-        match self {
-            Self::SessionNotFound(_) | Self::WindowNotFound(_) | Self::PaneNotFound(_) => 404,
-            Self::SessionAlreadyExists(_) => 409,
-            Self::InvalidTarget(_) | Self::ParseError { .. } => 400,
-            Self::TmuxNotRunning | Self::CommandFailed { .. } => 500,
-        }
-    }
-
-    /// Returns a string suitable for use as a gRPC status code.
-    pub fn grpc_code(&self) -> GrpcCode {
-        match self {
-            Self::SessionNotFound(_) | Self::WindowNotFound(_) | Self::PaneNotFound(_) => {
-                GrpcCode::NotFound
-            }
-            Self::SessionAlreadyExists(_) => GrpcCode::AlreadyExists,
-            Self::InvalidTarget(_) | Self::ParseError { .. } => GrpcCode::InvalidArgument,
-            Self::TmuxNotRunning | Self::CommandFailed { .. } => GrpcCode::Internal,
-        }
-    }
-}
-
-impl From<crate::validation::ValidationError> for TmuxError {
-    fn from(e: crate::validation::ValidationError) -> Self {
-        Self::InvalidTarget(e.to_string())
-    }
-}
-
-/// Subset of gRPC status codes relevant to tmux errors.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum GrpcCode {
-    NotFound,
-    AlreadyExists,
-    InvalidArgument,
-    Internal,
-}
-
-impl fmt::Display for GrpcCode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::NotFound => write!(f, "NOT_FOUND"),
-            Self::AlreadyExists => write!(f, "ALREADY_EXISTS"),
-            Self::InvalidArgument => write!(f, "INVALID_ARGUMENT"),
-            Self::Internal => write!(f, "INTERNAL"),
-        }
-    }
 }
 
 #[cfg(test)]
@@ -123,19 +76,6 @@ mod tests {
     fn from_stderr_duplicate_session_case_insensitive() {
         let err = TmuxError::from_stderr("new-session", "Duplicate Session: bar", "bar");
         assert!(matches!(err, TmuxError::SessionAlreadyExists(ref name) if name == "bar"));
-    }
-
-    #[test]
-    fn session_already_exists_http_status() {
-        let err = TmuxError::SessionAlreadyExists("test".to_string());
-        assert_eq!(err.http_status_code(), 409);
-    }
-
-    #[test]
-    fn session_already_exists_grpc_code() {
-        let err = TmuxError::SessionAlreadyExists("test".to_string());
-        assert_eq!(err.grpc_code(), GrpcCode::AlreadyExists);
-        assert_eq!(GrpcCode::AlreadyExists.to_string(), "ALREADY_EXISTS");
     }
 
     #[test]
@@ -290,5 +230,56 @@ mod tests {
         // TmuxNotRunning should win because it's checked first.
         let err = TmuxError::from_stderr("cmd", "no server running on... session not found", "s");
         assert!(matches!(err, TmuxError::TmuxNotRunning));
+    }
+
+    // --- Validation variant ---
+
+    #[test]
+    fn validation_error_preserves_empty_input() {
+        let ve = crate::validation::ValidationError::EmptyInput { field: "name" };
+        let err: TmuxError = ve.into();
+        assert!(matches!(
+            err,
+            TmuxError::Validation(crate::validation::ValidationError::EmptyInput {
+                field: "name"
+            })
+        ));
+        assert_eq!(err.to_string(), "validation error: name must not be empty");
+    }
+
+    #[test]
+    fn validation_error_preserves_invalid_session_name() {
+        let ve = crate::validation::ValidationError::InvalidSessionName {
+            reason: "too long".to_string(),
+        };
+        let err: TmuxError = ve.into();
+        assert!(matches!(
+            err,
+            TmuxError::Validation(crate::validation::ValidationError::InvalidSessionName { .. })
+        ));
+    }
+
+    #[test]
+    fn validation_error_preserves_invalid_window_name() {
+        let ve = crate::validation::ValidationError::InvalidWindowName {
+            reason: "bad chars".to_string(),
+        };
+        let err: TmuxError = ve.into();
+        assert!(matches!(
+            err,
+            TmuxError::Validation(crate::validation::ValidationError::InvalidWindowName { .. })
+        ));
+    }
+
+    #[test]
+    fn validation_error_preserves_invalid_target() {
+        let ve = crate::validation::ValidationError::InvalidTarget {
+            reason: "missing colon".to_string(),
+        };
+        let err: TmuxError = ve.into();
+        assert!(matches!(
+            err,
+            TmuxError::Validation(crate::validation::ValidationError::InvalidTarget { .. })
+        ));
     }
 }

@@ -150,9 +150,13 @@ grpc_service! {
         rpc NewWindow / new_window(NewWindowRequest) -> NewWindowResponse;
         rpc SplitWindow / split_window(SplitWindowRequest) -> SplitWindowResponse;
         rpc CapturePane / capture_pane(CapturePaneRequest) -> CapturePaneResponse;
+        rpc CapturePaneWithOptions / capture_pane_with_options(CapturePaneWithOptionsRequest) -> CapturePaneWithOptionsResponse;
         rpc CreateSessionWithWindows / create_session_with_windows(CreateSessionWithWindowsRequest) -> CreateSessionWithWindowsResponse;
         rpc SwapPanes / swap_panes(SwapPanesRequest) -> SwapPanesResponse;
         rpc MoveWindow / move_window(MoveWindowRequest) -> MoveWindowResponse;
+        rpc SelectWindow / select_window(SelectWindowRequest) -> SelectWindowResponse;
+        rpc SelectPane / select_pane(SelectPaneRequest) -> SelectPaneResponse;
+        rpc ResizePane / resize_pane(ResizePaneRequest) -> ResizePaneResponse;
         rpc GetOption / get_option(GetOptionRequest) -> GetOptionResponse;
         rpc SetOption / set_option(SetOptionRequest) -> SetOptionResponse;
         rpc ListOptions / list_options(ListOptionsRequest) -> ListOptionsResponse;

@@ -18,8 +18,34 @@ pub fn tmux_available() -> bool {
         .unwrap_or(false)
 }
 
+pub fn require_tmux() {
+    assert!(
+        tmux_available(),
+        "tmux is not installed or not available in PATH — this test requires tmux"
+    );
+}
+
 pub fn cleanup_session(name: &str) {
     let _ = std::process::Command::new("tmux")
         .args(["kill-session", "-t", name])
         .output();
+}
+
+pub struct TestSession {
+    pub name: String,
+}
+
+impl TestSession {
+    pub fn new() -> Self {
+        require_tmux();
+        Self {
+            name: unique_session_name(),
+        }
+    }
+}
+
+impl Drop for TestSession {
+    fn drop(&mut self) {
+        cleanup_session(&self.name);
+    }
 }

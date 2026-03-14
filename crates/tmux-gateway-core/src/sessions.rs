@@ -1,9 +1,7 @@
-use serde::Serialize;
-
 use super::TmuxError;
 use crate::executor::TmuxExecutor;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TmuxSession {
     pub name: String,
     pub windows: u32,
@@ -11,6 +9,7 @@ pub struct TmuxSession {
     pub attached: bool,
 }
 
+#[tracing::instrument(skip(executor))]
 pub async fn session_exists(
     executor: &(impl TmuxExecutor + ?Sized),
     name: &str,
@@ -19,6 +18,7 @@ pub async fn session_exists(
     Ok(sessions.iter().any(|s| s.name == name))
 }
 
+#[tracing::instrument(skip(executor))]
 pub async fn get_session(
     executor: &(impl TmuxExecutor + ?Sized),
     name: &str,
@@ -59,6 +59,7 @@ pub(crate) fn parse_sessions(stdout: &str) -> Result<Vec<TmuxSession>, TmuxError
         .collect()
 }
 
+#[tracing::instrument(skip(executor))]
 pub async fn list_sessions(
     executor: &(impl TmuxExecutor + ?Sized),
 ) -> Result<Vec<TmuxSession>, TmuxError> {

@@ -1,4 +1,7 @@
-use super::{OptionScope, TmuxError, TmuxOption, TmuxPane, TmuxSession, TmuxWindow};
+use super::{
+    CaptureOptions, OptionScope, ResizeDirection, TmuxError, TmuxOption, TmuxPane, TmuxSession,
+    TmuxWindow,
+};
 
 /// All API layers (REST, gRPC, GraphQL) must implement this trait.
 /// Adding a new command here will cause a compile error in any
@@ -58,6 +61,11 @@ pub trait TmuxCommands {
         &self,
         target: &str,
     ) -> impl std::future::Future<Output = Result<String, TmuxError>> + Send;
+    fn capture_pane_with_options(
+        &self,
+        target: &str,
+        opts: &CaptureOptions,
+    ) -> impl std::future::Future<Output = Result<String, TmuxError>> + Send;
     fn create_session_with_windows(
         &self,
         name: &str,
@@ -72,6 +80,19 @@ pub trait TmuxCommands {
         &self,
         source: &str,
         destination_session: &str,
+    ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send;
+    fn select_window(
+        &self,
+        target: &str,
+    ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send;
+    fn select_pane(
+        &self,
+        target: &str,
+    ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send;
+    fn resize_pane(
+        &self,
+        target: &str,
+        direction: ResizeDirection,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send;
     fn get_option(
         &self,

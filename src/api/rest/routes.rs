@@ -66,6 +66,14 @@ impl TmuxCommands for RestHandler {
         tmux::capture_pane(&RealTmuxExecutor, target).await
     }
 
+    async fn capture_pane_with_options(
+        &self,
+        target: &str,
+        opts: &tmux::CaptureOptions,
+    ) -> Result<String, TmuxError> {
+        tmux::capture_pane_with_options(&RealTmuxExecutor, target, opts).await
+    }
+
     async fn create_session_with_windows(
         &self,
         name: &str,
@@ -80,6 +88,22 @@ impl TmuxCommands for RestHandler {
 
     async fn move_window(&self, source: &str, destination_session: &str) -> Result<(), TmuxError> {
         tmux::move_window(&RealTmuxExecutor, source, destination_session).await
+    }
+
+    async fn select_window(&self, target: &str) -> Result<(), TmuxError> {
+        tmux::select_window(&RealTmuxExecutor, target).await
+    }
+
+    async fn select_pane(&self, target: &str) -> Result<(), TmuxError> {
+        tmux::select_pane(&RealTmuxExecutor, target).await
+    }
+
+    async fn resize_pane(
+        &self,
+        target: &str,
+        direction: tmux::ResizeDirection,
+    ) -> Result<(), TmuxError> {
+        tmux::resize_pane(&RealTmuxExecutor, target, direction).await
     }
 
     async fn get_option(
@@ -111,8 +135,18 @@ impl TmuxCommands for RestHandler {
 }
 
 fn tmux_err_to_http(e: TmuxError) -> (StatusCode, String) {
-    let status =
-        StatusCode::from_u16(e.http_status_code()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+    let status = match &e {
+        TmuxError::SessionNotFound(_)
+        | TmuxError::WindowNotFound(_)
+        | TmuxError::PaneNotFound(_) => StatusCode::NOT_FOUND,
+        TmuxError::SessionAlreadyExists(_) => StatusCode::CONFLICT,
+        TmuxError::InvalidTarget(_) | TmuxError::Validation(_) | TmuxError::ParseError { .. } => {
+            StatusCode::BAD_REQUEST
+        }
+        TmuxError::TmuxNotRunning | TmuxError::CommandFailed { .. } => {
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+    };
     (status, e.to_string())
 }
 
@@ -145,6 +179,8 @@ struct PaneResponse {
     width: u32,
     height: u32,
     active: bool,
+    current_path: String,
+    current_command: String,
 }
 
 #[utoipa::path(
@@ -383,6 +419,8 @@ async fn list_panes(
                 width: p.width,
                 height: p.height,
                 active: p.active,
+                current_path: p.current_path,
+                current_command: p.current_command,
             })
             .collect(),
     ))
@@ -518,6 +556,8 @@ struct SplitWindowResponse {
     width: u32,
     height: u32,
     active: bool,
+    current_path: String,
+    current_command: String,
 }
 
 #[utoipa::path(
@@ -543,6 +583,8 @@ async fn split_window(
         width: pane.width,
         height: pane.height,
         active: pane.active,
+        current_path: pane.current_path,
+        current_command: pane.current_command,
     }))
 }
 
@@ -648,6 +690,91 @@ async fn move_window(
     Ok(StatusCode::OK)
 }
 
+#[utoipa::path(
+    post,
+    path = "/select-window",
+    request_body = KillTargetRequest,
+    responses(
+        (status = 200, description = "Window selected"),
+        (status = 400, description = "Invalid target"),
+        (status = 404, description = "Window not found"),
+        (status = 500, description = "Failed to select window")
+    )
+)]
+async fn select_window(
+    Json(body): Json<KillTargetRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    RestHandler
+        .select_window(&body.target)
+        .await
+        .map_err(tmux_err_to_http)?;
+
+    Ok(StatusCode::OK)
+}
+
+#[utoipa::path(
+    post,
+    path = "/select-pane",
+    request_body = KillTargetRequest,
+    responses(
+        (status = 200, description = "Pane selected"),
+        (status = 400, description = "Invalid target"),
+        (status = 404, description = "Pane not found"),
+        (status = 500, description = "Failed to select pane")
+    )
+)]
+async fn select_pane(
+    Json(body): Json<KillTargetRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    RestHandler
+        .select_pane(&body.target)
+        .await
+        .map_err(tmux_err_to_http)?;
+
+    Ok(StatusCode::OK)
+}
+
+#[derive(Deserialize, ToSchema)]
+struct ResizePaneRequest {
+    target: String,
+    direction: String,
+    amount: u32,
+}
+
+#[utoipa::path(
+    post,
+    path = "/resize-pane",
+    request_body = ResizePaneRequest,
+    responses(
+        (status = 200, description = "Pane resized"),
+        (status = 400, description = "Invalid target or direction"),
+        (status = 404, description = "Pane not found"),
+        (status = 500, description = "Failed to resize pane")
+    )
+)]
+async fn resize_pane(
+    Json(body): Json<ResizePaneRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    let direction = match body.direction.as_str() {
+        "up" | "Up" | "U" => tmux::ResizeDirection::Up(body.amount),
+        "down" | "Down" | "D" => tmux::ResizeDirection::Down(body.amount),
+        "left" | "Left" | "L" => tmux::ResizeDirection::Left(body.amount),
+        "right" | "Right" | "R" => tmux::ResizeDirection::Right(body.amount),
+        _ => {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                format!("invalid direction: {}", body.direction),
+            ));
+        }
+    };
+    RestHandler
+        .resize_pane(&body.target, direction)
+        .await
+        .map_err(tmux_err_to_http)?;
+
+    Ok(StatusCode::OK)
+}
+
 #[derive(Deserialize, ToSchema)]
 struct CapturePaneRequest {
     target: String,
@@ -673,6 +800,43 @@ async fn capture_pane(
 ) -> Result<Json<CapturePaneResponse>, (axum::http::StatusCode, String)> {
     let content = RestHandler
         .capture_pane(&params.target)
+        .await
+        .map_err(tmux_err_to_http)?;
+
+    Ok(Json(CapturePaneResponse { content }))
+}
+
+#[derive(Deserialize, ToSchema)]
+struct CapturePaneWithOptionsRequest {
+    target: String,
+    #[serde(default)]
+    start_line: Option<i32>,
+    #[serde(default)]
+    end_line: Option<i32>,
+    #[serde(default)]
+    escape_sequences: bool,
+}
+
+#[utoipa::path(
+    post,
+    path = "/capture-pane-with-options",
+    request_body = CapturePaneWithOptionsRequest,
+    responses(
+        (status = 200, description = "Pane content captured with options", body = CapturePaneResponse),
+        (status = 404, description = "Pane not found"),
+        (status = 500, description = "Failed to capture pane")
+    )
+)]
+async fn capture_pane_with_options(
+    Json(body): Json<CapturePaneWithOptionsRequest>,
+) -> Result<Json<CapturePaneResponse>, (axum::http::StatusCode, String)> {
+    let opts = tmux::CaptureOptions {
+        start_line: body.start_line,
+        end_line: body.end_line,
+        escape_sequences: body.escape_sequences,
+    };
+    let content = RestHandler
+        .capture_pane_with_options(&body.target, &opts)
         .await
         .map_err(tmux_err_to_http)?;
 
@@ -830,9 +994,13 @@ async fn list_options(
         new_window,
         split_window,
         capture_pane,
+        capture_pane_with_options,
         create_session_with_windows,
         swap_panes,
         move_window,
+        select_window,
+        select_pane,
+        resize_pane,
         get_option,
         set_option,
         list_options
@@ -855,10 +1023,12 @@ async fn list_options(
         SplitWindowResponse,
         CapturePaneRequest,
         CapturePaneResponse,
+        CapturePaneWithOptionsRequest,
         CreateSessionWithWindowsRequest,
         CreateSessionWithWindowsResponse,
         SwapPanesRequest,
         MoveWindowRequest,
+        ResizePaneRequest,
         GetOptionRequest,
         GetOptionResponse,
         SetOptionRequest,
@@ -901,8 +1071,15 @@ pub fn write_router() -> Router {
             "/create-session-with-windows",
             post(create_session_with_windows),
         )
+        .route(
+            "/capture-pane-with-options",
+            post(capture_pane_with_options),
+        )
         .route("/swap-panes", post(swap_panes))
         .route("/move-window", post(move_window))
+        .route("/select-window", post(select_window))
+        .route("/select-pane", post(select_pane))
+        .route("/resize-pane", post(resize_pane))
         .route("/set-option", post(set_option))
 }
 

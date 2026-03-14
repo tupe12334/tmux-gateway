@@ -18,6 +18,11 @@ macro_rules! define_proto_struct {
             $($acc)* #[prost(uint32, tag = $tag)] pub $field: u32,
         ] $($rest)*);
     };
+    (@build $name:ident [$($acc:tt)*] int32 $field:ident = $tag:literal; $($rest:tt)*) => {
+        define_proto_struct!(@build $name [
+            $($acc)* #[prost(int32, tag = $tag)] pub $field: i32,
+        ] $($rest)*);
+    };
     (@build $name:ident [$($acc:tt)*] int64 $field:ident = $tag:literal; $($rest:tt)*) => {
         define_proto_struct!(@build $name [
             $($acc)* #[prost(int64, tag = $tag)] pub $field: i64,
@@ -61,6 +66,11 @@ macro_rules! message_proto_text {
     (@build $name:ident [$($acc:tt)*] uint32 $field:ident = $tag:literal; $($rest:tt)*) => {
         message_proto_text!(@build $name [
             $($acc)* "  uint32 ", stringify!($field), " = ", $tag, ";\n",
+        ] $($rest)*)
+    };
+    (@build $name:ident [$($acc:tt)*] int32 $field:ident = $tag:literal; $($rest:tt)*) => {
+        message_proto_text!(@build $name [
+            $($acc)* "  int32 ", stringify!($field), " = ", $tag, ";\n",
         ] $($rest)*)
     };
     (@build $name:ident [$($acc:tt)*] int64 $field:ident = $tag:literal; $($rest:tt)*) => {
@@ -179,6 +189,8 @@ proto_messages! {
         uint32 width = "2";
         uint32 height = "3";
         bool active = "4";
+        string current_path = "5";
+        string current_command = "6";
     }
 
     message SendKeysRequest {
@@ -224,6 +236,8 @@ proto_messages! {
         uint32 width = "2";
         uint32 height = "3";
         bool active = "4";
+        string current_path = "5";
+        string current_command = "6";
     }
 
     message CapturePaneRequest {
@@ -231,6 +245,19 @@ proto_messages! {
     }
 
     message CapturePaneResponse {
+        string content = "1";
+    }
+
+    message CapturePaneWithOptionsRequest {
+        string target = "1";
+        bool has_start_line = "2";
+        int32 start_line = "3";
+        bool has_end_line = "4";
+        int32 end_line = "5";
+        bool escape_sequences = "6";
+    }
+
+    message CapturePaneWithOptionsResponse {
         string content = "1";
     }
 
@@ -259,6 +286,26 @@ proto_messages! {
     }
 
     message MoveWindowResponse {}
+
+    message SelectWindowRequest {
+        string target = "1";
+    }
+
+    message SelectWindowResponse {}
+
+    message SelectPaneRequest {
+        string target = "1";
+    }
+
+    message SelectPaneResponse {}
+
+    message ResizePaneRequest {
+        string target = "1";
+        string direction = "2";
+        uint32 amount = "3";
+    }
+
+    message ResizePaneResponse {}
 
     message GetOptionRequest {
         string target = "1";

@@ -38,8 +38,7 @@ fn try_export_all() -> anyhow::Result<()> {
     // Export GraphQL SDL
     let schema = graphql::build_schema();
     let sdl = schema.sdl_with_options(SDLExportOptions::new());
-    fs::write(schemas_dir.join("schema.graphql"), sdl)
-        .context("failed to write schema.graphql")?;
+    fs::write(schemas_dir.join("schema.graphql"), sdl).context("failed to write schema.graphql")?;
     tracing::info!("Exported schemas/schema.graphql");
 
     // Export gRPC proto schema
