@@ -186,18 +186,43 @@ async fn main() -> anyhow::Result<()> {
         .build_v1()
         .context("failed to build gRPC reflection service")?;
 
+    let mut health_shutdown_rx = shutdown_tx.subscribe();
+
     let grpc_handle = tokio::spawn(async move {
         let (health_reporter, health_service) = tonic_health::server::health_reporter();
 
-        // Check tmux availability for gRPC health status
-        if tmux_gateway_core::is_available().await {
-            health_reporter
-                .set_serving::<grpc::TmuxGatewayServerConcrete>()
-                .await;
-        } else {
-            health_reporter
-                .set_not_serving::<grpc::TmuxGatewayServerConcrete>()
-                .await;
+        // Spawn a background task that periodically verifies tmux is responsive
+        // and updates the gRPC health status accordingly.
+        {
+            let reporter = health_reporter.clone();
+            tokio::spawn(async move {
+                const CHECK_INTERVAL: Duration = Duration::from_secs(5);
+                const CHECK_TIMEOUT: Duration = Duration::from_secs(3);
+
+                loop {
+                    let healthy =
+                        tokio::time::timeout(CHECK_TIMEOUT, tmux_gateway_core::is_available())
+                            .await
+                            .unwrap_or(false);
+
+                    if healthy {
+                        reporter
+                            .set_serving::<grpc::TmuxGatewayServerConcrete>()
+                            .await;
+                    } else {
+                        reporter
+                            .set_not_serving::<grpc::TmuxGatewayServerConcrete>()
+                            .await;
+                    }
+
+                    tokio::select! {
+                        _ = tokio::time::sleep(CHECK_INTERVAL) => {}
+                        _ = health_shutdown_rx.wait_for(|&v| v) => break,
+                    }
+                }
+
+                tracing::info!("Health check loop stopped");
+            });
         }
 
         let x_request_id = http::HeaderName::from_static("x-request-id");
