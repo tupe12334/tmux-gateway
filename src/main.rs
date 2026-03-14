@@ -51,10 +51,7 @@ async fn main() -> anyhow::Result<()> {
 
     let cors = {
         let origins_raw = env::var("CORS_ORIGINS").unwrap_or_else(|_| {
-            format!(
-                "http://localhost:{},http://localhost:{}",
-                http_port, grpc_port
-            )
+            format!("http://localhost:{},http://localhost:3000", http_port)
         });
         let raw_entries: Vec<&str> = origins_raw.split(',').map(|s| s.trim()).collect();
         let total = raw_entries.len();
