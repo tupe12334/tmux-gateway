@@ -16,6 +16,9 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      - name: Install tmux
+        run: sudo apt-get update && sudo apt-get install -y tmux
+
       - name: Build
         run: cargo build --release
 
@@ -65,3 +68,27 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t tmux-gateway:ci .
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install tmux
+        run: sudo apt-get update && sudo apt-get install -y tmux
+
+      - name: Install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin
+
+      - name: Generate coverage
+        run: cargo tarpaulin --out xml --output-dir coverage
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/cobertura.xml
