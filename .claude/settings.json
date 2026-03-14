@@ -17,7 +17,11 @@
       "Bash(docker build:*)",
       "Bash(gh issue:*)",
       "Bash(gh label:*)",
-      "Bash(centy start:*)"
+      "Bash(centy start:*)",
+      "Bash(centy init:*)",
+      "Bash(centy list:*)",
+      "Bash(centy create:*)",
+      "Bash(docker run:*)"
     ],
     "deny": ["Bash(gh issue create:*)"]
   },
