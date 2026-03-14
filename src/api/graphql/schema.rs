@@ -1,7 +1,7 @@
 use async_graphql::{EmptySubscription, Object, Schema, SimpleObject};
 use chrono::{DateTime, Utc};
 
-use crate::tmux::{self, TmuxCommands, TmuxError};
+use crate::tmux::{self, RealTmuxExecutor, TmuxCommands, TmuxError};
 
 pub type AppSchema = Schema<QueryRoot, MutationRoot, EmptySubscription>;
 
@@ -33,47 +33,47 @@ struct GraphqlHandler;
 
 impl TmuxCommands for GraphqlHandler {
     async fn ls(&self) -> Result<Vec<tmux::TmuxSession>, TmuxError> {
-        tmux::list_sessions().await
+        tmux::list_sessions(&RealTmuxExecutor).await
     }
 
     async fn create_session(&self, name: &str) -> Result<tmux::TmuxSession, TmuxError> {
-        tmux::new_session(name).await
+        tmux::new_session(&RealTmuxExecutor, name).await
     }
 
     async fn kill_session(&self, target: &str) -> Result<(), TmuxError> {
-        tmux::kill_session(target).await
+        tmux::kill_session(&RealTmuxExecutor, target).await
     }
 
     async fn kill_window(&self, target: &str) -> Result<(), TmuxError> {
-        tmux::kill_window(target).await
+        tmux::kill_window(&RealTmuxExecutor, target).await
     }
 
     async fn kill_pane(&self, target: &str) -> Result<(), TmuxError> {
-        tmux::kill_pane(target).await
+        tmux::kill_pane(&RealTmuxExecutor, target).await
     }
 
     async fn list_windows(&self, session: &str) -> Result<Vec<tmux::TmuxWindow>, TmuxError> {
-        tmux::list_windows(session).await
+        tmux::list_windows(&RealTmuxExecutor, session).await
     }
 
     async fn list_panes(&self, target: &str) -> Result<Vec<tmux::TmuxPane>, TmuxError> {
-        tmux::list_panes(target).await
+        tmux::list_panes(&RealTmuxExecutor, target).await
     }
 
     async fn send_keys(&self, target: &str, keys: &[String]) -> Result<(), TmuxError> {
-        tmux::send_keys(target, keys).await
+        tmux::send_keys(&RealTmuxExecutor, target, keys).await
     }
 
     async fn rename_session(&self, target: &str, new_name: &str) -> Result<(), TmuxError> {
-        tmux::rename_session(target, new_name).await
+        tmux::rename_session(&RealTmuxExecutor, target, new_name).await
     }
 
     async fn rename_window(&self, target: &str, new_name: &str) -> Result<(), TmuxError> {
-        tmux::rename_window(target, new_name).await
+        tmux::rename_window(&RealTmuxExecutor, target, new_name).await
     }
 
     async fn new_window(&self, session: &str, name: &str) -> Result<tmux::TmuxWindow, TmuxError> {
-        tmux::new_window(session, name).await
+        tmux::new_window(&RealTmuxExecutor, session, name).await
     }
 
     async fn split_window(
@@ -81,11 +81,19 @@ impl TmuxCommands for GraphqlHandler {
         target: &str,
         horizontal: bool,
     ) -> Result<tmux::TmuxPane, TmuxError> {
-        tmux::split_window(target, horizontal).await
+        tmux::split_window(&RealTmuxExecutor, target, horizontal).await
     }
 
     async fn capture_pane(&self, target: &str) -> Result<String, TmuxError> {
-        tmux::capture_pane(target).await
+        tmux::capture_pane(&RealTmuxExecutor, target).await
+    }
+
+    async fn capture_pane_with_options(
+        &self,
+        target: &str,
+        opts: &tmux::CaptureOptions,
+    ) -> Result<String, TmuxError> {
+        tmux::capture_pane_with_options(&RealTmuxExecutor, target, opts).await
     }
 
     async fn create_session_with_windows(
@@ -93,15 +101,15 @@ impl TmuxCommands for GraphqlHandler {
         name: &str,
         window_names: &[String],
     ) -> Result<tmux::TmuxSession, TmuxError> {
-        tmux::create_session_with_windows(name, window_names).await
+        tmux::create_session_with_windows(&RealTmuxExecutor, name, window_names).await
     }
 
     async fn swap_panes(&self, src: &str, dst: &str) -> Result<(), TmuxError> {
-        tmux::swap_panes(src, dst).await
+        tmux::swap_panes(&RealTmuxExecutor, src, dst).await
     }
 
     async fn move_window(&self, source: &str, destination_session: &str) -> Result<(), TmuxError> {
-        tmux::move_window(source, destination_session).await
+        tmux::move_window(&RealTmuxExecutor, source, destination_session).await
     }
 }
 
@@ -169,6 +177,24 @@ impl QueryRoot {
     async fn capture_pane(&self, target: String) -> async_graphql::Result<String> {
         GraphqlHandler
             .capture_pane(&target)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))
+    }
+
+    async fn capture_pane_with_options(
+        &self,
+        target: String,
+        start_line: Option<i32>,
+        end_line: Option<i32>,
+        #[graphql(default = false)] escape_sequences: bool,
+    ) -> async_graphql::Result<String> {
+        let opts = tmux::CaptureOptions {
+            start_line,
+            end_line,
+            escape_sequences,
+        };
+        GraphqlHandler
+            .capture_pane_with_options(&target, &opts)
             .await
             .map_err(|e| async_graphql::Error::new(e.to_string()))
     }

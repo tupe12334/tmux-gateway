@@ -9,4 +9,3 @@ description = "Core tmux session management library — no networking"
 tokio = { version = "1", features = ["rt", "macros", "sync"] }
 serde = { version = "1", features = ["derive"] }
 thiserror = "2"
-tmux_interface = "0.4"

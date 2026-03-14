@@ -5,53 +5,53 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::{OpenApi, ToSchema};
 
-use crate::tmux::{self, TmuxCommands, TmuxError};
+use crate::tmux::{self, RealTmuxExecutor, TmuxCommands, TmuxError};
 
 struct RestHandler;
 
 impl TmuxCommands for RestHandler {
     async fn ls(&self) -> Result<Vec<tmux::TmuxSession>, TmuxError> {
-        tmux::list_sessions().await
+        tmux::list_sessions(&RealTmuxExecutor).await
     }
 
     async fn create_session(&self, name: &str) -> Result<tmux::TmuxSession, TmuxError> {
-        tmux::new_session(name).await
+        tmux::new_session(&RealTmuxExecutor, name).await
     }
 
     async fn kill_session(&self, target: &str) -> Result<(), TmuxError> {
-        tmux::kill_session(target).await
+        tmux::kill_session(&RealTmuxExecutor, target).await
     }
 
     async fn kill_window(&self, target: &str) -> Result<(), TmuxError> {
-        tmux::kill_window(target).await
+        tmux::kill_window(&RealTmuxExecutor, target).await
     }
 
     async fn kill_pane(&self, target: &str) -> Result<(), TmuxError> {
-        tmux::kill_pane(target).await
+        tmux::kill_pane(&RealTmuxExecutor, target).await
     }
 
     async fn list_windows(&self, session: &str) -> Result<Vec<tmux::TmuxWindow>, TmuxError> {
-        tmux::list_windows(session).await
+        tmux::list_windows(&RealTmuxExecutor, session).await
     }
 
     async fn list_panes(&self, target: &str) -> Result<Vec<tmux::TmuxPane>, TmuxError> {
-        tmux::list_panes(target).await
+        tmux::list_panes(&RealTmuxExecutor, target).await
     }
 
     async fn send_keys(&self, target: &str, keys: &[String]) -> Result<(), TmuxError> {
-        tmux::send_keys(target, keys).await
+        tmux::send_keys(&RealTmuxExecutor, target, keys).await
     }
 
     async fn rename_session(&self, target: &str, new_name: &str) -> Result<(), TmuxError> {
-        tmux::rename_session(target, new_name).await
+        tmux::rename_session(&RealTmuxExecutor, target, new_name).await
     }
 
     async fn rename_window(&self, target: &str, new_name: &str) -> Result<(), TmuxError> {
-        tmux::rename_window(target, new_name).await
+        tmux::rename_window(&RealTmuxExecutor, target, new_name).await
     }
 
     async fn new_window(&self, session: &str, name: &str) -> Result<tmux::TmuxWindow, TmuxError> {
-        tmux::new_window(session, name).await
+        tmux::new_window(&RealTmuxExecutor, session, name).await
     }
 
     async fn split_window(
@@ -59,11 +59,19 @@ impl TmuxCommands for RestHandler {
         target: &str,
         horizontal: bool,
     ) -> Result<tmux::TmuxPane, TmuxError> {
-        tmux::split_window(target, horizontal).await
+        tmux::split_window(&RealTmuxExecutor, target, horizontal).await
     }
 
     async fn capture_pane(&self, target: &str) -> Result<String, TmuxError> {
-        tmux::capture_pane(target).await
+        tmux::capture_pane(&RealTmuxExecutor, target).await
+    }
+
+    async fn capture_pane_with_options(
+        &self,
+        target: &str,
+        opts: &tmux::CaptureOptions,
+    ) -> Result<String, TmuxError> {
+        tmux::capture_pane_with_options(&RealTmuxExecutor, target, opts).await
     }
 
     async fn create_session_with_windows(
@@ -71,21 +79,29 @@ impl TmuxCommands for RestHandler {
         name: &str,
         window_names: &[String],
     ) -> Result<tmux::TmuxSession, TmuxError> {
-        tmux::create_session_with_windows(name, window_names).await
+        tmux::create_session_with_windows(&RealTmuxExecutor, name, window_names).await
     }
 
     async fn swap_panes(&self, src: &str, dst: &str) -> Result<(), TmuxError> {
-        tmux::swap_panes(src, dst).await
+        tmux::swap_panes(&RealTmuxExecutor, src, dst).await
     }
 
     async fn move_window(&self, source: &str, destination_session: &str) -> Result<(), TmuxError> {
-        tmux::move_window(source, destination_session).await
+        tmux::move_window(&RealTmuxExecutor, source, destination_session).await
     }
 }
 
 fn tmux_err_to_http(e: TmuxError) -> (StatusCode, String) {
-    let status =
-        StatusCode::from_u16(e.http_status_code()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+    let status = match &e {
+        TmuxError::SessionNotFound(_)
+        | TmuxError::WindowNotFound(_)
+        | TmuxError::PaneNotFound(_) => StatusCode::NOT_FOUND,
+        TmuxError::SessionAlreadyExists(_) => StatusCode::CONFLICT,
+        TmuxError::InvalidTarget(_) | TmuxError::ParseError { .. } => StatusCode::BAD_REQUEST,
+        TmuxError::TmuxNotRunning | TmuxError::CommandFailed { .. } => {
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+    };
     (status, e.to_string())
 }
 
@@ -129,7 +145,7 @@ struct PaneResponse {
     )
 )]
 async fn health() -> (axum::http::StatusCode, Json<HealthResponse>) {
-    if tmux::is_available().await {
+    if tmux::is_available(&RealTmuxExecutor).await {
         (
             axum::http::StatusCode::OK,
             Json(HealthResponse {
@@ -652,6 +668,43 @@ async fn capture_pane(
     Ok(Json(CapturePaneResponse { content }))
 }
 
+#[derive(Deserialize, ToSchema)]
+struct CapturePaneWithOptionsRequest {
+    target: String,
+    #[serde(default)]
+    start_line: Option<i32>,
+    #[serde(default)]
+    end_line: Option<i32>,
+    #[serde(default)]
+    escape_sequences: bool,
+}
+
+#[utoipa::path(
+    post,
+    path = "/capture-pane-with-options",
+    request_body = CapturePaneWithOptionsRequest,
+    responses(
+        (status = 200, description = "Pane content captured with options", body = CapturePaneResponse),
+        (status = 404, description = "Pane not found"),
+        (status = 500, description = "Failed to capture pane")
+    )
+)]
+async fn capture_pane_with_options(
+    Json(body): Json<CapturePaneWithOptionsRequest>,
+) -> Result<Json<CapturePaneResponse>, (axum::http::StatusCode, String)> {
+    let opts = tmux::CaptureOptions {
+        start_line: body.start_line,
+        end_line: body.end_line,
+        escape_sequences: body.escape_sequences,
+    };
+    let content = RestHandler
+        .capture_pane_with_options(&body.target, &opts)
+        .await
+        .map_err(tmux_err_to_http)?;
+
+    Ok(Json(CapturePaneResponse { content }))
+}
+
 #[derive(OpenApi)]
 #[openapi(
     paths(
@@ -669,6 +722,7 @@ async fn capture_pane(
         new_window,
         split_window,
         capture_pane,
+        capture_pane_with_options,
         create_session_with_windows,
         swap_panes,
         move_window
@@ -691,6 +745,7 @@ async fn capture_pane(
         SplitWindowResponse,
         CapturePaneRequest,
         CapturePaneResponse,
+        CapturePaneWithOptionsRequest,
         CreateSessionWithWindowsRequest,
         CreateSessionWithWindowsResponse,
         SwapPanesRequest,
@@ -729,6 +784,10 @@ pub fn write_router() -> Router {
         .route(
             "/create-session-with-windows",
             post(create_session_with_windows),
+        )
+        .route(
+            "/capture-pane-with-options",
+            post(capture_pane_with_options),
         )
         .route("/swap-panes", post(swap_panes))
         .route("/move-window", post(move_window))

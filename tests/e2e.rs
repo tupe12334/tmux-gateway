@@ -25,16 +25,16 @@ fn json_post(uri: &str, json: &str) -> Request<Body> {
 
 #[tokio::test]
 async fn rest_session_lifecycle() {
-    if !common::tmux_available() {
-        return;
-    }
-    let name = common::unique_session_name();
+    let session = common::TestSession::new();
     let app = rest::router();
 
     // Create
     let resp = app
         .clone()
-        .oneshot(json_post("/new", &format!(r#"{{"name":"{}"}}"#, name)))
+        .oneshot(json_post(
+            "/new",
+            &format!(r#"{{"name":"{}"}}"#, session.name),
+        ))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::CREATED);
@@ -52,7 +52,7 @@ async fn rest_session_lifecycle() {
             .as_array()
             .unwrap()
             .iter()
-            .any(|s| s["name"] == name)
+            .any(|s| s["name"] == session.name)
     );
 
     // Kill
@@ -60,7 +60,7 @@ async fn rest_session_lifecycle() {
         .clone()
         .oneshot(json_post(
             "/kill-session",
-            &format!(r#"{{"target":"{}"}}"#, name),
+            &format!(r#"{{"target":"{}"}}"#, session.name),
         ))
         .await
         .unwrap();
@@ -77,21 +77,21 @@ async fn rest_session_lifecycle() {
             .as_array()
             .unwrap()
             .iter()
-            .any(|s| s["name"] == name)
+            .any(|s| s["name"] == session.name)
     );
 }
 
 #[tokio::test]
 async fn cross_protocol_create_rest_verify_graphql_kill_grpc() {
-    if !common::tmux_available() {
-        return;
-    }
-    let name = common::unique_session_name();
+    let session = common::TestSession::new();
 
     // Create via REST
     let app = rest::router();
     let resp = app
-        .oneshot(json_post("/new", &format!(r#"{{"name":"{}"}}"#, name)))
+        .oneshot(json_post(
+            "/new",
+            &format!(r#"{{"name":"{}"}}"#, session.name),
+        ))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::CREATED);
@@ -106,14 +106,14 @@ async fn cross_protocol_create_rest_verify_graphql_kill_grpc() {
             .as_array()
             .unwrap()
             .iter()
-            .any(|s| s["name"] == name)
+            .any(|s| s["name"] == session.name)
     );
 
     // Kill via gRPC
     let service = TmuxGatewayServiceImpl;
     service
         .kill_session(GrpcRequest::new(KillSessionRequest {
-            target: name.clone(),
+            target: session.name.clone(),
         }))
         .await
         .unwrap();
@@ -130,23 +130,20 @@ async fn cross_protocol_create_rest_verify_graphql_kill_grpc() {
             .as_array()
             .unwrap()
             .iter()
-            .any(|s| s["name"] == name)
+            .any(|s| s["name"] == session.name)
     );
 }
 
 #[tokio::test]
 async fn cross_protocol_create_graphql_verify_grpc_kill_rest() {
-    if !common::tmux_available() {
-        return;
-    }
-    let name = common::unique_session_name();
+    let session = common::TestSession::new();
 
     // Create via GraphQL
     let schema = graphql::build_schema();
     let result = schema
         .execute(&format!(
             r#"mutation {{ createSession(name: "{}") {{ name }} }}"#,
-            name
+            session.name
         ))
         .await;
     assert!(result.errors.is_empty());
@@ -154,14 +151,19 @@ async fn cross_protocol_create_graphql_verify_grpc_kill_rest() {
     // Verify via gRPC
     let service = TmuxGatewayServiceImpl;
     let resp = service.ls(GrpcRequest::new(LsRequest {})).await.unwrap();
-    assert!(resp.into_inner().sessions.iter().any(|s| s.name == name));
+    assert!(
+        resp.into_inner()
+            .sessions
+            .iter()
+            .any(|s| s.name == session.name)
+    );
 
     // Kill via REST
     let app = rest::router();
     let resp = app
         .oneshot(json_post(
             "/kill-session",
-            &format!(r#"{{"target":"{}"}}"#, name),
+            &format!(r#"{{"target":"{}"}}"#, session.name),
         ))
         .await
         .unwrap();
@@ -170,17 +172,14 @@ async fn cross_protocol_create_graphql_verify_grpc_kill_rest() {
 
 #[tokio::test]
 async fn concurrent_session_creation() {
-    if !common::tmux_available() {
-        return;
-    }
-    let names: Vec<String> = (0..5).map(|_| common::unique_session_name()).collect();
+    let sessions: Vec<common::TestSession> = (0..5).map(|_| common::TestSession::new()).collect();
     let app = rest::router();
 
-    let handles: Vec<_> = names
+    let handles: Vec<_> = sessions
         .iter()
-        .map(|name| {
+        .map(|session| {
             let app = app.clone();
-            let name = name.clone();
+            let name = session.name.clone();
             tokio::spawn(async move {
                 app.oneshot(json_post("/new", &format!(r#"{{"name":"{}"}}"#, name)))
                     .await
@@ -200,39 +199,32 @@ async fn concurrent_session_creation() {
         .oneshot(Request::builder().uri("/ls").body(Body::empty()).unwrap())
         .await
         .unwrap();
-    let sessions = body_json(resp.into_body()).await;
-    let session_names: Vec<&str> = sessions
+    let body = body_json(resp.into_body()).await;
+    let session_names: Vec<&str> = body
         .as_array()
         .unwrap()
         .iter()
         .filter_map(|s| s["name"].as_str())
         .collect();
-    for name in &names {
+    for session in &sessions {
         assert!(
-            session_names.contains(&name.as_str()),
+            session_names.contains(&session.name.as_str()),
             "session {} not found",
-            name
+            session.name
         );
-    }
-
-    for name in &names {
-        common::cleanup_session(name);
     }
 }
 
 #[tokio::test]
 async fn all_apis_return_consistent_session_list() {
-    if !common::tmux_available() {
-        return;
-    }
-    let name = common::unique_session_name();
+    let session = common::TestSession::new();
 
     // Create a session
     let schema = graphql::build_schema();
     let result = schema
         .execute(&format!(
             r#"mutation {{ createSession(name: "{}") {{ name }} }}"#,
-            name
+            session.name
         ))
         .await;
     assert!(result.errors.is_empty());
@@ -249,7 +241,7 @@ async fn all_apis_return_consistent_session_list() {
             .as_array()
             .unwrap()
             .iter()
-            .any(|s| s["name"] == name),
+            .any(|s| s["name"] == session.name),
         "not in REST"
     );
 
@@ -261,7 +253,7 @@ async fn all_apis_return_consistent_session_list() {
             .as_array()
             .unwrap()
             .iter()
-            .any(|s| s["name"] == name),
+            .any(|s| s["name"] == session.name),
         "not in GraphQL"
     );
 
@@ -269,9 +261,10 @@ async fn all_apis_return_consistent_session_list() {
     let service = TmuxGatewayServiceImpl;
     let resp = service.ls(GrpcRequest::new(LsRequest {})).await.unwrap();
     assert!(
-        resp.into_inner().sessions.iter().any(|s| s.name == name),
+        resp.into_inner()
+            .sessions
+            .iter()
+            .any(|s| s.name == session.name),
         "not in gRPC"
     );
-
-    common::cleanup_session(&name);
 }
