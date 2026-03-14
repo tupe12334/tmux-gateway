@@ -61,6 +61,22 @@ impl TmuxCommands for RestHandler {
     async fn capture_pane(&self, target: &str) -> Result<String, TmuxError> {
         tmux::capture_pane(target).await
     }
+
+    async fn create_session_with_windows(
+        &self,
+        name: &str,
+        window_names: &[String],
+    ) -> Result<tmux::TmuxSession, TmuxError> {
+        tmux::create_session_with_windows(name, window_names).await
+    }
+
+    async fn swap_panes(&self, src: &str, dst: &str) -> Result<(), TmuxError> {
+        tmux::swap_panes(src, dst).await
+    }
+
+    async fn move_window(&self, source: &str, destination_session: &str) -> Result<(), TmuxError> {
+        tmux::move_window(source, destination_session).await
+    }
 }
 
 fn tmux_err_to_http(e: TmuxError) -> (StatusCode, String) {
@@ -465,6 +481,108 @@ async fn split_window(
     Ok(axum::http::StatusCode::OK)
 }
 
+#[derive(Deserialize, ToSchema)]
+struct CreateSessionWithWindowsRequest {
+    name: String,
+    window_names: Vec<String>,
+}
+
+#[derive(Serialize, ToSchema)]
+struct CreateSessionWithWindowsResponse {
+    name: String,
+    windows: u32,
+    created: String,
+    attached: bool,
+}
+
+#[utoipa::path(
+    post,
+    path = "/create-session-with-windows",
+    request_body = CreateSessionWithWindowsRequest,
+    responses(
+        (status = 201, description = "Session created with windows", body = CreateSessionWithWindowsResponse),
+        (status = 400, description = "Invalid session or window name"),
+        (status = 409, description = "Session already exists"),
+        (status = 500, description = "Failed to create session")
+    )
+)]
+async fn create_session_with_windows(
+    Json(body): Json<CreateSessionWithWindowsRequest>,
+) -> Result<(StatusCode, Json<CreateSessionWithWindowsResponse>), (StatusCode, String)> {
+    let session = RestHandler
+        .create_session_with_windows(&body.name, &body.window_names)
+        .await
+        .map_err(tmux_err_to_http)?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(CreateSessionWithWindowsResponse {
+            name: session.name,
+            windows: session.windows,
+            created: DateTime::<Utc>::from_timestamp(session.created, 0)
+                .map(|dt| dt.to_rfc3339())
+                .unwrap_or_else(|| session.created.to_string()),
+            attached: session.attached,
+        }),
+    ))
+}
+
+#[derive(Deserialize, ToSchema)]
+struct SwapPanesRequest {
+    src: String,
+    dst: String,
+}
+
+#[utoipa::path(
+    post,
+    path = "/swap-panes",
+    request_body = SwapPanesRequest,
+    responses(
+        (status = 200, description = "Panes swapped"),
+        (status = 400, description = "Invalid target"),
+        (status = 404, description = "Pane not found"),
+        (status = 500, description = "Failed to swap panes")
+    )
+)]
+async fn swap_panes(
+    Json(body): Json<SwapPanesRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    RestHandler
+        .swap_panes(&body.src, &body.dst)
+        .await
+        .map_err(tmux_err_to_http)?;
+
+    Ok(StatusCode::OK)
+}
+
+#[derive(Deserialize, ToSchema)]
+struct MoveWindowRequest {
+    source: String,
+    destination_session: String,
+}
+
+#[utoipa::path(
+    post,
+    path = "/move-window",
+    request_body = MoveWindowRequest,
+    responses(
+        (status = 200, description = "Window moved"),
+        (status = 400, description = "Invalid target"),
+        (status = 404, description = "Session or window not found"),
+        (status = 500, description = "Failed to move window")
+    )
+)]
+async fn move_window(
+    Json(body): Json<MoveWindowRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    RestHandler
+        .move_window(&body.source, &body.destination_session)
+        .await
+        .map_err(tmux_err_to_http)?;
+
+    Ok(StatusCode::OK)
+}
+
 #[derive(Serialize, ToSchema)]
 struct CapturePaneResponse {
     content: String,
@@ -507,7 +625,10 @@ async fn capture_pane(
         rename_window,
         new_window,
         split_window,
-        capture_pane
+        capture_pane,
+        create_session_with_windows,
+        swap_panes,
+        move_window
     ),
     components(schemas(
         HealthResponse,
@@ -524,7 +645,11 @@ async fn capture_pane(
         NewWindowRequest,
         NewWindowResponse,
         SplitWindowRequest,
-        CapturePaneResponse
+        CapturePaneResponse,
+        CreateSessionWithWindowsRequest,
+        CreateSessionWithWindowsResponse,
+        SwapPanesRequest,
+        MoveWindowRequest
     )),
     info(
         title = "tmux-gateway",
@@ -556,6 +681,12 @@ pub fn write_router() -> Router {
         .route("/rename-window", post(rename_window))
         .route("/new-window", post(new_window))
         .route("/split-window", post(split_window))
+        .route(
+            "/create-session-with-windows",
+            post(create_session_with_windows),
+        )
+        .route("/swap-panes", post(swap_panes))
+        .route("/move-window", post(move_window))
 }
 
 pub fn router() -> Router {

@@ -58,4 +58,19 @@ pub trait TmuxCommands {
         &self,
         target: &str,
     ) -> impl std::future::Future<Output = Result<String, TmuxError>> + Send;
+    fn create_session_with_windows(
+        &self,
+        name: &str,
+        window_names: &[String],
+    ) -> impl std::future::Future<Output = Result<TmuxSession, TmuxError>> + Send;
+    fn swap_panes(
+        &self,
+        src: &str,
+        dst: &str,
+    ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send;
+    fn move_window(
+        &self,
+        source: &str,
+        destination_session: &str,
+    ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send;
 }

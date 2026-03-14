@@ -3,8 +3,7 @@ mod common;
 use tmux_gateway::api::grpc::{
     CapturePaneRequest, KillPaneRequest, KillSessionRequest, KillWindowRequest, ListPanesRequest,
     ListWindowsRequest, LsRequest, NewSessionRequest, NewWindowRequest, RenameSessionRequest,
-    RenameWindowRequest, SendKeysRequest, SplitWindowRequest, TmuxGateway,
-    TmuxGatewayServiceImpl,
+    RenameWindowRequest, SendKeysRequest, SplitWindowRequest, TmuxGateway, TmuxGatewayServiceImpl,
 };
 use tonic::Request;
 
