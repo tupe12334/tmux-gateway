@@ -35,6 +35,7 @@ utoipa = { version = "5", features = ["axum_extras"] }
 utoipa-axum = "0.2"
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
 dotenvy = "0.15.7"
+anyhow = "1"
 protox = "0.9.1"
 prost-types = "0.14"
 
