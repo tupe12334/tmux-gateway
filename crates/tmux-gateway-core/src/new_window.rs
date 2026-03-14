@@ -23,7 +23,7 @@ pub async fn new_window(
             name,
             "-P",
             "-F",
-            "#{window_index}\t#{window_name}\t#{window_panes}\t#{window_active}",
+            "#{window_id}\t#{window_index}\t#{window_name}\t#{window_panes}\t#{window_active}",
         ])
         .await?;
     if !output.success {
