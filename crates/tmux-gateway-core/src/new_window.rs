@@ -5,6 +5,7 @@ use crate::validation::{validate_session_target, validate_window_name};
 
 use super::TmuxError;
 
+#[tracing::instrument(skip(executor))]
 pub async fn new_window(
     executor: &(impl TmuxExecutor + ?Sized),
     session: &str,

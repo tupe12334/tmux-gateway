@@ -6,6 +6,7 @@ use crate::validation::{validate_session_target, validate_window_target};
 ///
 /// `source` is in window target format (`session:window`).
 /// `destination_session` is a session name.
+#[tracing::instrument(skip(executor))]
 pub async fn move_window(
     executor: &(impl TmuxExecutor + ?Sized),
     source: &str,

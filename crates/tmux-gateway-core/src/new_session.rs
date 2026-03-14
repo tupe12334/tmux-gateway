@@ -5,6 +5,7 @@ use crate::validation::validate_session_name;
 
 use super::TmuxError;
 
+#[tracing::instrument(skip(executor))]
 pub async fn new_session(
     executor: &(impl TmuxExecutor + ?Sized),
     name: &str,

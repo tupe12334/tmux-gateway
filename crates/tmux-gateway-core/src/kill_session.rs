@@ -3,6 +3,7 @@ use crate::validation::validate_session_target;
 
 use super::TmuxError;
 
+#[tracing::instrument(skip(executor))]
 pub async fn kill_session(
     executor: &(impl TmuxExecutor + ?Sized),
     target: &str,

@@ -13,6 +13,7 @@ pub struct CaptureOptions {
     pub escape_sequences: bool,
 }
 
+#[tracing::instrument(skip(executor))]
 pub async fn capture_pane(
     executor: &(impl TmuxExecutor + ?Sized),
     target: &str,
@@ -20,6 +21,7 @@ pub async fn capture_pane(
     capture_pane_with_options(executor, target, &CaptureOptions::default()).await
 }
 
+#[tracing::instrument(skip(executor))]
 pub async fn capture_pane_with_options(
     executor: &(impl TmuxExecutor + ?Sized),
     target: &str,

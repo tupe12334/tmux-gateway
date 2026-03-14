@@ -5,6 +5,7 @@ use crate::validation::validate_pane_target;
 
 use super::TmuxError;
 
+#[tracing::instrument(skip(executor))]
 pub async fn split_window(
     executor: &(impl TmuxExecutor + ?Sized),
     target: &str,
