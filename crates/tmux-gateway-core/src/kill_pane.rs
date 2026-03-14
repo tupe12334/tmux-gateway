@@ -1,8 +1,10 @@
+use crate::validation::validate_pane_target;
 use tmux_interface::{KillPane as TmuxKillPane, Tmux};
 
 use super::TmuxError;
 
 pub async fn kill_pane(target: &str) -> Result<(), TmuxError> {
+    validate_pane_target(target)?;
     let target = target.to_string();
     tokio::task::spawn_blocking(move || {
         let output = Tmux::with_command(TmuxKillPane::new().target_pane(target.as_str()))

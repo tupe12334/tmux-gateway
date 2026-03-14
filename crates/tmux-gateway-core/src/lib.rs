@@ -13,6 +13,7 @@ mod rename_window;
 mod send_keys;
 mod sessions;
 mod split_window;
+pub mod validation;
 
 pub use capture_pane::capture_pane;
 pub use commands::TmuxCommands;
@@ -29,5 +30,6 @@ pub use rename_window::rename_window;
 pub use send_keys::send_keys;
 pub use sessions::{TmuxSession, list_sessions};
 pub use split_window::split_window;
+pub use validation::ValidationError;
 
 pub use tmux_interface;

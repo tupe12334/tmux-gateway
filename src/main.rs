@@ -67,9 +67,7 @@ async fn main() {
     let http_app = axum::Router::new()
         .merge(rest::router())
         .merge(graphql::router())
-        .merge(
-            SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", rest::ApiDoc::openapi()),
-        )
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", rest::ApiDoc::openapi()))
         .layer(cors);
 
     let http_addr = format!("0.0.0.0:{http_port}");
@@ -124,9 +122,7 @@ async fn main() {
         .await
         .is_err()
     {
-        tracing::warn!(
-            "Graceful shutdown timed out after {shutdown_timeout}s, forcing exit"
-        );
+        tracing::warn!("Graceful shutdown timed out after {shutdown_timeout}s, forcing exit");
     } else {
         tracing::info!("All servers shut down gracefully");
     }
@@ -137,8 +133,8 @@ async fn shutdown_signal() {
 
     #[cfg(unix)]
     {
-        let mut sigterm =
-            signal::unix::signal(signal::unix::SignalKind::terminate()).expect("failed to install SIGTERM handler");
+        let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install SIGTERM handler");
         tokio::select! {
             _ = ctrl_c => {}
             _ = sigterm.recv() => {}

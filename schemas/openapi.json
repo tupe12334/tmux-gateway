@@ -46,6 +46,12 @@
           "200": {
             "description": "Pane killed"
           },
+          "400": {
+            "description": "Invalid target"
+          },
+          "404": {
+            "description": "Pane not found"
+          },
           "500": {
             "description": "Failed to kill pane"
           }
@@ -70,6 +76,12 @@
           "200": {
             "description": "Session killed"
           },
+          "400": {
+            "description": "Invalid target"
+          },
+          "404": {
+            "description": "Session not found"
+          },
           "500": {
             "description": "Failed to kill session"
           }
@@ -93,6 +105,12 @@
         "responses": {
           "200": {
             "description": "Window killed"
+          },
+          "400": {
+            "description": "Invalid target"
+          },
+          "404": {
+            "description": "Window not found"
           },
           "500": {
             "description": "Failed to kill window"
@@ -148,6 +166,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid session name"
           },
           "500": {
             "description": "Failed to create session"

@@ -4,9 +4,7 @@ use super::{TmuxError, TmuxPane, TmuxSession, TmuxWindow};
 /// Adding a new command here will cause a compile error in any
 /// API layer that hasn't implemented it yet.
 pub trait TmuxCommands {
-    fn ls(
-        &self,
-    ) -> impl std::future::Future<Output = Result<Vec<TmuxSession>, TmuxError>> + Send;
+    fn ls(&self) -> impl std::future::Future<Output = Result<Vec<TmuxSession>, TmuxError>> + Send;
     fn create_session(
         &self,
         name: &str,

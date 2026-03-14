@@ -1,3 +1,4 @@
+use axum::http::StatusCode;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
@@ -61,9 +62,9 @@ impl TmuxCommands for RestHandler {
     }
 }
 
-fn tmux_err_to_http(e: TmuxError) -> (axum::http::StatusCode, String) {
-    let status = axum::http::StatusCode::from_u16(e.http_status_code())
-        .unwrap_or(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
+fn tmux_err_to_http(e: TmuxError) -> (StatusCode, String) {
+    let status =
+        StatusCode::from_u16(e.http_status_code()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
     (status, e.to_string())
 }
 
@@ -117,7 +118,7 @@ async fn health() -> Json<HealthResponse> {
         (status = 500, description = "Failed to list sessions")
     )
 )]
-async fn ls() -> Result<Json<Vec<SessionResponse>>, (axum::http::StatusCode, String)> {
+async fn ls() -> Result<Json<Vec<SessionResponse>>, (StatusCode, String)> {
     let sessions = RestHandler.ls().await.map_err(tmux_err_to_http)?;
 
     Ok(Json(
@@ -149,21 +150,19 @@ struct NewSessionResponse {
     request_body = NewSessionRequest,
     responses(
         (status = 201, description = "Session created", body = NewSessionResponse),
+        (status = 400, description = "Invalid session name"),
         (status = 500, description = "Failed to create session")
     )
 )]
 async fn new(
     Json(body): Json<NewSessionRequest>,
-) -> Result<(axum::http::StatusCode, Json<NewSessionResponse>), (axum::http::StatusCode, String)> {
+) -> Result<(StatusCode, Json<NewSessionResponse>), (StatusCode, String)> {
     let name = RestHandler
         .create_session(&body.name)
         .await
         .map_err(tmux_err_to_http)?;
 
-    Ok((
-        axum::http::StatusCode::CREATED,
-        Json(NewSessionResponse { name }),
-    ))
+    Ok((StatusCode::CREATED, Json(NewSessionResponse { name })))
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -177,19 +176,20 @@ struct KillTargetRequest {
     request_body = KillTargetRequest,
     responses(
         (status = 200, description = "Session killed"),
+        (status = 400, description = "Invalid target"),
         (status = 404, description = "Session not found"),
         (status = 500, description = "Failed to kill session")
     )
 )]
 async fn kill_session(
     Json(body): Json<KillTargetRequest>,
-) -> Result<axum::http::StatusCode, (axum::http::StatusCode, String)> {
+) -> Result<StatusCode, (StatusCode, String)> {
     RestHandler
         .kill_session(&body.target)
         .await
         .map_err(tmux_err_to_http)?;
 
-    Ok(axum::http::StatusCode::OK)
+    Ok(StatusCode::OK)
 }
 
 #[utoipa::path(
@@ -198,19 +198,20 @@ async fn kill_session(
     request_body = KillTargetRequest,
     responses(
         (status = 200, description = "Window killed"),
+        (status = 400, description = "Invalid target"),
         (status = 404, description = "Window not found"),
         (status = 500, description = "Failed to kill window")
     )
 )]
 async fn kill_window(
     Json(body): Json<KillTargetRequest>,
-) -> Result<axum::http::StatusCode, (axum::http::StatusCode, String)> {
+) -> Result<StatusCode, (StatusCode, String)> {
     RestHandler
         .kill_window(&body.target)
         .await
         .map_err(tmux_err_to_http)?;
 
-    Ok(axum::http::StatusCode::OK)
+    Ok(StatusCode::OK)
 }
 
 #[utoipa::path(
@@ -219,19 +220,20 @@ async fn kill_window(
     request_body = KillTargetRequest,
     responses(
         (status = 200, description = "Pane killed"),
+        (status = 400, description = "Invalid target"),
         (status = 404, description = "Pane not found"),
         (status = 500, description = "Failed to kill pane")
     )
 )]
 async fn kill_pane(
     Json(body): Json<KillTargetRequest>,
-) -> Result<axum::http::StatusCode, (axum::http::StatusCode, String)> {
+) -> Result<StatusCode, (StatusCode, String)> {
     RestHandler
         .kill_pane(&body.target)
         .await
         .map_err(tmux_err_to_http)?;
 
-    Ok(axum::http::StatusCode::OK)
+    Ok(StatusCode::OK)
 }
 
 #[derive(Deserialize, ToSchema)]
