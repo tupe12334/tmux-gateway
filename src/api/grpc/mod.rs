@@ -5,7 +5,7 @@ mod tmux_gateway_service;
 
 pub use messages::*;
 pub use server::{TmuxGateway, TmuxGatewayServer};
-pub use tmux_gateway_service::grpc_server;
+pub use tmux_gateway_service::{TmuxGatewayServiceImpl, grpc_server};
 
 pub type TmuxGatewayServerConcrete =
     TmuxGatewayServer<tmux_gateway_service::TmuxGatewayServiceImpl>;
@@ -71,5 +71,106 @@ mod tests {
     fn proto_compiles_with_protox() {
         // Verifies the generated proto is valid protobuf
         let _ = file_descriptor_set();
+    }
+
+    #[test]
+    fn proto_has_all_rpcs() {
+        let proto = proto_content();
+        let expected_rpcs = [
+            "rpc Ls(LsRequest) returns (LsResponse);",
+            "rpc NewSession(NewSessionRequest) returns (NewSessionResponse);",
+            "rpc KillSession(KillSessionRequest) returns (KillSessionResponse);",
+            "rpc KillWindow(KillWindowRequest) returns (KillWindowResponse);",
+            "rpc KillPane(KillPaneRequest) returns (KillPaneResponse);",
+            "rpc ListWindows(ListWindowsRequest) returns (ListWindowsResponse);",
+            "rpc ListPanes(ListPanesRequest) returns (ListPanesResponse);",
+            "rpc SendKeys(SendKeysRequest) returns (SendKeysResponse);",
+            "rpc RenameSession(RenameSessionRequest) returns (RenameSessionResponse);",
+            "rpc RenameWindow(RenameWindowRequest) returns (RenameWindowResponse);",
+            "rpc NewWindow(NewWindowRequest) returns (NewWindowResponse);",
+            "rpc SplitWindow(SplitWindowRequest) returns (SplitWindowResponse);",
+            "rpc CapturePane(CapturePaneRequest) returns (CapturePaneResponse);",
+        ];
+        for rpc in &expected_rpcs {
+            assert!(proto.contains(rpc), "missing RPC: {rpc}");
+        }
+    }
+
+    #[test]
+    fn proto_has_all_messages() {
+        let proto = proto_content();
+        let expected_messages = [
+            "message LsRequest",
+            "message LsResponse",
+            "message TmuxSession",
+            "message NewSessionRequest",
+            "message NewSessionResponse",
+            "message KillSessionRequest",
+            "message KillSessionResponse",
+            "message KillWindowRequest",
+            "message KillWindowResponse",
+            "message KillPaneRequest",
+            "message KillPaneResponse",
+            "message ListWindowsRequest",
+            "message ListWindowsResponse",
+            "message TmuxWindow",
+            "message ListPanesRequest",
+            "message ListPanesResponse",
+            "message TmuxPaneMsg",
+            "message SendKeysRequest",
+            "message SendKeysResponse",
+            "message RenameSessionRequest",
+            "message RenameSessionResponse",
+            "message RenameWindowRequest",
+            "message RenameWindowResponse",
+            "message NewWindowRequest",
+            "message NewWindowResponse",
+            "message SplitWindowRequest",
+            "message SplitWindowResponse",
+            "message CapturePaneRequest",
+            "message CapturePaneResponse",
+        ];
+        for msg in &expected_messages {
+            assert!(proto.contains(msg), "missing message: {msg}");
+        }
+    }
+
+    #[test]
+    fn message_struct_construction() {
+        let req = LsRequest {};
+        let _ = req;
+
+        let session = TmuxSession {
+            name: "test".to_string(),
+            windows: 3,
+            created: "now".to_string(),
+            attached: true,
+        };
+        assert_eq!(session.name, "test");
+        assert_eq!(session.windows, 3);
+        assert!(session.attached);
+
+        let resp = LsResponse {
+            sessions: vec![session],
+        };
+        assert_eq!(resp.sessions.len(), 1);
+
+        let new_req = NewSessionRequest {
+            name: "s1".to_string(),
+        };
+        assert_eq!(new_req.name, "s1");
+
+        let kill_req = KillSessionRequest {
+            target: "s1".to_string(),
+        };
+        assert_eq!(kill_req.target, "s1");
+    }
+
+    #[test]
+    fn file_descriptor_set_has_service() {
+        let fds = file_descriptor_set();
+        let bytes = prost::Message::encode_to_vec(&fds);
+        assert!(!bytes.is_empty());
+        assert!(!fds.file.is_empty());
     }
 }
