@@ -96,7 +96,7 @@ RUST_LOG=tmux_gateway=debug cargo run
 curl http://localhost:8080/health
 
 # List tmux sessions
-curl http://localhost:8080/sessions
+curl http://localhost:8080/ls
 ```
 
 Full Swagger UI available at `http://localhost:8080/swagger-ui`.
@@ -120,7 +120,7 @@ Using [grpcurl](https://github.com/fullstorydev/grpcurl):
 grpcurl -plaintext localhost:50051 grpc.health.v1.Health/Check
 
 # List tmux sessions
-grpcurl -plaintext localhost:50051 tmux_gateway.TmuxGateway/ListSessions
+grpcurl -plaintext localhost:50051 tmux_gateway.TmuxGateway/Ls
 ```
 
 ## Project Structure
