@@ -48,6 +48,7 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
         let proto_sessions = sessions
             .into_iter()
             .map(|s| TmuxSession {
+                id: s.id,
                 name: s.name,
                 windows: s.windows,
                 created: s.created,
@@ -69,6 +70,7 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
             .await
             .map_err(tmux_err_to_status)?;
         Ok(Response::new(NewSessionResponse {
+            id: session.id,
             name: session.name,
             windows: session.windows,
             created: session.created,
@@ -121,6 +123,7 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
         let proto_windows = windows
             .into_iter()
             .map(|w| TmuxWindow {
+                id: w.id,
                 index: w.index,
                 name: w.name,
                 panes: w.panes,
@@ -199,6 +202,7 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
             .await
             .map_err(tmux_err_to_status)?;
         Ok(Response::new(NewWindowResponse {
+            id: window.id,
             index: window.index,
             name: window.name,
             panes: window.panes,
@@ -269,6 +273,7 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
                 .await
                 .map_err(tmux_err_to_status)?;
         Ok(Response::new(CreateSessionWithWindowsResponse {
+            id: session.id,
             name: session.name,
             windows: session.windows,
             created: session.created,
