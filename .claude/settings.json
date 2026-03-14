@@ -14,7 +14,8 @@
       "Bash(git status:*)",
       "Bash(cargo clippy:*)",
       "Bash(cargo check:*)"
-    ]
+    ],
+    "deny": ["Bash(gh issue create:*)"]
   },
   "hooks": {
     "PreToolUse": [
