@@ -1,7 +1,7 @@
-use std::env;
-use std::time::Duration;
 use anyhow::Context;
 use axum::extract::DefaultBodyLimit;
+use std::env;
+use std::time::Duration;
 use tmux_gateway::api::{graphql, grpc, middleware, rest};
 use tmux_gateway::{export_schemas, port_table, preflight};
 use tokio::net::TcpListener;
@@ -10,7 +10,7 @@ use tokio::sync::watch;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::request_id::{PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::trace::TraceLayer;
-use tracing::{info, Span};
+use tracing::{Span, info};
 use tracing_subscriber::EnvFilter;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -57,10 +57,8 @@ async fn main() -> anyhow::Result<()> {
         });
         let raw_entries: Vec<&str> = origins_raw.split(',').map(|s| s.trim()).collect();
         let total = raw_entries.len();
-        let origins: Vec<http::HeaderValue> = raw_entries
-            .iter()
-            .filter_map(|s| s.parse().ok())
-            .collect();
+        let origins: Vec<http::HeaderValue> =
+            raw_entries.iter().filter_map(|s| s.parse().ok()).collect();
         let valid = origins.len();
         let invalid = total - valid;
 

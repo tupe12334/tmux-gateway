@@ -116,9 +116,7 @@ mod tests {
         assert_eq!(session.unwrap().name, name);
 
         // Cleanup
-        let _ = Tmux::with_command(
-            tmux_interface::KillSession::new().target_session(name),
-        )
-        .output();
+        let _ =
+            Tmux::with_command(tmux_interface::KillSession::new().target_session(name)).output();
     }
 }
