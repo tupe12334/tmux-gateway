@@ -1,8 +1,11 @@
 use tmux_interface::{RenameWindow as TmuxRenameWindow, Tmux};
 
 use super::TmuxError;
+use super::validation::{validate_window_name, validate_window_target};
 
 pub async fn rename_window(target: &str, new_name: &str) -> Result<(), TmuxError> {
+    validate_window_target(target)?;
+    validate_window_name(new_name)?;
     let target = target.to_string();
     let new_name = new_name.to_string();
     tokio::task::spawn_blocking(move || {

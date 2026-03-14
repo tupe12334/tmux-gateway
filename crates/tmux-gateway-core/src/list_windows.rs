@@ -2,6 +2,7 @@ use serde::Serialize;
 use tmux_interface::{ListWindows, Tmux};
 
 use super::TmuxError;
+use super::validation::validate_session_target;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct TmuxWindow {
@@ -12,6 +13,7 @@ pub struct TmuxWindow {
 }
 
 pub async fn list_windows(session: &str) -> Result<Vec<TmuxWindow>, TmuxError> {
+    validate_session_target(session)?;
     let session = session.to_string();
     tokio::task::spawn_blocking(move || {
         let output = Tmux::with_command(

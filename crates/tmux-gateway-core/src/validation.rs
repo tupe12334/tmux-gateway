@@ -6,6 +6,7 @@ const MAX_SESSION_NAME_LEN: usize = 128;
 pub enum ValidationError {
     EmptyInput { field: &'static str },
     InvalidSessionName { reason: String },
+    InvalidWindowName { reason: String },
     InvalidTarget { reason: String },
 }
 
@@ -15,6 +16,9 @@ impl fmt::Display for ValidationError {
             Self::EmptyInput { field } => write!(f, "{field} must not be empty"),
             Self::InvalidSessionName { reason } => {
                 write!(f, "invalid session name: {reason}")
+            }
+            Self::InvalidWindowName { reason } => {
+                write!(f, "invalid window name: {reason}")
             }
             Self::InvalidTarget { reason } => write!(f, "invalid target: {reason}"),
         }
@@ -42,6 +46,32 @@ pub fn validate_session_name(name: &str) -> Result<(), ValidationError> {
         .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.')
     {
         return Err(ValidationError::InvalidSessionName {
+            reason: "must contain only alphanumeric characters, hyphens, underscores, or dots"
+                .to_string(),
+        });
+    }
+    Ok(())
+}
+
+/// Validate a window name for creation or renaming.
+/// Allowed: alphanumeric, hyphens, underscores, dots. 1-128 chars.
+pub fn validate_window_name(name: &str) -> Result<(), ValidationError> {
+    if name.is_empty() {
+        return Err(ValidationError::EmptyInput { field: "name" });
+    }
+    if name.len() > MAX_SESSION_NAME_LEN {
+        return Err(ValidationError::InvalidWindowName {
+            reason: format!(
+                "must be at most {MAX_SESSION_NAME_LEN} characters, got {}",
+                name.len()
+            ),
+        });
+    }
+    if !name
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.')
+    {
+        return Err(ValidationError::InvalidWindowName {
             reason: "must contain only alphanumeric characters, hyphens, underscores, or dots"
                 .to_string(),
         });
@@ -270,6 +300,40 @@ mod tests {
         assert!(validate_pane_target(":win.0").is_err());
         assert!(validate_pane_target("sess:.0").is_err());
         assert!(validate_pane_target("sess:win.").is_err());
+    }
+
+    // ── Window name validation ──
+
+    #[test]
+    fn valid_window_names() {
+        assert!(validate_window_name("my-window").is_ok());
+        assert!(validate_window_name("test_123").is_ok());
+        assert!(validate_window_name("a").is_ok());
+        assert!(validate_window_name("My.Window").is_ok());
+    }
+
+    #[test]
+    fn empty_window_name() {
+        assert_eq!(
+            validate_window_name(""),
+            Err(ValidationError::EmptyInput { field: "name" })
+        );
+    }
+
+    #[test]
+    fn window_name_too_long() {
+        let long = "a".repeat(129);
+        assert!(matches!(
+            validate_window_name(&long),
+            Err(ValidationError::InvalidWindowName { .. })
+        ));
+    }
+
+    #[test]
+    fn window_name_with_special_chars() {
+        assert!(validate_window_name("foo;bar").is_err());
+        assert!(validate_window_name("foo&bar").is_err());
+        assert!(validate_window_name("$(cmd)").is_err());
     }
 
     // ── Command injection prevention ──

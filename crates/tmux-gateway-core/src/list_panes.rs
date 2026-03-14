@@ -2,6 +2,7 @@ use serde::Serialize;
 use tmux_interface::{ListPanes, Tmux};
 
 use super::TmuxError;
+use super::validation::validate_window_target;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct TmuxPane {
@@ -12,6 +13,7 @@ pub struct TmuxPane {
 }
 
 pub async fn list_panes(target: &str) -> Result<Vec<TmuxPane>, TmuxError> {
+    validate_window_target(target)?;
     let target = target.to_string();
     tokio::task::spawn_blocking(move || {
         let output = Tmux::with_command(

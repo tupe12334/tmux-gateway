@@ -1,8 +1,13 @@
 use tmux_interface::{SendKeys, Tmux};
 
 use super::TmuxError;
+use super::validation::{ValidationError, validate_pane_target};
 
 pub async fn send_keys(target: &str, keys: &[String]) -> Result<(), TmuxError> {
+    validate_pane_target(target)?;
+    if keys.is_empty() {
+        return Err(ValidationError::EmptyInput { field: "keys" }.into());
+    }
     let target = target.to_string();
     let keys = keys.to_vec();
     tokio::task::spawn_blocking(move || {
