@@ -625,6 +625,7 @@
       "SessionResponse": {
         "type": "object",
         "required": [
+          "id",
           "name",
           "windows",
           "created",
@@ -635,6 +636,9 @@
             "type": "boolean"
           },
           "created": {
+            "type": "string"
+          },
+          "id": {
             "type": "string"
           },
           "name": {
@@ -665,6 +669,7 @@
       "WindowResponse": {
         "type": "object",
         "required": [
+          "id",
           "index",
           "name",
           "panes",
@@ -673,6 +678,9 @@
         "properties": {
           "active": {
             "type": "boolean"
+          },
+          "id": {
+            "type": "string"
           },
           "index": {
             "type": "integer",
