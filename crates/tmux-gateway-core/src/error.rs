@@ -19,6 +19,9 @@ pub enum TmuxError {
 
     #[error("invalid target: {0}")]
     InvalidTarget(String),
+
+    #[error("failed to parse tmux output for {command}: {details}")]
+    ParseError { command: String, details: String },
 }
 
 impl TmuxError {
@@ -53,7 +56,7 @@ impl TmuxError {
     pub fn http_status_code(&self) -> u16 {
         match self {
             Self::SessionNotFound(_) | Self::WindowNotFound(_) | Self::PaneNotFound(_) => 404,
-            Self::InvalidTarget(_) => 400,
+            Self::InvalidTarget(_) | Self::ParseError { .. } => 400,
             Self::TmuxNotRunning | Self::CommandFailed { .. } => 500,
         }
     }
@@ -64,7 +67,7 @@ impl TmuxError {
             Self::SessionNotFound(_) | Self::WindowNotFound(_) | Self::PaneNotFound(_) => {
                 GrpcCode::NotFound
             }
-            Self::InvalidTarget(_) => GrpcCode::InvalidArgument,
+            Self::InvalidTarget(_) | Self::ParseError { .. } => GrpcCode::InvalidArgument,
             Self::TmuxNotRunning | Self::CommandFailed { .. } => GrpcCode::Internal,
         }
     }

@@ -45,19 +45,26 @@ pub async fn list_sessions() -> Result<Vec<TmuxSession>, TmuxError> {
         let sessions = stdout
             .lines()
             .filter(|line| !line.is_empty())
-            .filter_map(|line| {
+            .map(|line| {
                 let parts: Vec<&str> = line.splitn(4, '\t').collect();
                 if parts.len() < 4 {
-                    return None;
+                    return Err(TmuxError::ParseError {
+                        command: "list-sessions".to_string(),
+                        details: format!("expected 4 tab-separated fields, got: {line}"),
+                    });
                 }
-                Some(TmuxSession {
+                let windows = parts[1].parse::<u32>().map_err(|e| TmuxError::ParseError {
+                    command: "list-sessions".to_string(),
+                    details: format!("invalid window count '{}': {e}", parts[1]),
+                })?;
+                Ok(TmuxSession {
                     name: parts[0].to_string(),
-                    windows: parts[1].parse().unwrap_or(0),
+                    windows,
                     created: parts[2].to_string(),
                     attached: parts[3] == "1",
                 })
             })
-            .collect();
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(sessions)
     })
