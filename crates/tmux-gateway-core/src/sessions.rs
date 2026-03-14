@@ -110,6 +110,7 @@ mod tests {
     #[test]
     fn display_attached_session() {
         let session = TmuxSession {
+            id: "$0".to_string(),
             name: "dev".to_string(),
             windows: 3,
             created: 1700000000,
@@ -121,6 +122,7 @@ mod tests {
     #[test]
     fn display_detached_session() {
         let session = TmuxSession {
+            id: "$1".to_string(),
             name: "prod".to_string(),
             windows: 1,
             created: 1700000000,
