@@ -10,6 +10,41 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/capture-pane": {
+      "get": {
+        "tags": [],
+        "operationId": "capture_pane",
+        "parameters": [
+          {
+            "name": "target",
+            "in": "query",
+            "description": "Pane target",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pane content captured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CapturePaneResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Pane not found"
+          },
+          "500": {
+            "description": "Failed to capture pane"
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": [],
@@ -128,6 +163,82 @@
         }
       }
     },
+    "/list-panes": {
+      "get": {
+        "tags": [],
+        "operationId": "list_panes",
+        "parameters": [
+          {
+            "name": "target",
+            "in": "query",
+            "description": "Window target",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List panes in window",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PaneResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Window not found"
+          },
+          "500": {
+            "description": "Failed to list panes"
+          }
+        }
+      }
+    },
+    "/list-windows": {
+      "get": {
+        "tags": [],
+        "operationId": "list_windows",
+        "parameters": [
+          {
+            "name": "session",
+            "in": "query",
+            "description": "Session name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List windows in session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WindowResponse"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found"
+          },
+          "500": {
+            "description": "Failed to list windows"
+          }
+        }
+      }
+    },
     "/ls": {
       "get": {
         "tags": [],
@@ -185,10 +296,163 @@
           }
         }
       }
+    },
+    "/new-window": {
+      "post": {
+        "tags": [],
+        "operationId": "new_window",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewWindowRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Window created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewWindowResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Session not found"
+          },
+          "500": {
+            "description": "Failed to create window"
+          }
+        }
+      }
+    },
+    "/rename-session": {
+      "post": {
+        "tags": [],
+        "operationId": "rename_session",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Session renamed"
+          },
+          "404": {
+            "description": "Session not found"
+          },
+          "500": {
+            "description": "Failed to rename session"
+          }
+        }
+      }
+    },
+    "/rename-window": {
+      "post": {
+        "tags": [],
+        "operationId": "rename_window",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Window renamed"
+          },
+          "404": {
+            "description": "Window not found"
+          },
+          "500": {
+            "description": "Failed to rename window"
+          }
+        }
+      }
+    },
+    "/send-keys": {
+      "post": {
+        "tags": [],
+        "operationId": "send_keys",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendKeysRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Keys sent"
+          },
+          "404": {
+            "description": "Pane not found"
+          },
+          "500": {
+            "description": "Failed to send keys"
+          }
+        }
+      }
+    },
+    "/split-window": {
+      "post": {
+        "tags": [],
+        "operationId": "split_window",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SplitWindowRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Window split"
+          },
+          "404": {
+            "description": "Target not found"
+          },
+          "500": {
+            "description": "Failed to split window"
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "CapturePaneResponse": {
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "string"
+          }
+        }
+      },
       "HealthResponse": {
         "type": "object",
         "required": [
@@ -217,6 +481,28 @@
           }
         }
       },
+      "ListPanesRequest": {
+        "type": "object",
+        "required": [
+          "target"
+        ],
+        "properties": {
+          "target": {
+            "type": "string"
+          }
+        }
+      },
+      "ListWindowsRequest": {
+        "type": "object",
+        "required": [
+          "session"
+        ],
+        "properties": {
+          "session": {
+            "type": "string"
+          }
+        }
+      },
       "NewSessionRequest": {
         "type": "object",
         "required": [
@@ -235,6 +521,92 @@
         ],
         "properties": {
           "name": {
+            "type": "string"
+          }
+        }
+      },
+      "NewWindowRequest": {
+        "type": "object",
+        "required": [
+          "session",
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "session": {
+            "type": "string"
+          }
+        }
+      },
+      "NewWindowResponse": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "PaneResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "width",
+          "height",
+          "active"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "height": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "id": {
+            "type": "string"
+          },
+          "width": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "RenameRequest": {
+        "type": "object",
+        "required": [
+          "target",
+          "new_name"
+        ],
+        "properties": {
+          "new_name": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          }
+        }
+      },
+      "SendKeysRequest": {
+        "type": "object",
+        "required": [
+          "target",
+          "keys"
+        ],
+        "properties": {
+          "keys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "target": {
             "type": "string"
           }
         }
@@ -258,6 +630,48 @@
             "type": "string"
           },
           "windows": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "SplitWindowRequest": {
+        "type": "object",
+        "required": [
+          "target",
+          "horizontal"
+        ],
+        "properties": {
+          "horizontal": {
+            "type": "boolean"
+          },
+          "target": {
+            "type": "string"
+          }
+        }
+      },
+      "WindowResponse": {
+        "type": "object",
+        "required": [
+          "index",
+          "name",
+          "panes",
+          "active"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "index": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string"
+          },
+          "panes": {
             "type": "integer",
             "format": "int32",
             "minimum": 0

@@ -131,3 +131,4 @@ message CapturePaneRequest {
 message CapturePaneResponse {
   string content = 1;
 }
+
