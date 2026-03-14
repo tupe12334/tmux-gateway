@@ -1,8 +1,10 @@
 use tmux_interface::{SplitWindow, Tmux};
 
 use super::TmuxError;
+use super::validation::validate_pane_target;
 
 pub async fn split_window(target: &str, horizontal: bool) -> Result<(), TmuxError> {
+    validate_pane_target(target)?;
     let target = target.to_string();
     tokio::task::spawn_blocking(move || {
         let mut cmd = SplitWindow::new().detached().target_pane(target.as_str());
