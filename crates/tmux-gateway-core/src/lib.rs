@@ -20,7 +20,7 @@ mod split_window;
 mod swap_panes;
 pub mod validation;
 
-pub use capture_pane::capture_pane;
+pub use capture_pane::{CaptureOptions, capture_pane, capture_pane_with_options};
 pub use commands::TmuxCommands;
 pub use create_session_with_windows::create_session_with_windows;
 pub use error::{GrpcCode, TmuxError};
