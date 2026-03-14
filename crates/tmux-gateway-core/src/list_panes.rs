@@ -8,14 +8,16 @@ pub struct TmuxPane {
     pub width: u32,
     pub height: u32,
     pub active: bool,
+    pub current_path: String,
+    pub current_command: String,
 }
 
 pub(crate) fn parse_pane_line(line: &str) -> Result<TmuxPane, TmuxError> {
-    let parts: Vec<&str> = line.splitn(4, '\t').collect();
-    if parts.len() < 4 {
+    let parts: Vec<&str> = line.splitn(6, '\t').collect();
+    if parts.len() < 6 {
         return Err(TmuxError::ParseError {
             command: "list-panes".to_string(),
-            details: format!("expected 4 tab-separated fields, got: {line}"),
+            details: format!("expected 6 tab-separated fields, got: {line}"),
         });
     }
     let width = parts[1].parse::<u32>().map_err(|e| TmuxError::ParseError {
@@ -31,6 +33,8 @@ pub(crate) fn parse_pane_line(line: &str) -> Result<TmuxPane, TmuxError> {
         width,
         height,
         active: parts[3] == "1",
+        current_path: parts[4].to_string(),
+        current_command: parts[5].to_string(),
     })
 }
 
@@ -53,7 +57,7 @@ pub async fn list_panes(
             "-t",
             target,
             "-F",
-            "#{pane_id}\t#{pane_width}\t#{pane_height}\t#{pane_active}",
+            "#{pane_id}\t#{pane_width}\t#{pane_height}\t#{pane_active}\t#{pane_current_path}\t#{pane_current_command}",
         ])
         .await?;
     if !output.success {
@@ -68,17 +72,21 @@ mod tests {
 
     #[test]
     fn parse_pane_line_valid() {
-        let pane = parse_pane_line("%0\t80\t24\t1").unwrap();
+        let pane = parse_pane_line("%0\t80\t24\t1\t/home/user\tbash").unwrap();
         assert_eq!(pane.id, "%0");
         assert_eq!(pane.width, 80);
         assert_eq!(pane.height, 24);
         assert!(pane.active);
+        assert_eq!(pane.current_path, "/home/user");
+        assert_eq!(pane.current_command, "bash");
     }
 
     #[test]
     fn parse_pane_line_inactive() {
-        let pane = parse_pane_line("%1\t120\t40\t0").unwrap();
+        let pane = parse_pane_line("%1\t120\t40\t0\t/tmp\tvim").unwrap();
         assert!(!pane.active);
+        assert_eq!(pane.current_path, "/tmp");
+        assert_eq!(pane.current_command, "vim");
     }
 
     #[test]
@@ -89,19 +97,19 @@ mod tests {
 
     #[test]
     fn parse_pane_line_invalid_width() {
-        let result = parse_pane_line("%0\tabc\t24\t1");
+        let result = parse_pane_line("%0\tabc\t24\t1\t/home\tbash");
         assert!(result.is_err());
     }
 
     #[test]
     fn parse_pane_line_invalid_height() {
-        let result = parse_pane_line("%0\t80\txyz\t1");
+        let result = parse_pane_line("%0\t80\txyz\t1\t/home\tbash");
         assert!(result.is_err());
     }
 
     #[test]
     fn parse_panes_multiple_lines() {
-        let input = "%0\t80\t24\t1\n%1\t80\t24\t0\n";
+        let input = "%0\t80\t24\t1\t/home\tbash\n%1\t80\t24\t0\t/tmp\tzsh\n";
         let panes = parse_panes(input).unwrap();
         assert_eq!(panes.len(), 2);
         assert_eq!(panes[0].id, "%0");
@@ -116,14 +124,14 @@ mod tests {
 
     #[test]
     fn parse_panes_skips_empty_lines() {
-        let input = "\n%0\t80\t24\t1\n\n";
+        let input = "\n%0\t80\t24\t1\t/home\tbash\n\n";
         let panes = parse_panes(input).unwrap();
         assert_eq!(panes.len(), 1);
     }
 
     #[test]
     fn parse_panes_propagates_error() {
-        let input = "%0\t80\t24\t1\nbad line";
+        let input = "%0\t80\t24\t1\t/home\tbash\nbad line";
         let result = parse_panes(input);
         assert!(result.is_err());
     }

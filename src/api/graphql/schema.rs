@@ -27,6 +27,8 @@ struct Pane {
     width: u32,
     height: u32,
     active: bool,
+    current_path: String,
+    current_command: String,
 }
 
 struct GraphqlHandler;
@@ -178,6 +180,8 @@ impl QueryRoot {
                 width: p.width,
                 height: p.height,
                 active: p.active,
+                current_path: p.current_path,
+                current_command: p.current_command,
             })
             .collect())
     }
@@ -302,6 +306,8 @@ impl MutationRoot {
             width: p.width,
             height: p.height,
             active: p.active,
+            current_path: p.current_path,
+            current_command: p.current_command,
         })
     }
 

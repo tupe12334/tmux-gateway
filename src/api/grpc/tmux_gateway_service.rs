@@ -230,6 +230,8 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
                 width: p.width,
                 height: p.height,
                 active: p.active,
+                current_path: p.current_path,
+                current_command: p.current_command,
             })
             .collect();
 
@@ -298,6 +300,8 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
             width: pane.width,
             height: pane.height,
             active: pane.active,
+            current_path: pane.current_path,
+            current_command: pane.current_command,
         }))
     }
 

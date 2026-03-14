@@ -189,6 +189,8 @@ proto_messages! {
         uint32 width = "2";
         uint32 height = "3";
         bool active = "4";
+        string current_path = "5";
+        string current_command = "6";
     }
 
     message SendKeysRequest {
@@ -234,6 +236,8 @@ proto_messages! {
         uint32 width = "2";
         uint32 height = "3";
         bool active = "4";
+        string current_path = "5";
+        string current_command = "6";
     }
 
     message CapturePaneRequest {
