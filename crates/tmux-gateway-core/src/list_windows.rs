@@ -1,10 +1,8 @@
-use serde::Serialize;
-
 use super::TmuxError;
 use super::validation::validate_session_target;
 use crate::executor::TmuxExecutor;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TmuxWindow {
     pub index: u32,
     pub name: String,

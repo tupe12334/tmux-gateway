@@ -1,10 +1,8 @@
-use serde::Serialize;
-
 use super::TmuxError;
 use super::validation::validate_window_target;
 use crate::executor::TmuxExecutor;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TmuxPane {
     pub id: String,
     pub width: u32,

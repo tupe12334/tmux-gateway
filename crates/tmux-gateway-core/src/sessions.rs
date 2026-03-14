@@ -1,9 +1,7 @@
-use serde::Serialize;
-
 use super::TmuxError;
 use crate::executor::TmuxExecutor;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TmuxSession {
     pub name: String,
     pub windows: u32,
