@@ -166,8 +166,45 @@ async fn main() -> anyhow::Result<()> {
                 .await;
         }
 
+        let x_request_id = http::HeaderName::from_static("x-request-id");
+
         tracing::info!("gRPC server listening on {}", addr);
         if let Err(e) = tonic::transport::Server::builder()
+            .layer(
+                tower::ServiceBuilder::new()
+                    .layer(SetRequestIdLayer::new(
+                        x_request_id.clone(),
+                        middleware::UuidRequestId,
+                    ))
+                    .layer(
+                        TraceLayer::new_for_grpc()
+                            .make_span_with(|request: &http::Request<_>| {
+                                let request_id = request
+                                    .headers()
+                                    .get("x-request-id")
+                                    .and_then(|v| v.to_str().ok())
+                                    .unwrap_or("-");
+                                tracing::info_span!(
+                                    "grpc_request",
+                                    method = %request.uri().path(),
+                                    request_id = %request_id,
+                                )
+                            })
+                            .on_response(
+                                |response: &http::Response<_>,
+                                 latency: Duration,
+                                 _span: &Span| {
+                                    tracing::info!(
+                                        status = response.status().as_u16(),
+                                        latency_ms = latency.as_millis(),
+                                        "response"
+                                    );
+                                },
+                            ),
+                    )
+                    .layer(PropagateRequestIdLayer::new(x_request_id))
+                    .into_inner(),
+            )
             .add_service(health_service)
             .add_service(grpc::grpc_server())
             .add_service(reflection_service)
