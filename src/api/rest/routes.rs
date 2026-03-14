@@ -583,6 +583,11 @@ async fn move_window(
     Ok(StatusCode::OK)
 }
 
+#[derive(Deserialize, ToSchema)]
+struct CapturePaneRequest {
+    target: String,
+}
+
 #[derive(Serialize, ToSchema)]
 struct CapturePaneResponse {
     content: String,
@@ -599,7 +604,7 @@ struct CapturePaneResponse {
     )
 )]
 async fn capture_pane(
-    axum::extract::Query(params): axum::extract::Query<KillTargetRequest>,
+    axum::extract::Query(params): axum::extract::Query<CapturePaneRequest>,
 ) -> Result<Json<CapturePaneResponse>, (axum::http::StatusCode, String)> {
     let content = RestHandler
         .capture_pane(&params.target)
@@ -645,6 +650,7 @@ async fn capture_pane(
         NewWindowRequest,
         NewWindowResponse,
         SplitWindowRequest,
+        CapturePaneRequest,
         CapturePaneResponse,
         CreateSessionWithWindowsRequest,
         CreateSessionWithWindowsResponse,
