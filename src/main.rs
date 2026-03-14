@@ -124,9 +124,9 @@ async fn main() -> anyhow::Result<()> {
         ));
 
     let http_addr = format!("0.0.0.0:{http_port}");
-    let listener = TcpListener::bind(&http_addr)
-        .await
-        .with_context(|| format!("failed to bind HTTP port {http_port} — port may already be in use"))?;
+    let listener = TcpListener::bind(&http_addr).await.with_context(|| {
+        format!("failed to bind HTTP port {http_port} — port may already be in use")
+    })?;
     tracing::info!("HTTP server (REST + GraphQL + Swagger) listening on {http_addr}");
 
     let http_handle = tokio::spawn(async move {
@@ -189,9 +189,7 @@ async fn main() -> anyhow::Result<()> {
                                 )
                             })
                             .on_response(
-                                |response: &http::Response<_>,
-                                 latency: Duration,
-                                 _span: &Span| {
+                                |response: &http::Response<_>, latency: Duration, _span: &Span| {
                                     tracing::info!(
                                         status = response.status().as_u16(),
                                         latency_ms = latency.as_millis(),
