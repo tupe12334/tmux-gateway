@@ -1,5 +1,6 @@
 use std::env;
 use std::time::Duration;
+use axum::extract::DefaultBodyLimit;
 use tmux_gateway::api::{graphql, grpc, middleware, rest};
 use tmux_gateway::{export_schemas, port_table, preflight};
 use tokio::net::TcpListener;
@@ -63,12 +64,18 @@ async fn main() {
             .allow_headers(tower_http::cors::Any)
     };
 
+    let max_body_bytes = env::var("MAX_REQUEST_BODY_BYTES")
+        .ok()
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(1_048_576); // 1 MB default
+
     let x_request_id = http::HeaderName::from_static("x-request-id");
 
     let http_app = axum::Router::new()
         .merge(rest::router())
         .merge(graphql::router())
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", rest::ApiDoc::openapi()))
+        .layer(DefaultBodyLimit::max(max_body_bytes))
         .layer(cors)
         .layer(PropagateRequestIdLayer::new(x_request_id.clone()))
         .layer(
