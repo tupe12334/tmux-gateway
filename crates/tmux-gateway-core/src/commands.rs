@@ -3,7 +3,7 @@ use super::{
     TmuxWindow, capture_pane, capture_pane_with_options, create_session_with_windows, kill_pane,
     kill_session, kill_window, list_panes, list_sessions, list_windows, move_window, new_session,
     new_window, rename_session, rename_window, resize_pane, select_pane, select_window, send_keys,
-    split_window, swap_panes,
+    split_window, swap_panes, swap_window,
 };
 
 /// All API layers (REST, gRPC, GraphQL) must implement this trait.
@@ -110,6 +110,13 @@ pub trait TmuxCommands {
         dst: &str,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         async move { swap_panes(&RealTmuxExecutor, src, dst).await }
+    }
+    fn swap_window(
+        &self,
+        src: &str,
+        dst: &str,
+    ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
+        async move { swap_window(&RealTmuxExecutor, src, dst).await }
     }
     fn move_window(
         &self,
