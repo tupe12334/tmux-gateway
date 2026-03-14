@@ -24,7 +24,12 @@ async fn main() -> anyhow::Result<()> {
 
     let config = preflight::run();
 
-    export_schemas::export_all();
+    if env::var("EXPORT_SCHEMAS")
+        .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
+        .unwrap_or(false)
+    {
+        export_schemas::export_all();
+    }
 
     let http_port = config.http_port;
     let grpc_port = config.grpc_port;
