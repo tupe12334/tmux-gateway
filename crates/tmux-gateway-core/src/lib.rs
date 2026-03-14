@@ -28,7 +28,7 @@ pub use new_window::new_window;
 pub use rename_session::rename_session;
 pub use rename_window::rename_window;
 pub use send_keys::send_keys;
-pub use sessions::{TmuxSession, list_sessions};
+pub use sessions::{TmuxSession, get_session, list_sessions, session_exists};
 pub use split_window::split_window;
 pub use validation::ValidationError;
 

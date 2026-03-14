@@ -11,6 +11,16 @@ pub struct TmuxSession {
     pub attached: bool,
 }
 
+pub async fn session_exists(name: &str) -> Result<bool, TmuxError> {
+    let sessions = list_sessions().await?;
+    Ok(sessions.iter().any(|s| s.name == name))
+}
+
+pub async fn get_session(name: &str) -> Result<Option<TmuxSession>, TmuxError> {
+    let sessions = list_sessions().await?;
+    Ok(sessions.into_iter().find(|s| s.name == name))
+}
+
 pub async fn list_sessions() -> Result<Vec<TmuxSession>, TmuxError> {
     tokio::task::spawn_blocking(|| {
         let output = Tmux::with_command(ListSessions::new().format(
@@ -56,4 +66,48 @@ pub async fn list_sessions() -> Result<Vec<TmuxSession>, TmuxError> {
         command: "list-sessions".to_string(),
         stderr: format!("task join error: {e}"),
     })?
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn session_exists_returns_false_for_nonexistent() {
+        let result = session_exists("__tmux_gw_test_nonexistent_session__").await;
+        assert!(result.is_ok());
+        assert!(!result.unwrap());
+    }
+
+    #[tokio::test]
+    async fn get_session_returns_none_for_nonexistent() {
+        let result = get_session("__tmux_gw_test_nonexistent_session__").await;
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn session_exists_finds_created_session() {
+        let name = "__tmux_gw_test_exists__";
+        // Create a detached session for testing
+        let _ = Tmux::with_command(
+            tmux_interface::NewSession::new()
+                .detached()
+                .session_name(name),
+        )
+        .output();
+
+        let exists = session_exists(name).await.unwrap();
+        assert!(exists);
+
+        let session = get_session(name).await.unwrap();
+        assert!(session.is_some());
+        assert_eq!(session.unwrap().name, name);
+
+        // Cleanup
+        let _ = Tmux::with_command(
+            tmux_interface::KillSession::new().target_session(name),
+        )
+        .output();
+    }
 }
