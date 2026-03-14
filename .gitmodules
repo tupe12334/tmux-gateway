@@ -1,0 +1,3 @@
+[submodule "agent_dylint_lints"]
+	path = agent_dylint_lints
+	url = https://github.com/tupe12334/agent_dylint_lints.git
