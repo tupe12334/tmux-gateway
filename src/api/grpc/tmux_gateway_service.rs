@@ -72,6 +72,7 @@ fn tmux_err_to_status(e: TmuxError) -> Status {
     let msg = e.to_string();
     match e.grpc_code() {
         GrpcCode::NotFound => Status::not_found(msg),
+        GrpcCode::AlreadyExists => Status::already_exists(msg),
         GrpcCode::InvalidArgument => Status::invalid_argument(msg),
         GrpcCode::Internal => Status::internal(msg),
     }
