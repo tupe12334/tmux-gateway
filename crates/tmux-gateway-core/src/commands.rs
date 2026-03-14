@@ -1,4 +1,4 @@
-use super::{CaptureOptions, TmuxError, TmuxPane, TmuxSession, TmuxWindow};
+use super::{CaptureOptions, ResizeDirection, TmuxError, TmuxPane, TmuxSession, TmuxWindow};
 
 /// All API layers (REST, gRPC, GraphQL) must implement this trait.
 /// Adding a new command here will cause a compile error in any
@@ -85,5 +85,10 @@ pub trait TmuxCommands {
     fn select_pane(
         &self,
         target: &str,
+    ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send;
+    fn resize_pane(
+        &self,
+        target: &str,
+        direction: ResizeDirection,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send;
 }

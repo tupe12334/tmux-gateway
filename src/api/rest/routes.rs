@@ -97,6 +97,14 @@ impl TmuxCommands for RestHandler {
     async fn select_pane(&self, target: &str) -> Result<(), TmuxError> {
         tmux::select_pane(&RealTmuxExecutor, target).await
     }
+
+    async fn resize_pane(
+        &self,
+        target: &str,
+        direction: tmux::ResizeDirection,
+    ) -> Result<(), TmuxError> {
+        tmux::resize_pane(&RealTmuxExecutor, target, direction).await
+    }
 }
 
 fn tmux_err_to_http(e: TmuxError) -> (StatusCode, String) {
@@ -700,6 +708,47 @@ async fn select_pane(
 }
 
 #[derive(Deserialize, ToSchema)]
+struct ResizePaneRequest {
+    target: String,
+    direction: String,
+    amount: u32,
+}
+
+#[utoipa::path(
+    post,
+    path = "/resize-pane",
+    request_body = ResizePaneRequest,
+    responses(
+        (status = 200, description = "Pane resized"),
+        (status = 400, description = "Invalid target or direction"),
+        (status = 404, description = "Pane not found"),
+        (status = 500, description = "Failed to resize pane")
+    )
+)]
+async fn resize_pane(
+    Json(body): Json<ResizePaneRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    let direction = match body.direction.as_str() {
+        "up" | "Up" | "U" => tmux::ResizeDirection::Up(body.amount),
+        "down" | "Down" | "D" => tmux::ResizeDirection::Down(body.amount),
+        "left" | "Left" | "L" => tmux::ResizeDirection::Left(body.amount),
+        "right" | "Right" | "R" => tmux::ResizeDirection::Right(body.amount),
+        _ => {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                format!("invalid direction: {}", body.direction),
+            ));
+        }
+    };
+    RestHandler
+        .resize_pane(&body.target, direction)
+        .await
+        .map_err(tmux_err_to_http)?;
+
+    Ok(StatusCode::OK)
+}
+
+#[derive(Deserialize, ToSchema)]
 struct CapturePaneRequest {
     target: String,
 }
@@ -789,7 +838,8 @@ async fn capture_pane_with_options(
         swap_panes,
         move_window,
         select_window,
-        select_pane
+        select_pane,
+        resize_pane
     ),
     components(schemas(
         HealthResponse,
@@ -813,7 +863,8 @@ async fn capture_pane_with_options(
         CreateSessionWithWindowsRequest,
         CreateSessionWithWindowsResponse,
         SwapPanesRequest,
-        MoveWindowRequest
+        MoveWindowRequest,
+        ResizePaneRequest
     )),
     info(
         title = "tmux-gateway",
@@ -857,6 +908,7 @@ pub fn write_router() -> Router {
         .route("/move-window", post(move_window))
         .route("/select-window", post(select_window))
         .route("/select-pane", post(select_pane))
+        .route("/resize-pane", post(resize_pane))
 }
 
 pub fn router() -> Router {

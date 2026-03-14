@@ -18,6 +18,7 @@ service TmuxGateway {
   rpc CapturePane(CapturePaneRequest) returns (CapturePaneResponse);
   rpc SelectWindow(SelectWindowRequest) returns (SelectWindowResponse);
   rpc SelectPane(SelectPaneRequest) returns (SelectPaneResponse);
+  rpc ResizePane(ResizePaneRequest) returns (ResizePaneResponse);
 }
 
 message LsRequest {}
@@ -145,4 +146,12 @@ message SelectPaneRequest {
 }
 
 message SelectPaneResponse {}
+
+message ResizePaneRequest {
+  string target = 1;
+  string direction = 2;
+  uint32 amount = 3;
+}
+
+message ResizePaneResponse {}
 
