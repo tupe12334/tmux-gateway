@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::TmuxError;
 use crate::executor::TmuxExecutor;
 
@@ -7,6 +9,22 @@ pub struct TmuxSession {
     pub windows: u32,
     pub created: i64,
     pub attached: bool,
+}
+
+impl fmt::Display for TmuxSession {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} ({} windows, {})",
+            self.name,
+            self.windows,
+            if self.attached {
+                "attached"
+            } else {
+                "detached"
+            }
+        )
+    }
 }
 
 #[tracing::instrument(skip(executor))]
@@ -86,6 +104,28 @@ pub async fn list_sessions(
 mod tests {
     use super::*;
     use crate::executor::{RealTmuxExecutor, TmuxOutput};
+
+    #[test]
+    fn display_attached_session() {
+        let session = TmuxSession {
+            name: "dev".to_string(),
+            windows: 3,
+            created: 1700000000,
+            attached: true,
+        };
+        assert_eq!(session.to_string(), "dev (3 windows, attached)");
+    }
+
+    #[test]
+    fn display_detached_session() {
+        let session = TmuxSession {
+            name: "prod".to_string(),
+            windows: 1,
+            created: 1700000000,
+            attached: false,
+        };
+        assert_eq!(session.to_string(), "prod (1 windows, detached)");
+    }
 
     #[test]
     fn parse_session_line_valid() {
