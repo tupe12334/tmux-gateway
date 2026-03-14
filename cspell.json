@@ -39,6 +39,8 @@
     "oneshot",
     "tbadts",
     "tnotanum",
-    "txyz"
+    "txyz",
+    "dylint",
+    "dylints"
   ]
 }
