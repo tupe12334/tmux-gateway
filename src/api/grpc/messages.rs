@@ -18,6 +18,11 @@ macro_rules! define_proto_struct {
             $($acc)* #[prost(uint32, tag = $tag)] pub $field: u32,
         ] $($rest)*);
     };
+    (@build $name:ident [$($acc:tt)*] int64 $field:ident = $tag:literal; $($rest:tt)*) => {
+        define_proto_struct!(@build $name [
+            $($acc)* #[prost(int64, tag = $tag)] pub $field: i64,
+        ] $($rest)*);
+    };
     (@build $name:ident [$($acc:tt)*] bool $field:ident = $tag:literal; $($rest:tt)*) => {
         define_proto_struct!(@build $name [
             $($acc)* #[prost(bool, tag = $tag)] pub $field: bool,
@@ -56,6 +61,11 @@ macro_rules! message_proto_text {
     (@build $name:ident [$($acc:tt)*] uint32 $field:ident = $tag:literal; $($rest:tt)*) => {
         message_proto_text!(@build $name [
             $($acc)* "  uint32 ", stringify!($field), " = ", $tag, ";\n",
+        ] $($rest)*)
+    };
+    (@build $name:ident [$($acc:tt)*] int64 $field:ident = $tag:literal; $($rest:tt)*) => {
+        message_proto_text!(@build $name [
+            $($acc)* "  int64 ", stringify!($field), " = ", $tag, ";\n",
         ] $($rest)*)
     };
     (@build $name:ident [$($acc:tt)*] bool $field:ident = $tag:literal; $($rest:tt)*) => {
@@ -108,7 +118,7 @@ proto_messages! {
     message TmuxSession {
         string name = "1";
         uint32 windows = "2";
-        string created = "3";
+        int64 created = "3";
         bool attached = "4";
     }
 

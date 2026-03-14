@@ -7,7 +7,7 @@ use super::TmuxError;
 pub struct TmuxSession {
     pub name: String,
     pub windows: u32,
-    pub created: String,
+    pub created: i64,
     pub attached: bool,
 }
 
@@ -24,7 +24,7 @@ pub async fn get_session(name: &str) -> Result<Option<TmuxSession>, TmuxError> {
 pub async fn list_sessions() -> Result<Vec<TmuxSession>, TmuxError> {
     tokio::task::spawn_blocking(|| {
         let output = Tmux::with_command(ListSessions::new().format(
-            "#{session_name}\t#{session_windows}\t#{session_created_string}\t#{session_attached}",
+            "#{session_name}\t#{session_windows}\t#{session_created}\t#{session_attached}",
         ))
         .output()
         .map_err(|e| TmuxError::CommandFailed {
@@ -57,10 +57,14 @@ pub async fn list_sessions() -> Result<Vec<TmuxSession>, TmuxError> {
                     command: "list-sessions".to_string(),
                     details: format!("invalid window count '{}': {e}", parts[1]),
                 })?;
+                let created = parts[2].parse::<i64>().map_err(|e| TmuxError::ParseError {
+                    command: "list-sessions".to_string(),
+                    details: format!("invalid session_created timestamp '{}': {e}", parts[2]),
+                })?;
                 Ok(TmuxSession {
                     name: parts[0].to_string(),
                     windows,
-                    created: parts[2].to_string(),
+                    created,
                     attached: parts[3] == "1",
                 })
             })

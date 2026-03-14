@@ -1,6 +1,7 @@
 use axum::http::StatusCode;
 use axum::routing::{get, post};
 use axum::{Json, Router};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::{OpenApi, ToSchema};
 
@@ -144,7 +145,9 @@ async fn ls() -> Result<Json<Vec<SessionResponse>>, (StatusCode, String)> {
             .map(|s| SessionResponse {
                 name: s.name,
                 windows: s.windows,
-                created: s.created,
+                created: DateTime::<Utc>::from_timestamp(s.created, 0)
+                    .map(|dt| dt.to_rfc3339())
+                    .unwrap_or_else(|| s.created.to_string()),
                 attached: s.attached,
             })
             .collect(),

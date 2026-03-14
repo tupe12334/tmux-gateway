@@ -143,7 +143,7 @@ mod tests {
         let session = TmuxSession {
             name: "test".to_string(),
             windows: 3,
-            created: "now".to_string(),
+            created: 1704067200,
             attached: true,
         };
         assert_eq!(session.name, "test");
