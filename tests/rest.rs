@@ -200,7 +200,7 @@ async fn send_keys_returns_200() {
     let resp = app
         .oneshot(json_post(
             "/send-keys",
-            &format!(r#"{{"target":"{}","keys":["echo","Enter"]}}"#, name),
+            &format!(r#"{{"target":"{}:0.0","keys":["echo","Enter"]}}"#, name),
         ))
         .await
         .unwrap();
@@ -291,7 +291,7 @@ async fn split_window_returns_200() {
     let resp = app
         .oneshot(json_post(
             "/split-window",
-            &format!(r#"{{"target":"{}:0","horizontal":false}}"#, name),
+            &format!(r#"{{"target":"{}:0.0","horizontal":false}}"#, name),
         ))
         .await
         .unwrap();
