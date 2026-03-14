@@ -2094,17 +2094,9 @@ dependencies = [
 name = "tmux-gateway-core"
 version = "0.1.0"
 dependencies = [
- "serde",
  "thiserror",
- "tmux_interface",
  "tokio",
 ]
-
-[[package]]
-name = "tmux_interface"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fb02603b24fb7fe7ad0fd11653bee5abf9cf4a9883b3618daaed2a6338d8288"
 
 [[package]]
 name = "tokio"

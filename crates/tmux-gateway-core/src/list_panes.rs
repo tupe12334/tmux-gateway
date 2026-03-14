@@ -1,11 +1,8 @@
-use serde::Serialize;
-use tmux_interface::ListPanes;
-
 use super::TmuxError;
 use super::validation::validate_window_target;
-use crate::executor::{exec_tmux, run_tmux};
+use crate::executor::TmuxExecutor;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TmuxPane {
     pub id: String,
     pub width: u32,
@@ -45,21 +42,24 @@ pub(crate) fn parse_panes(stdout: &str) -> Result<Vec<TmuxPane>, TmuxError> {
         .collect()
 }
 
-pub async fn list_panes(target: &str) -> Result<Vec<TmuxPane>, TmuxError> {
+pub async fn list_panes(
+    executor: &(impl TmuxExecutor + ?Sized),
+    target: &str,
+) -> Result<Vec<TmuxPane>, TmuxError> {
     validate_window_target(target)?;
-    let target = target.to_string();
-    run_tmux("list-panes", move || {
-        let output = exec_tmux(
+    let output = executor
+        .execute(&[
             "list-panes",
-            &target,
-            ListPanes::new()
-                .target(target.as_str())
-                .format("#{pane_id}\t#{pane_width}\t#{pane_height}\t#{pane_active}"),
-        )?;
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        parse_panes(&stdout)
-    })
-    .await
+            "-t",
+            target,
+            "-F",
+            "#{pane_id}\t#{pane_width}\t#{pane_height}\t#{pane_active}",
+        ])
+        .await?;
+    if !output.success {
+        return Err(TmuxError::from_stderr("list-panes", &output.stderr, target));
+    }
+    parse_panes(&output.stdout)
 }
 
 #[cfg(test)]

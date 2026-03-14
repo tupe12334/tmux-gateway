@@ -31,14 +31,14 @@ impl fmt::Display for Check {
     }
 }
 
-pub fn run() -> ServerConfig {
+pub async fn run() -> ServerConfig {
     let mut checks: Vec<Check> = Vec::new();
     let mut http_port: Option<u16> = None;
     let mut grpc_port: Option<u16> = None;
     let mut tmux_version = String::new();
 
     // ── tmux binary ──────────────────────────────────────────────
-    let info = tmux_gateway_core::server_info_blocking();
+    let info = tmux_gateway_core::server_info(&tmux_gateway_core::RealTmuxExecutor).await;
     if info.running {
         tmux_version = info.version.clone();
         checks.push(Check {
