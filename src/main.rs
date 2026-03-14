@@ -170,11 +170,11 @@ async fn main() -> anyhow::Result<()> {
             listener,
             http_app.into_make_service_with_connect_info::<SocketAddr>(),
         )
-            .with_graceful_shutdown(async move {
-                let _ = http_shutdown_rx.wait_for(|&v| v).await;
-                tracing::info!("HTTP server shutting down...");
-            })
-            .await
+        .with_graceful_shutdown(async move {
+            let _ = http_shutdown_rx.wait_for(|&v| v).await;
+            tracing::info!("HTTP server shutting down...");
+        })
+        .await
         {
             tracing::error!("HTTP server error: {e:#}");
         }

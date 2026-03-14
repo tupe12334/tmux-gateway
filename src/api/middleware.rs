@@ -67,8 +67,7 @@ pub async fn rate_limit(
             let wait = not_until.wait_time_from(DefaultClock::default().now());
             let retry_after = wait.as_secs().saturating_add(1);
 
-            let mut response =
-                (StatusCode::TOO_MANY_REQUESTS, "Too Many Requests").into_response();
+            let mut response = (StatusCode::TOO_MANY_REQUESTS, "Too Many Requests").into_response();
             let headers = response.headers_mut();
             headers.insert("x-ratelimit-limit", state.limit.into());
             headers.insert("x-ratelimit-remaining", 0u32.into());
