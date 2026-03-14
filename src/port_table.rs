@@ -6,9 +6,15 @@ fn is_port_free(port: u16) -> bool {
 
 pub fn format_port_table(ports: &[(&str, u16, &str)]) -> String {
     let mut out = String::new();
-    out.push_str("┌──────────────┬───────┬────────┬─────────────────────────────────────────────┐\n");
-    out.push_str("│ Service      │ Port  │ Status │ Explorer                                    │\n");
-    out.push_str("├──────────────┼───────┼────────┼─────────────────────────────────────────────┤\n");
+    out.push_str(
+        "┌──────────────┬───────┬────────┬─────────────────────────────────────────────┐\n",
+    );
+    out.push_str(
+        "│ Service      │ Port  │ Status │ Explorer                                    │\n",
+    );
+    out.push_str(
+        "├──────────────┼───────┼────────┼─────────────────────────────────────────────┤\n",
+    );
     for (name, port, explorer) in ports {
         let status = if is_port_free(*port) {
             "free"
@@ -20,7 +26,9 @@ pub fn format_port_table(ports: &[(&str, u16, &str)]) -> String {
             name, port, status, explorer
         ));
     }
-    out.push_str("└──────────────┴───────┴────────┴─────────────────────────────────────────────┘\n");
+    out.push_str(
+        "└──────────────┴───────┴────────┴─────────────────────────────────────────────┘\n",
+    );
     out
 }
 

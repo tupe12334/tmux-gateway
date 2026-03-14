@@ -26,7 +26,12 @@ fn json_post(uri: &str, json: &str) -> Request<Body> {
 async fn health_returns_200() {
     let app = rest::router();
     let resp = app
-        .oneshot(Request::builder().uri("/health").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri("/health")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 
@@ -383,10 +388,7 @@ async fn kill_window_nonexistent_returns_error() {
 
     let app = rest::router();
     let resp = app
-        .oneshot(json_post(
-            "/kill-window",
-            r#"{"target":"nonexistent:0"}"#,
-        ))
+        .oneshot(json_post("/kill-window", r#"{"target":"nonexistent:0"}"#))
         .await
         .unwrap();
 
@@ -401,10 +403,7 @@ async fn kill_pane_nonexistent_returns_error() {
 
     let app = rest::router();
     let resp = app
-        .oneshot(json_post(
-            "/kill-pane",
-            r#"{"target":"nonexistent:0.0"}"#,
-        ))
+        .oneshot(json_post("/kill-pane", r#"{"target":"nonexistent:0.0"}"#))
         .await
         .unwrap();
 
