@@ -18,7 +18,7 @@ pub async fn new_session(name: &str) -> Result<TmuxSession, TmuxError> {
                 .session_name(name.as_str())
                 .print()
                 .format(
-                    "#{session_name}\t#{session_windows}\t#{session_created}\t#{session_attached}",
+                    "#{session_id}\t#{session_name}\t#{session_windows}\t#{session_created}\t#{session_attached}",
                 ),
         )?;
         let stdout = String::from_utf8_lossy(&output.stdout);

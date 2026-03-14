@@ -116,10 +116,11 @@ proto_messages! {
     }
 
     message TmuxSession {
-        string name = "1";
-        uint32 windows = "2";
-        int64 created = "3";
-        bool attached = "4";
+        string id = "1";
+        string name = "2";
+        uint32 windows = "3";
+        int64 created = "4";
+        bool attached = "5";
     }
 
     message NewSessionRequest {
@@ -127,10 +128,11 @@ proto_messages! {
     }
 
     message NewSessionResponse {
-        string name = "1";
-        uint32 windows = "2";
-        int64 created = "3";
-        bool attached = "4";
+        string id = "1";
+        string name = "2";
+        uint32 windows = "3";
+        int64 created = "4";
+        bool attached = "5";
     }
 
     message KillSessionRequest {
@@ -160,10 +162,11 @@ proto_messages! {
     }
 
     message TmuxWindow {
-        uint32 index = "1";
-        string name = "2";
-        uint32 panes = "3";
-        bool active = "4";
+        string id = "1";
+        uint32 index = "2";
+        string name = "3";
+        uint32 panes = "4";
+        bool active = "5";
     }
 
     message ListPanesRequest {
@@ -208,10 +211,11 @@ proto_messages! {
     }
 
     message NewWindowResponse {
-        uint32 index = "1";
-        string name = "2";
-        uint32 panes = "3";
-        bool active = "4";
+        string id = "1";
+        uint32 index = "2";
+        string name = "3";
+        uint32 panes = "4";
+        bool active = "5";
     }
 
     message SplitWindowRequest {
@@ -240,10 +244,11 @@ proto_messages! {
     }
 
     message CreateSessionWithWindowsResponse {
-        string name = "1";
-        uint32 windows = "2";
-        int64 created = "3";
-        bool attached = "4";
+        string id = "1";
+        string name = "2";
+        uint32 windows = "3";
+        int64 created = "4";
+        bool attached = "5";
     }
 
     message SwapPanesRequest {

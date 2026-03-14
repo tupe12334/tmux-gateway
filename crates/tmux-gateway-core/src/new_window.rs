@@ -20,7 +20,7 @@ pub async fn new_window(session: &str, name: &str) -> Result<TmuxWindow, TmuxErr
                 .target_window(session.as_str())
                 .window_name(name.as_str())
                 .print()
-                .format("#{window_index}\t#{window_name}\t#{window_panes}\t#{window_active}"),
+                .format("#{window_id}\t#{window_index}\t#{window_name}\t#{window_panes}\t#{window_active}"),
         )?;
         let stdout = String::from_utf8_lossy(&output.stdout);
         parse_window_line(stdout.trim())

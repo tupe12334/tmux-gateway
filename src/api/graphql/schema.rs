@@ -7,6 +7,7 @@ pub type AppSchema = Schema<QueryRoot, MutationRoot, EmptySubscription>;
 
 #[derive(SimpleObject)]
 struct Session {
+    id: String,
     name: String,
     windows: u32,
     created: String,
@@ -15,6 +16,7 @@ struct Session {
 
 #[derive(SimpleObject)]
 struct Window {
+    id: String,
     index: u32,
     name: String,
     panes: u32,
@@ -122,6 +124,7 @@ impl QueryRoot {
         Ok(sessions
             .into_iter()
             .map(|s| Session {
+                id: s.id,
                 name: s.name,
                 windows: s.windows,
                 created: DateTime::<Utc>::from_timestamp(s.created, 0)
@@ -141,6 +144,7 @@ impl QueryRoot {
         Ok(windows
             .into_iter()
             .map(|w| Window {
+                id: w.id,
                 index: w.index,
                 name: w.name,
                 panes: w.panes,
@@ -184,6 +188,7 @@ impl MutationRoot {
             .await
             .map_err(|e| async_graphql::Error::new(e.to_string()))?;
         Ok(Session {
+            id: s.id,
             name: s.name,
             windows: s.windows,
             created: DateTime::<Utc>::from_timestamp(s.created, 0)
@@ -251,6 +256,7 @@ impl MutationRoot {
             .await
             .map_err(|e| async_graphql::Error::new(e.to_string()))?;
         Ok(Window {
+            id: w.id,
             index: w.index,
             name: w.name,
             panes: w.panes,
@@ -282,6 +288,7 @@ impl MutationRoot {
             .map_err(|e| async_graphql::Error::new(e.to_string()))?;
 
         Ok(Session {
+            id: session.id,
             name: session.name,
             windows: session.windows,
             created: DateTime::<Utc>::from_timestamp(session.created, 0)

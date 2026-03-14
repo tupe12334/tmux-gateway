@@ -98,6 +98,7 @@ struct HealthResponse {
 
 #[derive(Serialize, ToSchema)]
 struct SessionResponse {
+    id: String,
     name: String,
     windows: u32,
     created: String,
@@ -106,6 +107,7 @@ struct SessionResponse {
 
 #[derive(Serialize, ToSchema)]
 struct WindowResponse {
+    id: String,
     index: u32,
     name: String,
     panes: u32,
@@ -163,6 +165,7 @@ async fn ls() -> Result<Json<Vec<SessionResponse>>, (StatusCode, String)> {
         sessions
             .into_iter()
             .map(|s| SessionResponse {
+                id: s.id,
                 name: s.name,
                 windows: s.windows,
                 created: DateTime::<Utc>::from_timestamp(s.created, 0)
@@ -181,6 +184,7 @@ struct NewSessionRequest {
 
 #[derive(Serialize, ToSchema)]
 struct NewSessionResponse {
+    id: String,
     name: String,
     windows: u32,
     created: String,
@@ -208,6 +212,7 @@ async fn new(
     Ok((
         StatusCode::CREATED,
         Json(NewSessionResponse {
+            id: session.id,
             name: session.name,
             windows: session.windows,
             created: DateTime::<Utc>::from_timestamp(session.created, 0)
@@ -316,6 +321,7 @@ async fn list_windows(
         windows
             .into_iter()
             .map(|w| WindowResponse {
+                id: w.id,
                 index: w.index,
                 name: w.name,
                 panes: w.panes,
@@ -444,6 +450,7 @@ struct NewWindowRequest {
 
 #[derive(Serialize, ToSchema)]
 struct NewWindowResponse {
+    id: String,
     index: u32,
     name: String,
     panes: u32,
@@ -471,6 +478,7 @@ async fn new_window(
     Ok((
         axum::http::StatusCode::CREATED,
         Json(NewWindowResponse {
+            id: window.id,
             index: window.index,
             name: window.name,
             panes: window.panes,
@@ -527,6 +535,7 @@ struct CreateSessionWithWindowsRequest {
 
 #[derive(Serialize, ToSchema)]
 struct CreateSessionWithWindowsResponse {
+    id: String,
     name: String,
     windows: u32,
     created: String,
@@ -555,6 +564,7 @@ async fn create_session_with_windows(
     Ok((
         StatusCode::CREATED,
         Json(CreateSessionWithWindowsResponse {
+            id: session.id,
             name: session.name,
             windows: session.windows,
             created: DateTime::<Utc>::from_timestamp(session.created, 0)
