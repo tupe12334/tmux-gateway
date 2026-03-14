@@ -200,6 +200,9 @@ grpc_service! {
         rpc SelectWindow / select_window(SelectWindowRequest) -> SelectWindowResponse;
         rpc SelectPane / select_pane(SelectPaneRequest) -> SelectPaneResponse;
         rpc ResizePane / resize_pane(ResizePaneRequest) -> ResizePaneResponse;
+        rpc GetOption / get_option(GetOptionRequest) -> GetOptionResponse;
+        rpc SetOption / set_option(SetOptionRequest) -> SetOptionResponse;
+        rpc ListOptions / list_options(ListOptionsRequest) -> ListOptionsResponse;
         stream_rpc StreamPaneOutput / stream_pane_output [StreamPaneOutputStream] (StreamPaneOutputRequest) -> StreamPaneOutputResponse;
     }
 }
