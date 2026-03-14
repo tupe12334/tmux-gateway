@@ -1,8 +1,9 @@
 use serde::Serialize;
-use tmux_interface::{ListPanes, Tmux};
+use tmux_interface::ListPanes;
 
 use super::TmuxError;
 use super::validation::validate_window_target;
+use crate::executor::{exec_tmux, run_tmux};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct TmuxPane {
@@ -47,32 +48,18 @@ pub(crate) fn parse_panes(stdout: &str) -> Result<Vec<TmuxPane>, TmuxError> {
 pub async fn list_panes(target: &str) -> Result<Vec<TmuxPane>, TmuxError> {
     validate_window_target(target)?;
     let target = target.to_string();
-    tokio::task::spawn_blocking(move || {
-        let output = Tmux::with_command(
+    run_tmux("list-panes", move || {
+        let output = exec_tmux(
+            "list-panes",
+            &target,
             ListPanes::new()
                 .target(target.as_str())
                 .format("#{pane_id}\t#{pane_width}\t#{pane_height}\t#{pane_active}"),
-        )
-        .output()
-        .map_err(|e| TmuxError::CommandFailed {
-            command: "list-panes".to_string(),
-            stderr: e.to_string(),
-        })?
-        .into_inner();
-
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(TmuxError::from_stderr("list-panes", &stderr, &target));
-        }
-
+        )?;
         let stdout = String::from_utf8_lossy(&output.stdout);
         parse_panes(&stdout)
     })
     .await
-    .map_err(|e| TmuxError::CommandFailed {
-        command: "list-panes".to_string(),
-        stderr: format!("task join error: {e}"),
-    })?
 }
 
 #[cfg(test)]
