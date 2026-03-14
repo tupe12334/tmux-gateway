@@ -206,11 +206,7 @@ impl MutationRoot {
         Ok(true)
     }
 
-    async fn rename_window(
-        &self,
-        target: String,
-        new_name: String,
-    ) -> async_graphql::Result<bool> {
+    async fn rename_window(&self, target: String, new_name: String) -> async_graphql::Result<bool> {
         GraphqlHandler
             .rename_window(&target, &new_name)
             .await
@@ -225,11 +221,7 @@ impl MutationRoot {
             .map_err(|e| async_graphql::Error::new(e.to_string()))
     }
 
-    async fn split_window(
-        &self,
-        target: String,
-        horizontal: bool,
-    ) -> async_graphql::Result<bool> {
+    async fn split_window(&self, target: String, horizontal: bool) -> async_graphql::Result<bool> {
         GraphqlHandler
             .split_window(&target, horizontal)
             .await

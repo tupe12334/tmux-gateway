@@ -2,12 +2,12 @@ use tonic::{Request, Response, Status};
 
 use super::messages::{
     CapturePaneRequest, CapturePaneResponse, KillPaneRequest, KillPaneResponse, KillSessionRequest,
-    KillSessionResponse, KillWindowRequest, KillWindowResponse, ListPanesRequest, ListPanesResponse,
-    ListWindowsRequest, ListWindowsResponse, LsRequest, LsResponse, NewSessionRequest,
-    NewSessionResponse, NewWindowRequest, NewWindowResponse, RenameSessionRequest,
-    RenameSessionResponse, RenameWindowRequest, RenameWindowResponse, SendKeysRequest,
-    SendKeysResponse, SplitWindowRequest, SplitWindowResponse, TmuxPaneMsg, TmuxSession,
-    TmuxWindow,
+    KillSessionResponse, KillWindowRequest, KillWindowResponse, ListPanesRequest,
+    ListPanesResponse, ListWindowsRequest, ListWindowsResponse, LsRequest, LsResponse,
+    NewSessionRequest, NewSessionResponse, NewWindowRequest, NewWindowResponse,
+    RenameSessionRequest, RenameSessionResponse, RenameWindowRequest, RenameWindowResponse,
+    SendKeysRequest, SendKeysResponse, SplitWindowRequest, SplitWindowResponse, TmuxPaneMsg,
+    TmuxSession, TmuxWindow,
 };
 use super::server::{TmuxGateway, TmuxGatewayServer};
 use crate::tmux::{self, GrpcCode, TmuxCommands, TmuxError};
@@ -184,9 +184,7 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
             })
             .collect();
 
-        Ok(Response::new(ListPanesResponse {
-            panes: proto_panes,
-        }))
+        Ok(Response::new(ListPanesResponse { panes: proto_panes }))
     }
 
     async fn send_keys(

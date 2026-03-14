@@ -474,9 +474,20 @@ async fn capture_pane(
 #[derive(OpenApi)]
 #[openapi(
     paths(
-        health, ls, new, kill_session, kill_window, kill_pane,
-        list_windows, list_panes, send_keys, rename_session, rename_window,
-        new_window, split_window, capture_pane
+        health,
+        ls,
+        new,
+        kill_session,
+        kill_window,
+        kill_pane,
+        list_windows,
+        list_panes,
+        send_keys,
+        rename_session,
+        rename_window,
+        new_window,
+        split_window,
+        capture_pane
     ),
     components(schemas(
         HealthResponse,

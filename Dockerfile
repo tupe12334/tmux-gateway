@@ -1,8 +1,6 @@
 # ── Build stage ───────────────────────────────────────────────
 FROM rust:1.89-bookworm AS builder
 
-RUN apt-get update && apt-get install -y protobuf-compiler && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
 # Cache dependencies
@@ -14,7 +12,7 @@ RUN mkdir src && echo "fn main() {}" > src/main.rs && mkdir -p crates/tmux-gatew
 COPY schemas ./schemas
 COPY crates ./crates
 COPY src ./src
-RUN touch src/main.rs && cargo build --release
+RUN find . -name '*.rs' -exec touch {} + && cargo build --release
 
 # ── Runtime stage ─────────────────────────────────────────────
 FROM debian:bookworm-slim
