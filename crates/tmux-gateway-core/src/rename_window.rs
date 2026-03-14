@@ -3,6 +3,7 @@ use crate::validation::{validate_window_name, validate_window_target};
 
 use super::TmuxError;
 
+#[tracing::instrument(skip(executor))]
 pub async fn rename_window(
     executor: &(impl TmuxExecutor + ?Sized),
     target: &str,

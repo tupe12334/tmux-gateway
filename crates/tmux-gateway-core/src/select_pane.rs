@@ -3,6 +3,7 @@ use crate::validation::validate_pane_target;
 
 use super::TmuxError;
 
+#[tracing::instrument(skip(executor))]
 pub async fn select_pane(
     executor: &(impl TmuxExecutor + ?Sized),
     target: &str,

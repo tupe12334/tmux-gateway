@@ -46,6 +46,7 @@ pub(crate) fn parse_panes(stdout: &str) -> Result<Vec<TmuxPane>, TmuxError> {
         .collect()
 }
 
+#[tracing::instrument(skip(executor))]
 pub async fn list_panes(
     executor: &(impl TmuxExecutor + ?Sized),
     target: &str,
