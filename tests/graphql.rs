@@ -151,7 +151,7 @@ async fn send_keys_mutation() {
         ))
         .await;
     let query = format!(
-        r#"mutation {{ sendKeys(target: "{}", keys: ["echo", "Enter"]) }}"#,
+        r#"mutation {{ sendKeys(target: "{}:0.0", keys: ["echo", "Enter"]) }}"#,
         name
     );
     let result = schema.execute(&query).await;
