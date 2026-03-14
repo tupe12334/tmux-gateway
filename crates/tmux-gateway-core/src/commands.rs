@@ -1,9 +1,9 @@
 use super::{
-    CaptureOptions, RealTmuxExecutor, ResizeDirection, TmuxError, TmuxPane, TmuxSession,
-    TmuxWindow, capture_pane, capture_pane_with_options, create_session_with_windows, kill_pane,
-    kill_session, kill_window, list_panes, list_sessions, list_windows, move_window, new_session,
-    new_window, rename_session, rename_window, resize_pane, select_pane, select_window, send_keys,
-    split_window, swap_panes,
+    CaptureOptions, HealthStatus, RealTmuxExecutor, ResizeDirection, TmuxError, TmuxPane,
+    TmuxSession, TmuxWindow, capture_pane, capture_pane_with_options, create_session_with_windows,
+    health_check, kill_pane, kill_session, kill_window, list_panes, list_sessions, list_windows,
+    move_window, new_session, new_window, rename_session, rename_window, resize_pane, select_pane,
+    select_window, send_keys, split_window, swap_panes,
 };
 
 /// All API layers (REST, gRPC, GraphQL) must implement this trait.
@@ -136,5 +136,8 @@ pub trait TmuxCommands {
         direction: ResizeDirection,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         async move { resize_pane(&RealTmuxExecutor, target, direction).await }
+    }
+    fn health_check(&self) -> impl std::future::Future<Output = HealthStatus> + Send {
+        async { health_check(&RealTmuxExecutor).await }
     }
 }
