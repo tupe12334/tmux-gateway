@@ -124,9 +124,7 @@ async fn main() {
         .await
         .is_err()
     {
-        tracing::warn!(
-            "Graceful shutdown timed out after {shutdown_timeout}s, forcing exit"
-        );
+        tracing::warn!("Graceful shutdown timed out after {shutdown_timeout}s, forcing exit");
     } else {
         tracing::info!("All servers shut down gracefully");
     }
@@ -137,8 +135,8 @@ async fn shutdown_signal() {
 
     #[cfg(unix)]
     {
-        let mut sigterm =
-            signal::unix::signal(signal::unix::SignalKind::terminate()).expect("failed to install SIGTERM handler");
+        let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install SIGTERM handler");
         tokio::select! {
             _ = ctrl_c => {}
             _ = sigterm.recv() => {}

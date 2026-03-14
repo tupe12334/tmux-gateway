@@ -35,8 +35,7 @@ impl TmuxError {
             return Self::SessionNotFound(target.to_string());
         }
 
-        if stderr_lower.contains("window not found") || stderr_lower.contains("can't find window")
-        {
+        if stderr_lower.contains("window not found") || stderr_lower.contains("can't find window") {
             return Self::WindowNotFound(target.to_string());
         }
 

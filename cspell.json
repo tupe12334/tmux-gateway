@@ -11,9 +11,11 @@
     "clippy",
     "codegen",
     "dotenvy",
+    "fullstorydev",
     "graphiql",
     "grpcui",
     "grpcurl",
+    "healthcheck",
     "oapi",
     "prost",
     "protoc",
@@ -23,6 +25,7 @@
     "serde",
     "splitn",
     "RUSTSEC",
+    "thiserror",
     "tmux",
     "utoipa"
   ]
