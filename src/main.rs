@@ -9,7 +9,7 @@ use tokio::sync::watch;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::request_id::{PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::trace::TraceLayer;
-use tracing::Span;
+use tracing::{info, Span};
 use tracing_subscriber::EnvFilter;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -48,16 +48,32 @@ async fn main() {
     let mut grpc_shutdown_rx = shutdown_tx.subscribe();
 
     let cors = {
-        let origins = env::var("CORS_ORIGINS").unwrap_or_else(|_| {
+        let origins_raw = env::var("CORS_ORIGINS").unwrap_or_else(|_| {
             format!(
                 "http://localhost:{},http://localhost:{}",
                 http_port, grpc_port
             )
         });
-        let origins: Vec<_> = origins
-            .split(',')
-            .filter_map(|s| s.trim().parse().ok())
+        let raw_entries: Vec<&str> = origins_raw.split(',').map(|s| s.trim()).collect();
+        let total = raw_entries.len();
+        let origins: Vec<http::HeaderValue> = raw_entries
+            .iter()
+            .filter_map(|s| s.parse().ok())
             .collect();
+        let valid = origins.len();
+        let invalid = total - valid;
+
+        info!(
+            http_addr = %format!("0.0.0.0:{http_port}"),
+            grpc_addr = %format!("0.0.0.0:{grpc_port}"),
+            cors_origins = ?origins.iter().map(|o| o.to_str().unwrap_or("<non-utf8>")).collect::<Vec<_>>(),
+            cors_valid = valid,
+            cors_invalid = invalid,
+            shutdown_timeout_secs = shutdown_timeout,
+            tmux_version = %config.tmux_version,
+            "Effective configuration"
+        );
+
         CorsLayer::new()
             .allow_origin(AllowOrigin::list(origins))
             .allow_methods(tower_http::cors::Any)
