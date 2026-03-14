@@ -21,9 +21,15 @@ RUN apt-get update && apt-get install -y tmux curl && rm -rf /var/lib/apt/lists/
 
 COPY --from=builder /app/target/release/tmux-gateway /usr/local/bin/tmux-gateway
 
+RUN useradd -r -s /bin/false tmux-gateway
+USER tmux-gateway
+
 ENV HTTP_PORT=3020
 ENV GRPC_PORT=50251
 
 EXPOSE 3020 50251
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD curl -f http://localhost:${HTTP_PORT}/health || exit 1
 
 CMD ["tmux-gateway"]
