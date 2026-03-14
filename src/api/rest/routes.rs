@@ -60,6 +60,7 @@ struct PaneResponse {
     active: bool,
     current_path: String,
     current_command: String,
+    pid: u32,
 }
 
 #[utoipa::path(
@@ -304,6 +305,7 @@ async fn list_panes(
                 active: p.active,
                 current_path: p.current_path,
                 current_command: p.current_command,
+                pid: p.pid,
             })
             .collect(),
     ))
@@ -443,6 +445,7 @@ struct SplitWindowResponse {
     active: bool,
     current_path: String,
     current_command: String,
+    pid: u32,
 }
 
 #[utoipa::path(
@@ -470,6 +473,7 @@ async fn split_window(
         active: pane.active,
         current_path: pane.current_path,
         current_command: pane.current_command,
+        pid: pane.pid,
     }))
 }
 

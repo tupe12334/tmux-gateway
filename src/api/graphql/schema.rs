@@ -32,6 +32,7 @@ struct Pane {
     active: bool,
     current_path: String,
     current_command: String,
+    pid: u32,
 }
 
 struct GraphqlHandler;
@@ -99,6 +100,7 @@ impl QueryRoot {
                 active: p.active,
                 current_path: p.current_path,
                 current_command: p.current_command,
+                pid: p.pid,
             })
             .collect())
     }
@@ -227,6 +229,7 @@ impl MutationRoot {
             active: p.active,
             current_path: p.current_path,
             current_command: p.current_command,
+            pid: p.pid,
         })
     }
 

@@ -15,6 +15,9 @@ type Pane {
 	width: Int!
 	height: Int!
 	active: Boolean!
+	currentPath: String!
+	currentCommand: String!
+	pid: Int!
 }
 
 type QueryRoot {

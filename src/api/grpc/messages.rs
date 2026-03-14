@@ -194,6 +194,7 @@ proto_messages! {
         bool active = "4";
         string current_path = "5";
         string current_command = "6";
+        uint32 pid = "7";
     }
 
     message SendKeysRequest {
@@ -242,6 +243,7 @@ proto_messages! {
         bool active = "4";
         string current_path = "5";
         string current_command = "6";
+        uint32 pid = "7";
     }
 
     message CapturePaneRequest {
