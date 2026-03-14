@@ -111,6 +111,14 @@ impl TmuxCommands for GraphqlHandler {
     async fn move_window(&self, source: &str, destination_session: &str) -> Result<(), TmuxError> {
         tmux::move_window(&RealTmuxExecutor, source, destination_session).await
     }
+
+    async fn select_window(&self, target: &str) -> Result<(), TmuxError> {
+        tmux::select_window(&RealTmuxExecutor, target).await
+    }
+
+    async fn select_pane(&self, target: &str) -> Result<(), TmuxError> {
+        tmux::select_pane(&RealTmuxExecutor, target).await
+    }
 }
 
 pub struct QueryRoot;
@@ -332,6 +340,22 @@ impl MutationRoot {
     ) -> async_graphql::Result<bool> {
         GraphqlHandler
             .move_window(&source, &destination_session)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+        Ok(true)
+    }
+
+    async fn select_window(&self, target: String) -> async_graphql::Result<bool> {
+        GraphqlHandler
+            .select_window(&target)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+        Ok(true)
+    }
+
+    async fn select_pane(&self, target: String) -> async_graphql::Result<bool> {
+        GraphqlHandler
+            .select_pane(&target)
             .await
             .map_err(|e| async_graphql::Error::new(e.to_string()))?;
         Ok(true)

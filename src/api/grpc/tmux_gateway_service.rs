@@ -8,7 +8,8 @@ use super::messages::{
     ListPanesResponse, ListWindowsRequest, ListWindowsResponse, LsRequest, LsResponse,
     MoveWindowRequest, MoveWindowResponse, NewSessionRequest, NewSessionResponse, NewWindowRequest,
     NewWindowResponse, RenameSessionRequest, RenameSessionResponse, RenameWindowRequest,
-    RenameWindowResponse, SendKeysRequest, SendKeysResponse, SplitWindowRequest,
+    RenameWindowResponse, SelectPaneRequest, SelectPaneResponse, SelectWindowRequest,
+    SelectWindowResponse, SendKeysRequest, SendKeysResponse, SplitWindowRequest,
     SplitWindowResponse, SwapPanesRequest, SwapPanesResponse, TmuxPaneMsg, TmuxSession, TmuxWindow,
 };
 use super::server::{TmuxGateway, TmuxGatewayServer};
@@ -95,6 +96,14 @@ impl TmuxCommands for TmuxGatewayServiceImpl {
 
     async fn move_window(&self, source: &str, destination_session: &str) -> Result<(), TmuxError> {
         tmux::move_window(&RealTmuxExecutor, source, destination_session).await
+    }
+
+    async fn select_window(&self, target: &str) -> Result<(), TmuxError> {
+        tmux::select_window(&RealTmuxExecutor, target).await
+    }
+
+    async fn select_pane(&self, target: &str) -> Result<(), TmuxError> {
+        tmux::select_pane(&RealTmuxExecutor, target).await
     }
 }
 
@@ -364,6 +373,28 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
             .await
             .map_err(tmux_err_to_status)?;
         Ok(Response::new(MoveWindowResponse {}))
+    }
+
+    async fn select_window(
+        &self,
+        request: Request<SelectWindowRequest>,
+    ) -> Result<Response<SelectWindowResponse>, Status> {
+        let target = &request.into_inner().target;
+        TmuxCommands::select_window(self, target)
+            .await
+            .map_err(tmux_err_to_status)?;
+        Ok(Response::new(SelectWindowResponse {}))
+    }
+
+    async fn select_pane(
+        &self,
+        request: Request<SelectPaneRequest>,
+    ) -> Result<Response<SelectPaneResponse>, Status> {
+        let target = &request.into_inner().target;
+        TmuxCommands::select_pane(self, target)
+            .await
+            .map_err(tmux_err_to_status)?;
+        Ok(Response::new(SelectPaneResponse {}))
     }
 }
 

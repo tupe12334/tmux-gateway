@@ -89,6 +89,14 @@ impl TmuxCommands for RestHandler {
     async fn move_window(&self, source: &str, destination_session: &str) -> Result<(), TmuxError> {
         tmux::move_window(&RealTmuxExecutor, source, destination_session).await
     }
+
+    async fn select_window(&self, target: &str) -> Result<(), TmuxError> {
+        tmux::select_window(&RealTmuxExecutor, target).await
+    }
+
+    async fn select_pane(&self, target: &str) -> Result<(), TmuxError> {
+        tmux::select_pane(&RealTmuxExecutor, target).await
+    }
 }
 
 fn tmux_err_to_http(e: TmuxError) -> (StatusCode, String) {
@@ -637,6 +645,50 @@ async fn move_window(
     Ok(StatusCode::OK)
 }
 
+#[utoipa::path(
+    post,
+    path = "/select-window",
+    request_body = KillTargetRequest,
+    responses(
+        (status = 200, description = "Window selected"),
+        (status = 400, description = "Invalid target"),
+        (status = 404, description = "Window not found"),
+        (status = 500, description = "Failed to select window")
+    )
+)]
+async fn select_window(
+    Json(body): Json<KillTargetRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    RestHandler
+        .select_window(&body.target)
+        .await
+        .map_err(tmux_err_to_http)?;
+
+    Ok(StatusCode::OK)
+}
+
+#[utoipa::path(
+    post,
+    path = "/select-pane",
+    request_body = KillTargetRequest,
+    responses(
+        (status = 200, description = "Pane selected"),
+        (status = 400, description = "Invalid target"),
+        (status = 404, description = "Pane not found"),
+        (status = 500, description = "Failed to select pane")
+    )
+)]
+async fn select_pane(
+    Json(body): Json<KillTargetRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    RestHandler
+        .select_pane(&body.target)
+        .await
+        .map_err(tmux_err_to_http)?;
+
+    Ok(StatusCode::OK)
+}
+
 #[derive(Deserialize, ToSchema)]
 struct CapturePaneRequest {
     target: String,
@@ -725,7 +777,9 @@ async fn capture_pane_with_options(
         capture_pane_with_options,
         create_session_with_windows,
         swap_panes,
-        move_window
+        move_window,
+        select_window,
+        select_pane
     ),
     components(schemas(
         HealthResponse,
@@ -791,6 +845,8 @@ pub fn write_router() -> Router {
         )
         .route("/swap-panes", post(swap_panes))
         .route("/move-window", post(move_window))
+        .route("/select-window", post(select_window))
+        .route("/select-pane", post(select_pane))
 }
 
 pub fn router() -> Router {

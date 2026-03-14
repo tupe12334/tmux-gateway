@@ -78,4 +78,12 @@ pub trait TmuxCommands {
         source: &str,
         destination_session: &str,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send;
+    fn select_window(
+        &self,
+        target: &str,
+    ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send;
+    fn select_pane(
+        &self,
+        target: &str,
+    ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send;
 }
