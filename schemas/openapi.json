@@ -16,7 +16,17 @@
         "operationId": "health",
         "responses": {
           "200": {
-            "description": "Health check",
+            "description": "Healthy — tmux is reachable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Degraded — tmux is not available",
             "content": {
               "application/json": {
                 "schema": {
@@ -185,6 +195,12 @@
           "status"
         ],
         "properties": {
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "status": {
             "type": "string"
           }
