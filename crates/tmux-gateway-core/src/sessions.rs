@@ -48,18 +48,22 @@ pub async fn list_sessions() -> Result<Vec<TmuxSession>, TmuxError> {
             .map(|line| {
                 let parts: Vec<&str> = line.splitn(4, '\t').collect();
                 if parts.len() < 4 {
-                    return Err(TmuxError::CommandFailed {
+                    return Err(TmuxError::ParseError {
                         command: "list-sessions".to_string(),
-                        stderr: format!("unexpected output format: {line}"),
+                        details: format!("expected 4 tab-separated fields, got: {line}"),
                     });
                 }
-                let created = parts[2].parse::<i64>().map_err(|_| TmuxError::CommandFailed {
+                let windows = parts[1].parse::<u32>().map_err(|e| TmuxError::ParseError {
                     command: "list-sessions".to_string(),
-                    stderr: format!("invalid session_created timestamp: {}", parts[2]),
+                    details: format!("invalid window count '{}': {e}", parts[1]),
+                })?;
+                let created = parts[2].parse::<i64>().map_err(|e| TmuxError::ParseError {
+                    command: "list-sessions".to_string(),
+                    details: format!("invalid session_created timestamp '{}': {e}", parts[2]),
                 })?;
                 Ok(TmuxSession {
                     name: parts[0].to_string(),
-                    windows: parts[1].parse().unwrap_or(0),
+                    windows,
                     created,
                     attached: parts[3] == "1",
                 })

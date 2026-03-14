@@ -1,5 +1,6 @@
 use std::env;
 use std::time::Duration;
+use anyhow::Context;
 use axum::extract::DefaultBodyLimit;
 use tmux_gateway::api::{graphql, grpc, middleware, rest};
 use tmux_gateway::{export_schemas, port_table, preflight};
@@ -15,7 +16,7 @@ use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
 
     init_tracing();
@@ -125,25 +126,33 @@ async fn main() {
         ));
 
     let http_addr = format!("0.0.0.0:{http_port}");
+    let listener = TcpListener::bind(&http_addr)
+        .await
+        .with_context(|| format!("failed to bind HTTP port {http_port} — port may already be in use"))?;
+    tracing::info!("HTTP server (REST + GraphQL + Swagger) listening on {http_addr}");
+
     let http_handle = tokio::spawn(async move {
-        let listener = TcpListener::bind(&http_addr).await.unwrap();
-        tracing::info!("HTTP server (REST + GraphQL + Swagger) listening on {http_addr}");
-        axum::serve(listener, http_app)
+        if let Err(e) = axum::serve(listener, http_app)
             .with_graceful_shutdown(async move {
                 let _ = http_shutdown_rx.wait_for(|&v| v).await;
                 tracing::info!("HTTP server shutting down...");
             })
             .await
-            .unwrap();
+        {
+            tracing::error!("HTTP server error: {e:#}");
+        }
     });
 
     let grpc_addr = format!("0.0.0.0:{grpc_port}");
+    let addr = grpc_addr
+        .parse()
+        .with_context(|| format!("invalid gRPC address format: {grpc_addr}"))?;
+    let reflection_service = tonic_reflection::server::Builder::configure()
+        .register_file_descriptor_set(grpc::file_descriptor_set())
+        .build_v1()
+        .context("failed to build gRPC reflection service")?;
+
     let grpc_handle = tokio::spawn(async move {
-        let addr = grpc_addr.parse().unwrap();
-        let reflection_service = tonic_reflection::server::Builder::configure()
-            .register_file_descriptor_set(grpc::file_descriptor_set())
-            .build_v1()
-            .unwrap();
         let (health_reporter, health_service) = tonic_health::server::health_reporter();
 
         // Check tmux availability for gRPC health status
@@ -157,8 +166,45 @@ async fn main() {
                 .await;
         }
 
+        let x_request_id = http::HeaderName::from_static("x-request-id");
+
         tracing::info!("gRPC server listening on {}", addr);
-        tonic::transport::Server::builder()
+        if let Err(e) = tonic::transport::Server::builder()
+            .layer(
+                tower::ServiceBuilder::new()
+                    .layer(SetRequestIdLayer::new(
+                        x_request_id.clone(),
+                        middleware::UuidRequestId,
+                    ))
+                    .layer(
+                        TraceLayer::new_for_grpc()
+                            .make_span_with(|request: &http::Request<_>| {
+                                let request_id = request
+                                    .headers()
+                                    .get("x-request-id")
+                                    .and_then(|v| v.to_str().ok())
+                                    .unwrap_or("-");
+                                tracing::info_span!(
+                                    "grpc_request",
+                                    method = %request.uri().path(),
+                                    request_id = %request_id,
+                                )
+                            })
+                            .on_response(
+                                |response: &http::Response<_>,
+                                 latency: Duration,
+                                 _span: &Span| {
+                                    tracing::info!(
+                                        status = response.status().as_u16(),
+                                        latency_ms = latency.as_millis(),
+                                        "response"
+                                    );
+                                },
+                            ),
+                    )
+                    .layer(PropagateRequestIdLayer::new(x_request_id))
+                    .into_inner(),
+            )
             .add_service(health_service)
             .add_service(grpc::grpc_server())
             .add_service(reflection_service)
@@ -167,7 +213,9 @@ async fn main() {
                 tracing::info!("gRPC server shutting down...");
             })
             .await
-            .unwrap();
+        {
+            tracing::error!("gRPC server error: {e:#}");
+        }
     });
 
     // Wait for shutdown signal (Ctrl+C or SIGTERM).
@@ -189,6 +237,8 @@ async fn main() {
     } else {
         tracing::info!("All servers shut down gracefully");
     }
+
+    Ok(())
 }
 
 /// Initializes the tracing subscriber.

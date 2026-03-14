@@ -24,6 +24,7 @@ tonic-prost = "0.14"
 tonic-health = "0.14"
 tonic-reflection = "0.14"
 prost = "0.14"
+tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.6", features = ["cors", "trace", "request-id", "util", "propagate-header"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
@@ -35,6 +36,7 @@ utoipa = { version = "5", features = ["axum_extras"] }
 utoipa-axum = "0.2"
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
 dotenvy = "0.15.7"
+anyhow = "1"
 protox = "0.9.1"
 prost-types = "0.14"
 chrono = { version = "0.4.44", default-features = false, features = ["clock"] }

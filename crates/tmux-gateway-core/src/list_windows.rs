@@ -37,19 +37,30 @@ pub async fn list_windows(session: &str) -> Result<Vec<TmuxWindow>, TmuxError> {
         let windows = stdout
             .lines()
             .filter(|line| !line.is_empty())
-            .filter_map(|line| {
+            .map(|line| {
                 let parts: Vec<&str> = line.splitn(4, '\t').collect();
                 if parts.len() < 4 {
-                    return None;
+                    return Err(TmuxError::ParseError {
+                        command: "list-windows".to_string(),
+                        details: format!("expected 4 tab-separated fields, got: {line}"),
+                    });
                 }
-                Some(TmuxWindow {
-                    index: parts[0].parse().unwrap_or(0),
+                let index = parts[0].parse::<u32>().map_err(|e| TmuxError::ParseError {
+                    command: "list-windows".to_string(),
+                    details: format!("invalid window index '{}': {e}", parts[0]),
+                })?;
+                let panes = parts[2].parse::<u32>().map_err(|e| TmuxError::ParseError {
+                    command: "list-windows".to_string(),
+                    details: format!("invalid pane count '{}': {e}", parts[2]),
+                })?;
+                Ok(TmuxWindow {
+                    index,
                     name: parts[1].to_string(),
-                    panes: parts[2].parse().unwrap_or(0),
+                    panes,
                     active: parts[3] == "1",
                 })
             })
-            .collect();
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(windows)
     })
