@@ -3,7 +3,8 @@ mod common;
 use tmux_gateway::api::grpc::{
     CapturePaneRequest, KillPaneRequest, KillSessionRequest, KillWindowRequest, ListPanesRequest,
     ListWindowsRequest, LsRequest, NewSessionRequest, NewWindowRequest, RenameSessionRequest,
-    SendKeysRequest, SplitWindowRequest, TmuxGateway, TmuxGatewayServiceImpl,
+    RenameWindowRequest, SendKeysRequest, SplitWindowRequest, TmuxGateway,
+    TmuxGatewayServiceImpl,
 };
 use tonic::Request;
 
@@ -170,6 +171,27 @@ async fn rename_session_after_create() {
         .await;
     assert!(resp.is_ok());
     common::cleanup_session(&new_name);
+}
+
+#[tokio::test]
+async fn rename_window_after_create() {
+    if !common::tmux_available() {
+        return;
+    }
+    let name = common::unique_session_name();
+    let service = TmuxGatewayServiceImpl;
+    service
+        .new_session(Request::new(NewSessionRequest { name: name.clone() }))
+        .await
+        .unwrap();
+    let resp = service
+        .rename_window(Request::new(RenameWindowRequest {
+            target: format!("{}:0", name),
+            new_name: "renamed".into(),
+        }))
+        .await;
+    assert!(resp.is_ok());
+    common::cleanup_session(&name);
 }
 
 #[tokio::test]

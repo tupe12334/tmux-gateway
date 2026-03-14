@@ -240,6 +240,36 @@ async fn rename_session_returns_200() {
     common::cleanup_session(&new_name);
 }
 
+// ── Rename window ─────────────────────────────────────────────────
+
+#[tokio::test]
+async fn rename_window_returns_200() {
+    if !common::tmux_available() {
+        return;
+    }
+
+    let name = common::unique_session_name();
+    let app = rest::router();
+
+    let resp = app
+        .clone()
+        .oneshot(json_post("/new", &format!(r#"{{"name":"{}"}}"#, name)))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::CREATED);
+
+    let resp = app
+        .oneshot(json_post(
+            "/rename-window",
+            &format!(r#"{{"target":"{}:0","new_name":"renamed"}}"#, name),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+
+    common::cleanup_session(&name);
+}
+
 // ── New window ─────────────────────────────────────────────────────
 
 #[tokio::test]

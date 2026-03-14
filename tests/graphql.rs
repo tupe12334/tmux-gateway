@@ -206,6 +206,50 @@ async fn new_window_mutation() {
 }
 
 #[tokio::test]
+async fn rename_window_mutation() {
+    if !common::tmux_available() {
+        return;
+    }
+    let name = common::unique_session_name();
+    let schema = graphql::build_schema();
+    schema
+        .execute(&format!(
+            r#"mutation {{ createSession(name: "{}") }}"#,
+            name
+        ))
+        .await;
+    let query = format!(
+        r#"mutation {{ renameWindow(target: "{}:0", newName: "renamed") }}"#,
+        name
+    );
+    let result = schema.execute(&query).await;
+    assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
+    common::cleanup_session(&name);
+}
+
+#[tokio::test]
+async fn split_window_mutation() {
+    if !common::tmux_available() {
+        return;
+    }
+    let name = common::unique_session_name();
+    let schema = graphql::build_schema();
+    schema
+        .execute(&format!(
+            r#"mutation {{ createSession(name: "{}") }}"#,
+            name
+        ))
+        .await;
+    let query = format!(
+        r#"mutation {{ splitWindow(target: "{}:0.0", horizontal: false) }}"#,
+        name
+    );
+    let result = schema.execute(&query).await;
+    assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
+    common::cleanup_session(&name);
+}
+
+#[tokio::test]
 async fn capture_pane_query() {
     if !common::tmux_available() {
         return;
