@@ -40,6 +40,7 @@ anyhow = "1"
 protox = "0.9.1"
 prost-types = "0.14"
 chrono = { version = "0.4.44", default-features = false, features = ["clock"] }
+governor = "0.10.4"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }

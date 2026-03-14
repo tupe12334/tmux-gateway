@@ -1,6 +1,7 @@
 use anyhow::Context;
 use axum::extract::DefaultBodyLimit;
 use std::env;
+use std::net::SocketAddr;
 use std::time::Duration;
 use tmux_gateway::api::{graphql, grpc, middleware, rest};
 use tmux_gateway::{export_schemas, port_table, preflight};
@@ -84,11 +85,46 @@ async fn main() -> anyhow::Result<()> {
         .and_then(|v| v.parse::<usize>().ok())
         .unwrap_or(1_048_576); // 1 MB default
 
+    // ── Rate limiting ──────────────────────────────────────────
+    let base_rps: u32 = env::var("RATE_LIMIT_RPS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(100);
+    let read_rps: u32 = env::var("RATE_LIMIT_READ_RPS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(base_rps);
+    let write_rps: u32 = env::var("RATE_LIMIT_WRITE_RPS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(base_rps);
+
+    let read_rate_limit = middleware::RateLimitState::new(read_rps);
+    let write_rate_limit = middleware::RateLimitState::new(write_rps);
+
+    tracing::info!(read_rps, write_rps, "Per-IP rate limiting enabled");
+
     let x_request_id = http::HeaderName::from_static("x-request-id");
 
     let http_app = axum::Router::new()
-        .merge(rest::router())
-        .merge(graphql::router())
+        .merge(
+            rest::read_router().route_layer(axum::middleware::from_fn_with_state(
+                read_rate_limit,
+                middleware::rate_limit,
+            )),
+        )
+        .merge(
+            rest::write_router().route_layer(axum::middleware::from_fn_with_state(
+                write_rate_limit.clone(),
+                middleware::rate_limit,
+            )),
+        )
+        .merge(
+            graphql::router().route_layer(axum::middleware::from_fn_with_state(
+                write_rate_limit,
+                middleware::rate_limit,
+            )),
+        )
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", rest::ApiDoc::openapi()))
         .layer(DefaultBodyLimit::max(max_body_bytes))
         .layer(cors)
@@ -130,7 +166,10 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("HTTP server (REST + GraphQL + Swagger) listening on {http_addr}");
 
     let http_handle = tokio::spawn(async move {
-        if let Err(e) = axum::serve(listener, http_app)
+        if let Err(e) = axum::serve(
+            listener,
+            http_app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
             .with_graceful_shutdown(async move {
                 let _ = http_shutdown_rx.wait_for(|&v| v).await;
                 tracing::info!("HTTP server shutting down...");
