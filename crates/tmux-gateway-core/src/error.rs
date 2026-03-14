@@ -70,6 +70,12 @@ impl TmuxError {
     }
 }
 
+impl From<crate::validation::ValidationError> for TmuxError {
+    fn from(e: crate::validation::ValidationError) -> Self {
+        Self::InvalidTarget(e.to_string())
+    }
+}
+
 /// Subset of gRPC status codes relevant to tmux errors.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GrpcCode {
