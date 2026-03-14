@@ -28,7 +28,10 @@
     "splitn",
     "RUSTSEC",
     "thiserror",
+    "testwin",
     "tmux",
-    "utoipa"
+    "utoipa",
+    "mywin",
+    "oneshot"
   ]
 }

@@ -59,7 +59,10 @@ mod tests {
         let json_str = openapi_json();
         let v: serde_json::Value = serde_json::from_str(&json_str).unwrap();
         assert_eq!(v["info"]["title"], "tmux-gateway");
-        assert_eq!(v["openapi"].as_str().unwrap().split('.').next().unwrap(), "3");
+        assert_eq!(
+            v["openapi"].as_str().unwrap().split('.').next().unwrap(),
+            "3"
+        );
     }
 
     #[test]
@@ -68,9 +71,20 @@ mod tests {
         let v: serde_json::Value = serde_json::from_str(&json_str).unwrap();
         let paths = v["paths"].as_object().unwrap();
         let expected = [
-            "/health", "/ls", "/new", "/kill-session", "/kill-window", "/kill-pane",
-            "/list-windows", "/list-panes", "/send-keys", "/rename-session",
-            "/rename-window", "/new-window", "/split-window", "/capture-pane",
+            "/health",
+            "/ls",
+            "/new",
+            "/kill-session",
+            "/kill-window",
+            "/kill-pane",
+            "/list-windows",
+            "/list-panes",
+            "/send-keys",
+            "/rename-session",
+            "/rename-window",
+            "/new-window",
+            "/split-window",
+            "/capture-pane",
         ];
         for path in &expected {
             assert!(paths.contains_key(*path), "missing path: {path}");
@@ -99,9 +113,20 @@ mod tests {
     fn graphql_sdl_has_operations() {
         let sdl = graphql_sdl();
         let expected = [
-            "health", "ls", "createSession", "killSession", "killWindow", "killPane",
-            "listWindows", "listPanes", "sendKeys", "renameSession", "renameWindow",
-            "newWindow", "splitWindow", "capturePane",
+            "health",
+            "ls",
+            "createSession",
+            "killSession",
+            "killWindow",
+            "killPane",
+            "listWindows",
+            "listPanes",
+            "sendKeys",
+            "renameSession",
+            "renameWindow",
+            "newWindow",
+            "splitWindow",
+            "capturePane",
         ];
         for op in &expected {
             assert!(sdl.contains(op), "missing GraphQL operation: {op}");

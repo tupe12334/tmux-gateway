@@ -1892,7 +1892,6 @@ dependencies = [
  "tonic-health",
  "tonic-prost",
  "tonic-reflection",
- "tower",
  "tower-http",
  "tracing",
  "tracing-subscriber",

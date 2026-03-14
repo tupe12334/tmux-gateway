@@ -17,9 +17,13 @@ async fn health_query() {
 
 #[tokio::test]
 async fn ls_returns_array() {
-    if !common::tmux_available() { return; }
+    if !common::tmux_available() {
+        return;
+    }
     let schema = graphql::build_schema();
-    let result = schema.execute("{ ls { name windows created attached } }").await;
+    let result = schema
+        .execute("{ ls { name windows created attached } }")
+        .await;
     assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
     let v = to_json(&result.data);
     assert!(v["ls"].is_array());
@@ -27,7 +31,9 @@ async fn ls_returns_array() {
 
 #[tokio::test]
 async fn create_session_mutation() {
-    if !common::tmux_available() { return; }
+    if !common::tmux_available() {
+        return;
+    }
     let name = common::unique_session_name();
     let schema = graphql::build_schema();
     let query = format!(r#"mutation {{ createSession(name: "{}") }}"#, name);
@@ -40,7 +46,9 @@ async fn create_session_mutation() {
 
 #[tokio::test]
 async fn kill_session_mutation() {
-    if !common::tmux_available() { return; }
+    if !common::tmux_available() {
+        return;
+    }
     let name = common::unique_session_name();
     let schema = graphql::build_schema();
     let query = format!(r#"mutation {{ createSession(name: "{}") }}"#, name);
@@ -54,7 +62,9 @@ async fn kill_session_mutation() {
 
 #[tokio::test]
 async fn kill_window_mutation() {
-    if !common::tmux_available() { return; }
+    if !common::tmux_available() {
+        return;
+    }
     let name = common::unique_session_name();
     let schema = graphql::build_schema();
     let query = format!(r#"mutation {{ createSession(name: "{}") }}"#, name);
@@ -67,7 +77,9 @@ async fn kill_window_mutation() {
 
 #[tokio::test]
 async fn kill_pane_mutation() {
-    if !common::tmux_available() { return; }
+    if !common::tmux_available() {
+        return;
+    }
     let name = common::unique_session_name();
     let schema = graphql::build_schema();
     let query = format!(r#"mutation {{ createSession(name: "{}") }}"#, name);
@@ -80,11 +92,21 @@ async fn kill_pane_mutation() {
 
 #[tokio::test]
 async fn list_windows_query() {
-    if !common::tmux_available() { return; }
+    if !common::tmux_available() {
+        return;
+    }
     let name = common::unique_session_name();
     let schema = graphql::build_schema();
-    schema.execute(&format!(r#"mutation {{ createSession(name: "{}") }}"#, name)).await;
-    let query = format!(r#"{{ listWindows(session: "{}") {{ index name panes active }} }}"#, name);
+    schema
+        .execute(&format!(
+            r#"mutation {{ createSession(name: "{}") }}"#,
+            name
+        ))
+        .await;
+    let query = format!(
+        r#"{{ listWindows(session: "{}") {{ index name panes active }} }}"#,
+        name
+    );
     let result = schema.execute(&query).await;
     assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
     let v = to_json(&result.data);
@@ -95,11 +117,21 @@ async fn list_windows_query() {
 
 #[tokio::test]
 async fn list_panes_query() {
-    if !common::tmux_available() { return; }
+    if !common::tmux_available() {
+        return;
+    }
     let name = common::unique_session_name();
     let schema = graphql::build_schema();
-    schema.execute(&format!(r#"mutation {{ createSession(name: "{}") }}"#, name)).await;
-    let query = format!(r#"{{ listPanes(target: "{}:0") {{ id width height active }} }}"#, name);
+    schema
+        .execute(&format!(
+            r#"mutation {{ createSession(name: "{}") }}"#,
+            name
+        ))
+        .await;
+    let query = format!(
+        r#"{{ listPanes(target: "{}:0") {{ id width height active }} }}"#,
+        name
+    );
     let result = schema.execute(&query).await;
     assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
     common::cleanup_session(&name);
@@ -107,11 +139,21 @@ async fn list_panes_query() {
 
 #[tokio::test]
 async fn send_keys_mutation() {
-    if !common::tmux_available() { return; }
+    if !common::tmux_available() {
+        return;
+    }
     let name = common::unique_session_name();
     let schema = graphql::build_schema();
-    schema.execute(&format!(r#"mutation {{ createSession(name: "{}") }}"#, name)).await;
-    let query = format!(r#"mutation {{ sendKeys(target: "{}", keys: ["echo", "Enter"]) }}"#, name);
+    schema
+        .execute(&format!(
+            r#"mutation {{ createSession(name: "{}") }}"#,
+            name
+        ))
+        .await;
+    let query = format!(
+        r#"mutation {{ sendKeys(target: "{}", keys: ["echo", "Enter"]) }}"#,
+        name
+    );
     let result = schema.execute(&query).await;
     assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
     assert_eq!(to_json(&result.data)["sendKeys"], true);
@@ -120,12 +162,22 @@ async fn send_keys_mutation() {
 
 #[tokio::test]
 async fn rename_session_mutation() {
-    if !common::tmux_available() { return; }
+    if !common::tmux_available() {
+        return;
+    }
     let name = common::unique_session_name();
     let new_name = common::unique_session_name();
     let schema = graphql::build_schema();
-    schema.execute(&format!(r#"mutation {{ createSession(name: "{}") }}"#, name)).await;
-    let query = format!(r#"mutation {{ renameSession(target: "{}", newName: "{}") }}"#, name, new_name);
+    schema
+        .execute(&format!(
+            r#"mutation {{ createSession(name: "{}") }}"#,
+            name
+        ))
+        .await;
+    let query = format!(
+        r#"mutation {{ renameSession(target: "{}", newName: "{}") }}"#,
+        name, new_name
+    );
     let result = schema.execute(&query).await;
     assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
     common::cleanup_session(&new_name);
@@ -133,11 +185,21 @@ async fn rename_session_mutation() {
 
 #[tokio::test]
 async fn new_window_mutation() {
-    if !common::tmux_available() { return; }
+    if !common::tmux_available() {
+        return;
+    }
     let name = common::unique_session_name();
     let schema = graphql::build_schema();
-    schema.execute(&format!(r#"mutation {{ createSession(name: "{}") }}"#, name)).await;
-    let query = format!(r#"mutation {{ newWindow(session: "{}", name: "mywin") }}"#, name);
+    schema
+        .execute(&format!(
+            r#"mutation {{ createSession(name: "{}") }}"#,
+            name
+        ))
+        .await;
+    let query = format!(
+        r#"mutation {{ newWindow(session: "{}", name: "mywin") }}"#,
+        name
+    );
     let result = schema.execute(&query).await;
     assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
     common::cleanup_session(&name);
@@ -145,10 +207,17 @@ async fn new_window_mutation() {
 
 #[tokio::test]
 async fn capture_pane_query() {
-    if !common::tmux_available() { return; }
+    if !common::tmux_available() {
+        return;
+    }
     let name = common::unique_session_name();
     let schema = graphql::build_schema();
-    schema.execute(&format!(r#"mutation {{ createSession(name: "{}") }}"#, name)).await;
+    schema
+        .execute(&format!(
+            r#"mutation {{ createSession(name: "{}") }}"#,
+            name
+        ))
+        .await;
     let query = format!(r#"{{ capturePane(target: "{}:0.0") }}"#, name);
     let result = schema.execute(&query).await;
     assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
@@ -157,9 +226,13 @@ async fn capture_pane_query() {
 
 #[tokio::test]
 async fn kill_session_nonexistent_returns_error() {
-    if !common::tmux_available() { return; }
+    if !common::tmux_available() {
+        return;
+    }
     let schema = graphql::build_schema();
-    let result = schema.execute(r#"mutation { killSession(target: "nonexistent_xyz_99999") }"#).await;
+    let result = schema
+        .execute(r#"mutation { killSession(target: "nonexistent_xyz_99999") }"#)
+        .await;
     assert!(!result.errors.is_empty());
 }
 
@@ -172,14 +245,25 @@ async fn invalid_query_returns_error() {
 
 #[tokio::test]
 async fn ls_includes_created_session() {
-    if !common::tmux_available() { return; }
+    if !common::tmux_available() {
+        return;
+    }
     let name = common::unique_session_name();
     let schema = graphql::build_schema();
-    schema.execute(&format!(r#"mutation {{ createSession(name: "{}") }}"#, name)).await;
+    schema
+        .execute(&format!(
+            r#"mutation {{ createSession(name: "{}") }}"#,
+            name
+        ))
+        .await;
     let result = schema.execute("{ ls { name } }").await;
     assert!(result.errors.is_empty());
     let v = to_json(&result.data);
     let sessions = v["ls"].as_array().unwrap();
-    assert!(sessions.iter().any(|s| s["name"] == name), "session {} not found in ls", name);
+    assert!(
+        sessions.iter().any(|s| s["name"] == name),
+        "session {} not found in ls",
+        name
+    );
     common::cleanup_session(&name);
 }
