@@ -44,9 +44,7 @@ async fn health_returns_200() {
 
 #[tokio::test]
 async fn ls_returns_200() {
-    if !common::tmux_available() {
-        return;
-    }
+    common::require_tmux();
 
     let app = rest::router();
     let resp = app
@@ -64,37 +62,33 @@ async fn ls_returns_200() {
 
 #[tokio::test]
 async fn create_session_returns_201() {
-    if !common::tmux_available() {
-        return;
-    }
-
-    let name = common::unique_session_name();
+    let session = common::TestSession::new();
     let app = rest::router();
 
     let resp = app
-        .oneshot(json_post("/new", &format!(r#"{{"name":"{}"}}"#, name)))
+        .oneshot(json_post(
+            "/new",
+            &format!(r#"{{"name":"{}"}}"#, session.name),
+        ))
         .await
         .unwrap();
 
     assert_eq!(resp.status(), StatusCode::CREATED);
     let body = body_string(resp.into_body()).await;
-    assert!(body.contains(&name));
-
-    common::cleanup_session(&name);
+    assert!(body.contains(&session.name));
 }
 
 #[tokio::test]
 async fn kill_session_returns_200() {
-    if !common::tmux_available() {
-        return;
-    }
-
-    let name = common::unique_session_name();
+    let session = common::TestSession::new();
 
     // Create first
     let app = rest::router();
     let resp = app
-        .oneshot(json_post("/new", &format!(r#"{{"name":"{}"}}"#, name)))
+        .oneshot(json_post(
+            "/new",
+            &format!(r#"{{"name":"{}"}}"#, session.name),
+        ))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::CREATED);
@@ -104,7 +98,7 @@ async fn kill_session_returns_200() {
     let resp = app
         .oneshot(json_post(
             "/kill-session",
-            &format!(r#"{{"target":"{}"}}"#, name),
+            &format!(r#"{{"target":"{}"}}"#, session.name),
         ))
         .await
         .unwrap();
@@ -115,16 +109,15 @@ async fn kill_session_returns_200() {
 
 #[tokio::test]
 async fn list_windows_returns_200() {
-    if !common::tmux_available() {
-        return;
-    }
-
-    let name = common::unique_session_name();
+    let session = common::TestSession::new();
     let app = rest::router();
 
     let resp = app
         .clone()
-        .oneshot(json_post("/new", &format!(r#"{{"name":"{}"}}"#, name)))
+        .oneshot(json_post(
+            "/new",
+            &format!(r#"{{"name":"{}"}}"#, session.name),
+        ))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::CREATED);
@@ -132,7 +125,7 @@ async fn list_windows_returns_200() {
     let resp = app
         .oneshot(
             Request::builder()
-                .uri(&format!("/list-windows?session={}", name))
+                .uri(&format!("/list-windows?session={}", session.name))
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -143,24 +136,21 @@ async fn list_windows_returns_200() {
     let windows: serde_json::Value = serde_json::from_str(&body).unwrap();
     assert!(windows.is_array());
     assert!(!windows.as_array().unwrap().is_empty());
-
-    common::cleanup_session(&name);
 }
 
 // ── List panes ─────────────────────────────────────────────────────
 
 #[tokio::test]
 async fn list_panes_returns_200() {
-    if !common::tmux_available() {
-        return;
-    }
-
-    let name = common::unique_session_name();
+    let session = common::TestSession::new();
     let app = rest::router();
 
     let resp = app
         .clone()
-        .oneshot(json_post("/new", &format!(r#"{{"name":"{}"}}"#, name)))
+        .oneshot(json_post(
+            "/new",
+            &format!(r#"{{"name":"{}"}}"#, session.name),
+        ))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::CREATED);
@@ -168,31 +158,28 @@ async fn list_panes_returns_200() {
     let resp = app
         .oneshot(
             Request::builder()
-                .uri(&format!("/list-panes?target={}:0", name))
+                .uri(&format!("/list-panes?target={}:0", session.name))
                 .body(Body::empty())
                 .unwrap(),
         )
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
-
-    common::cleanup_session(&name);
 }
 
 // ── Send keys ──────────────────────────────────────────────────────
 
 #[tokio::test]
 async fn send_keys_returns_200() {
-    if !common::tmux_available() {
-        return;
-    }
-
-    let name = common::unique_session_name();
+    let session = common::TestSession::new();
     let app = rest::router();
 
     let resp = app
         .clone()
-        .oneshot(json_post("/new", &format!(r#"{{"name":"{}"}}"#, name)))
+        .oneshot(json_post(
+            "/new",
+            &format!(r#"{{"name":"{}"}}"#, session.name),
+        ))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::CREATED);
@@ -200,30 +187,30 @@ async fn send_keys_returns_200() {
     let resp = app
         .oneshot(json_post(
             "/send-keys",
-            &format!(r#"{{"target":"{}:0.0","keys":["echo","Enter"]}}"#, name),
+            &format!(
+                r#"{{"target":"{}:0.0","keys":["echo","Enter"]}}"#,
+                session.name
+            ),
         ))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
-
-    common::cleanup_session(&name);
 }
 
 // ── Rename session ─────────────────────────────────────────────────
 
 #[tokio::test]
 async fn rename_session_returns_200() {
-    if !common::tmux_available() {
-        return;
-    }
-
-    let name = common::unique_session_name();
-    let new_name = common::unique_session_name();
+    let session = common::TestSession::new();
+    let new_session = common::TestSession::new();
     let app = rest::router();
 
     let resp = app
         .clone()
-        .oneshot(json_post("/new", &format!(r#"{{"name":"{}"}}"#, name)))
+        .oneshot(json_post(
+            "/new",
+            &format!(r#"{{"name":"{}"}}"#, session.name),
+        ))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::CREATED);
@@ -231,29 +218,29 @@ async fn rename_session_returns_200() {
     let resp = app
         .oneshot(json_post(
             "/rename-session",
-            &format!(r#"{{"target":"{}","new_name":"{}"}}"#, name, new_name),
+            &format!(
+                r#"{{"target":"{}","new_name":"{}"}}"#,
+                session.name, new_session.name
+            ),
         ))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
-
-    common::cleanup_session(&new_name);
 }
 
 // ── Rename window ─────────────────────────────────────────────────
 
 #[tokio::test]
 async fn rename_window_returns_200() {
-    if !common::tmux_available() {
-        return;
-    }
-
-    let name = common::unique_session_name();
+    let session = common::TestSession::new();
     let app = rest::router();
 
     let resp = app
         .clone()
-        .oneshot(json_post("/new", &format!(r#"{{"name":"{}"}}"#, name)))
+        .oneshot(json_post(
+            "/new",
+            &format!(r#"{{"name":"{}"}}"#, session.name),
+        ))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::CREATED);
@@ -261,29 +248,26 @@ async fn rename_window_returns_200() {
     let resp = app
         .oneshot(json_post(
             "/rename-window",
-            &format!(r#"{{"target":"{}:0","new_name":"renamed"}}"#, name),
+            &format!(r#"{{"target":"{}:0","new_name":"renamed"}}"#, session.name),
         ))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
-
-    common::cleanup_session(&name);
 }
 
 // ── New window ─────────────────────────────────────────────────────
 
 #[tokio::test]
 async fn new_window_returns_201() {
-    if !common::tmux_available() {
-        return;
-    }
-
-    let name = common::unique_session_name();
+    let session = common::TestSession::new();
     let app = rest::router();
 
     let resp = app
         .clone()
-        .oneshot(json_post("/new", &format!(r#"{{"name":"{}"}}"#, name)))
+        .oneshot(json_post(
+            "/new",
+            &format!(r#"{{"name":"{}"}}"#, session.name),
+        ))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::CREATED);
@@ -291,29 +275,26 @@ async fn new_window_returns_201() {
     let resp = app
         .oneshot(json_post(
             "/new-window",
-            &format!(r#"{{"session":"{}","name":"mywin"}}"#, name),
+            &format!(r#"{{"session":"{}","name":"mywin"}}"#, session.name),
         ))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::CREATED);
-
-    common::cleanup_session(&name);
 }
 
 // ── Split window ───────────────────────────────────────────────────
 
 #[tokio::test]
 async fn split_window_returns_200() {
-    if !common::tmux_available() {
-        return;
-    }
-
-    let name = common::unique_session_name();
+    let session = common::TestSession::new();
     let app = rest::router();
 
     let resp = app
         .clone()
-        .oneshot(json_post("/new", &format!(r#"{{"name":"{}"}}"#, name)))
+        .oneshot(json_post(
+            "/new",
+            &format!(r#"{{"name":"{}"}}"#, session.name),
+        ))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::CREATED);
@@ -321,29 +302,26 @@ async fn split_window_returns_200() {
     let resp = app
         .oneshot(json_post(
             "/split-window",
-            &format!(r#"{{"target":"{}:0.0","horizontal":false}}"#, name),
+            &format!(r#"{{"target":"{}:0.0","horizontal":false}}"#, session.name),
         ))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
-
-    common::cleanup_session(&name);
 }
 
 // ── Capture pane ───────────────────────────────────────────────────
 
 #[tokio::test]
 async fn capture_pane_returns_200() {
-    if !common::tmux_available() {
-        return;
-    }
-
-    let name = common::unique_session_name();
+    let session = common::TestSession::new();
     let app = rest::router();
 
     let resp = app
         .clone()
-        .oneshot(json_post("/new", &format!(r#"{{"name":"{}"}}"#, name)))
+        .oneshot(json_post(
+            "/new",
+            &format!(r#"{{"name":"{}"}}"#, session.name),
+        ))
         .await
         .unwrap();
     assert_eq!(resp.status(), StatusCode::CREATED);
@@ -351,7 +329,7 @@ async fn capture_pane_returns_200() {
     let resp = app
         .oneshot(
             Request::builder()
-                .uri(&format!("/capture-pane?target={}:0.0", name))
+                .uri(&format!("/capture-pane?target={}:0.0", session.name))
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -360,8 +338,6 @@ async fn capture_pane_returns_200() {
     assert_eq!(resp.status(), StatusCode::OK);
     let body = body_string(resp.into_body()).await;
     assert!(body.contains("content"));
-
-    common::cleanup_session(&name);
 }
 
 // ── Error cases ────────────────────────────────────────────────────
@@ -394,9 +370,7 @@ async fn new_session_invalid_json_returns_error() {
 
 #[tokio::test]
 async fn kill_session_nonexistent_returns_error() {
-    if !common::tmux_available() {
-        return;
-    }
+    common::require_tmux();
 
     let app = rest::router();
     let resp = app
@@ -412,9 +386,7 @@ async fn kill_session_nonexistent_returns_error() {
 
 #[tokio::test]
 async fn kill_window_nonexistent_returns_error() {
-    if !common::tmux_available() {
-        return;
-    }
+    common::require_tmux();
 
     let app = rest::router();
     let resp = app
@@ -427,9 +399,7 @@ async fn kill_window_nonexistent_returns_error() {
 
 #[tokio::test]
 async fn kill_pane_nonexistent_returns_error() {
-    if !common::tmux_available() {
-        return;
-    }
+    common::require_tmux();
 
     let app = rest::router();
     let resp = app
