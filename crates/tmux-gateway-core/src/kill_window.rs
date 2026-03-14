@@ -1,19 +1,20 @@
-use crate::executor::{exec_tmux, run_tmux};
+use crate::executor::TmuxExecutor;
 use crate::validation::validate_window_target;
-use tmux_interface::KillWindow as TmuxKillWindow;
 
 use super::TmuxError;
 
-pub async fn kill_window(target: &str) -> Result<(), TmuxError> {
+pub async fn kill_window(
+    executor: &(impl TmuxExecutor + ?Sized),
+    target: &str,
+) -> Result<(), TmuxError> {
     validate_window_target(target)?;
-    let target = target.to_string();
-    run_tmux("kill-window", move || {
-        exec_tmux(
+    let output = executor.execute(&["kill-window", "-t", target]).await?;
+    if !output.success {
+        return Err(TmuxError::from_stderr(
             "kill-window",
-            &target,
-            TmuxKillWindow::new().target_window(target.as_str()),
-        )?;
-        Ok(())
-    })
-    .await
+            &output.stderr,
+            target,
+        ));
+    }
+    Ok(())
 }
