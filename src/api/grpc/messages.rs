@@ -259,4 +259,16 @@ proto_messages! {
     }
 
     message MoveWindowResponse {}
+
+    message SelectWindowRequest {
+        string target = "1";
+    }
+
+    message SelectWindowResponse {}
+
+    message SelectPaneRequest {
+        string target = "1";
+    }
+
+    message SelectPaneResponse {}
 }
