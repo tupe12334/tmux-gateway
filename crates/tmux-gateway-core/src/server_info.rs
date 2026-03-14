@@ -1,8 +1,6 @@
-use serde::Serialize;
-
 use crate::executor::TmuxExecutor;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TmuxServerInfo {
     pub version: String,
     pub running: bool,
