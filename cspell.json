@@ -41,6 +41,11 @@
     "tnotanum",
     "txyz",
     "dylint",
-    "dylints"
+    "dylints",
+    "srpc",
+    "smethod",
+    "stype",
+    "sreq",
+    "sres"
   ]
 }
