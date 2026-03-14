@@ -37,6 +37,7 @@ fn tmux_err_to_status(e: TmuxError) -> Status {
         GrpcCode::NotFound => Status::not_found(msg),
         GrpcCode::InvalidArgument => Status::invalid_argument(msg),
         GrpcCode::Internal => Status::internal(msg),
+        GrpcCode::DeadlineExceeded => Status::deadline_exceeded(msg),
     }
 }
 

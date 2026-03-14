@@ -5,6 +5,7 @@ mod kill_session;
 mod kill_window;
 mod new_session;
 mod sessions;
+mod timeout;
 pub mod validation;
 
 pub use commands::TmuxCommands;

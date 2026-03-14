@@ -2,6 +2,7 @@ use serde::Serialize;
 use tmux_interface::{ListSessions, Tmux};
 
 use super::TmuxError;
+use crate::timeout::spawn_blocking_with_timeout;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct TmuxSession {
@@ -12,7 +13,7 @@ pub struct TmuxSession {
 }
 
 pub async fn list_sessions() -> Result<Vec<TmuxSession>, TmuxError> {
-    tokio::task::spawn_blocking(|| {
+    spawn_blocking_with_timeout("list-sessions", || {
         let output = Tmux::with_command(ListSessions::new().format(
             "#{session_name}\t#{session_windows}\t#{session_created_string}\t#{session_attached}",
         ))
@@ -52,8 +53,4 @@ pub async fn list_sessions() -> Result<Vec<TmuxSession>, TmuxError> {
         Ok(sessions)
     })
     .await
-    .map_err(|e| TmuxError::CommandFailed {
-        command: "list-sessions".to_string(),
-        stderr: format!("task join error: {e}"),
-    })?
 }

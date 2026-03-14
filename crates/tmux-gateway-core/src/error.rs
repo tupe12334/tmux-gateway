@@ -19,6 +19,9 @@ pub enum TmuxError {
 
     #[error("invalid target: {0}")]
     InvalidTarget(String),
+
+    #[error("tmux command timed out: {command}")]
+    Timeout { command: String },
 }
 
 impl TmuxError {
@@ -54,6 +57,7 @@ impl TmuxError {
         match self {
             Self::SessionNotFound(_) | Self::WindowNotFound(_) | Self::PaneNotFound(_) => 404,
             Self::InvalidTarget(_) => 400,
+            Self::Timeout { .. } => 504,
             Self::TmuxNotRunning | Self::CommandFailed { .. } => 500,
         }
     }
@@ -65,6 +69,7 @@ impl TmuxError {
                 GrpcCode::NotFound
             }
             Self::InvalidTarget(_) => GrpcCode::InvalidArgument,
+            Self::Timeout { .. } => GrpcCode::DeadlineExceeded,
             Self::TmuxNotRunning | Self::CommandFailed { .. } => GrpcCode::Internal,
         }
     }
@@ -82,6 +87,7 @@ pub enum GrpcCode {
     NotFound,
     InvalidArgument,
     Internal,
+    DeadlineExceeded,
 }
 
 impl fmt::Display for GrpcCode {
@@ -90,6 +96,7 @@ impl fmt::Display for GrpcCode {
             Self::NotFound => write!(f, "NOT_FOUND"),
             Self::InvalidArgument => write!(f, "INVALID_ARGUMENT"),
             Self::Internal => write!(f, "INTERNAL"),
+            Self::DeadlineExceeded => write!(f, "DEADLINE_EXCEEDED"),
         }
     }
 }

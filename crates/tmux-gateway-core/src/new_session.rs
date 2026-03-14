@@ -2,11 +2,12 @@ use crate::validation::validate_session_name;
 use tmux_interface::{NewSession, Tmux};
 
 use super::TmuxError;
+use crate::timeout::spawn_blocking_with_timeout;
 
 pub async fn new_session(name: &str) -> Result<String, TmuxError> {
     validate_session_name(name)?;
     let name = name.to_string();
-    tokio::task::spawn_blocking(move || {
+    spawn_blocking_with_timeout("new-session", move || {
         let output = Tmux::with_command(NewSession::new().detached().session_name(name.as_str()))
             .output()
             .map_err(|e| TmuxError::CommandFailed {
@@ -23,8 +24,4 @@ pub async fn new_session(name: &str) -> Result<String, TmuxError> {
         Ok(name)
     })
     .await
-    .map_err(|e| TmuxError::CommandFailed {
-        command: "new-session".to_string(),
-        stderr: format!("task join error: {e}"),
-    })?
 }

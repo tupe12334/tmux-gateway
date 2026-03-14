@@ -2,11 +2,12 @@ use crate::validation::validate_window_target;
 use tmux_interface::{KillWindow as TmuxKillWindow, Tmux};
 
 use super::TmuxError;
+use crate::timeout::spawn_blocking_with_timeout;
 
 pub async fn kill_window(target: &str) -> Result<(), TmuxError> {
     validate_window_target(target)?;
     let target = target.to_string();
-    tokio::task::spawn_blocking(move || {
+    spawn_blocking_with_timeout("kill-window", move || {
         let output = Tmux::with_command(TmuxKillWindow::new().target_window(target.as_str()))
             .output()
             .map_err(|e| TmuxError::CommandFailed {
@@ -23,8 +24,4 @@ pub async fn kill_window(target: &str) -> Result<(), TmuxError> {
         Ok(())
     })
     .await
-    .map_err(|e| TmuxError::CommandFailed {
-        command: "kill-window".to_string(),
-        stderr: format!("task join error: {e}"),
-    })?
 }
