@@ -128,7 +128,7 @@ async fn list_panes_query() {
         ))
         .await;
     let query = format!(
-        r#"{{ listPanes(target: "{}:0") {{ id width height active }} }}"#,
+        r#"{{ listPanes(target: "{}:0") {{ id width height active currentPath currentCommand }} }}"#,
         session.name
     );
     let result = schema.execute(&query).await;

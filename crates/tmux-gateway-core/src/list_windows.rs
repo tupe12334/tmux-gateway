@@ -42,6 +42,7 @@ pub(crate) fn parse_windows(stdout: &str) -> Result<Vec<TmuxWindow>, TmuxError> 
         .collect()
 }
 
+#[tracing::instrument(skip(executor))]
 pub async fn list_windows(
     executor: &(impl TmuxExecutor + ?Sized),
     session: &str,

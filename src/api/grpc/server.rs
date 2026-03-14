@@ -197,6 +197,9 @@ grpc_service! {
         rpc CreateSessionWithWindows / create_session_with_windows(CreateSessionWithWindowsRequest) -> CreateSessionWithWindowsResponse;
         rpc SwapPanes / swap_panes(SwapPanesRequest) -> SwapPanesResponse;
         rpc MoveWindow / move_window(MoveWindowRequest) -> MoveWindowResponse;
+        rpc SelectWindow / select_window(SelectWindowRequest) -> SelectWindowResponse;
+        rpc SelectPane / select_pane(SelectPaneRequest) -> SelectPaneResponse;
+        rpc ResizePane / resize_pane(ResizePaneRequest) -> ResizePaneResponse;
         stream_rpc StreamPaneOutput / stream_pane_output [StreamPaneOutputStream] (StreamPaneOutputRequest) -> StreamPaneOutputResponse;
     }
 }

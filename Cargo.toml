@@ -56,3 +56,8 @@ tonic = "0.14"
 
 [package.metadata.cargo-machete]
 ignored = ["prost", "serde_json", "tonic-prost", "utoipa-axum"]
+
+[workspace.metadata.dylint]
+libraries = [
+    { git = "https://github.com/tupe12334/agent_dylint_lints" },
+]

@@ -8,3 +8,4 @@ description = "Core tmux session management library — no networking"
 [dependencies]
 tokio = { version = "1", features = ["rt", "macros"] }
 thiserror = "2"
+tracing = "0.1"

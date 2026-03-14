@@ -5,6 +5,7 @@ use crate::validation::validate_pane_target;
 
 use super::TmuxError;
 
+#[tracing::instrument(skip(executor))]
 pub async fn split_window(
     executor: &(impl TmuxExecutor + ?Sized),
     target: &str,
@@ -21,7 +22,7 @@ pub async fn split_window(
             target,
             "-P",
             "-F",
-            "#{pane_id}\t#{pane_width}\t#{pane_height}\t#{pane_active}",
+            "#{pane_id}\t#{pane_width}\t#{pane_height}\t#{pane_active}\t#{pane_current_path}\t#{pane_current_command}",
         ])
         .await?;
     if !output.success {

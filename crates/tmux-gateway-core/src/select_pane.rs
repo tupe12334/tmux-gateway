@@ -1,18 +1,18 @@
 use crate::executor::TmuxExecutor;
-use crate::validation::validate_window_target;
+use crate::validation::validate_pane_target;
 
 use super::TmuxError;
 
 #[tracing::instrument(skip(executor))]
-pub async fn kill_window(
+pub async fn select_pane(
     executor: &(impl TmuxExecutor + ?Sized),
     target: &str,
 ) -> Result<(), TmuxError> {
-    validate_window_target(target)?;
-    let output = executor.execute(&["kill-window", "-t", target]).await?;
+    validate_pane_target(target)?;
+    let output = executor.execute(&["select-pane", "-t", target]).await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
-            "kill-window",
+            "select-pane",
             &output.stderr,
             target,
         ));

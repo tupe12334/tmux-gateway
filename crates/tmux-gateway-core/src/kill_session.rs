@@ -3,6 +3,7 @@ use crate::validation::validate_session_target;
 
 use super::TmuxError;
 
+#[tracing::instrument(skip(executor))]
 pub async fn kill_session(
     executor: &(impl TmuxExecutor + ?Sized),
     target: &str,
@@ -76,7 +77,7 @@ mod tests {
             }),
         };
         let result = kill_session(&executor, "").await;
-        assert!(matches!(result, Err(TmuxError::InvalidTarget(_))));
+        assert!(matches!(result, Err(TmuxError::Validation(_))));
     }
 
     #[tokio::test]

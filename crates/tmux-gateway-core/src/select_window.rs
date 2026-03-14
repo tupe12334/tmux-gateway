@@ -4,15 +4,17 @@ use crate::validation::validate_window_target;
 use super::TmuxError;
 
 #[tracing::instrument(skip(executor))]
-pub async fn kill_window(
+pub async fn select_window(
     executor: &(impl TmuxExecutor + ?Sized),
     target: &str,
 ) -> Result<(), TmuxError> {
     validate_window_target(target)?;
-    let output = executor.execute(&["kill-window", "-t", target]).await?;
+    let output = executor
+        .execute(&["select-window", "-t", target])
+        .await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
-            "kill-window",
+            "select-window",
             &output.stderr,
             target,
         ));

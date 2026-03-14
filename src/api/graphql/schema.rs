@@ -28,6 +28,8 @@ struct Pane {
     width: u32,
     height: u32,
     active: bool,
+    current_path: String,
+    current_command: String,
 }
 
 struct GraphqlHandler;
@@ -112,6 +114,22 @@ impl TmuxCommands for GraphqlHandler {
     async fn move_window(&self, source: &str, destination_session: &str) -> Result<(), TmuxError> {
         tmux::move_window(&RealTmuxExecutor, source, destination_session).await
     }
+
+    async fn select_window(&self, target: &str) -> Result<(), TmuxError> {
+        tmux::select_window(&RealTmuxExecutor, target).await
+    }
+
+    async fn select_pane(&self, target: &str) -> Result<(), TmuxError> {
+        tmux::select_pane(&RealTmuxExecutor, target).await
+    }
+
+    async fn resize_pane(
+        &self,
+        target: &str,
+        direction: tmux::ResizeDirection,
+    ) -> Result<(), TmuxError> {
+        tmux::resize_pane(&RealTmuxExecutor, target, direction).await
+    }
 }
 
 pub struct QueryRoot;
@@ -171,6 +189,8 @@ impl QueryRoot {
                 width: p.width,
                 height: p.height,
                 active: p.active,
+                current_path: p.current_path,
+                current_command: p.current_command,
             })
             .collect())
     }
@@ -295,6 +315,8 @@ impl MutationRoot {
             width: p.width,
             height: p.height,
             active: p.active,
+            current_path: p.current_path,
+            current_command: p.current_command,
         })
     }
 
@@ -333,6 +355,46 @@ impl MutationRoot {
     ) -> async_graphql::Result<bool> {
         GraphqlHandler
             .move_window(&source, &destination_session)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+        Ok(true)
+    }
+
+    async fn select_window(&self, target: String) -> async_graphql::Result<bool> {
+        GraphqlHandler
+            .select_window(&target)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+        Ok(true)
+    }
+
+    async fn select_pane(&self, target: String) -> async_graphql::Result<bool> {
+        GraphqlHandler
+            .select_pane(&target)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+        Ok(true)
+    }
+
+    async fn resize_pane(
+        &self,
+        target: String,
+        direction: String,
+        amount: u32,
+    ) -> async_graphql::Result<bool> {
+        let dir = match direction.as_str() {
+            "up" | "Up" | "U" => tmux::ResizeDirection::Up(amount),
+            "down" | "Down" | "D" => tmux::ResizeDirection::Down(amount),
+            "left" | "Left" | "L" => tmux::ResizeDirection::Left(amount),
+            "right" | "Right" | "R" => tmux::ResizeDirection::Right(amount),
+            _ => {
+                return Err(async_graphql::Error::new(format!(
+                    "invalid direction: {direction}"
+                )));
+            }
+        };
+        GraphqlHandler
+            .resize_pane(&target, dir)
             .await
             .map_err(|e| async_graphql::Error::new(e.to_string()))?;
         Ok(true)
