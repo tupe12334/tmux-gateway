@@ -13,7 +13,11 @@
       "Bash(cargo doc:*)",
       "Bash(git status:*)",
       "Bash(cargo clippy:*)",
-      "Bash(cargo check:*)"
+      "Bash(cargo check:*)",
+      "Bash(docker build:*)",
+      "Bash(gh issue:*)",
+      "Bash(gh label:*)",
+      "Bash(centy start:*)"
     ],
     "deny": ["Bash(gh issue create:*)"]
   },
