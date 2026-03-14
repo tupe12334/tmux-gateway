@@ -37,19 +37,30 @@ pub async fn list_panes(target: &str) -> Result<Vec<TmuxPane>, TmuxError> {
         let panes = stdout
             .lines()
             .filter(|line| !line.is_empty())
-            .filter_map(|line| {
+            .map(|line| {
                 let parts: Vec<&str> = line.splitn(4, '\t').collect();
                 if parts.len() < 4 {
-                    return None;
+                    return Err(TmuxError::ParseError {
+                        command: "list-panes".to_string(),
+                        details: format!("expected 4 tab-separated fields, got: {line}"),
+                    });
                 }
-                Some(TmuxPane {
+                let width = parts[1].parse::<u32>().map_err(|e| TmuxError::ParseError {
+                    command: "list-panes".to_string(),
+                    details: format!("invalid width '{}': {e}", parts[1]),
+                })?;
+                let height = parts[2].parse::<u32>().map_err(|e| TmuxError::ParseError {
+                    command: "list-panes".to_string(),
+                    details: format!("invalid height '{}': {e}", parts[2]),
+                })?;
+                Ok(TmuxPane {
                     id: parts[0].to_string(),
-                    width: parts[1].parse().unwrap_or(0),
-                    height: parts[2].parse().unwrap_or(0),
+                    width,
+                    height,
                     active: parts[3] == "1",
                 })
             })
-            .collect();
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(panes)
     })
