@@ -37,6 +37,7 @@ utoipa-swagger-ui = { version = "9", features = ["axum"] }
 dotenvy = "0.15.7"
 protox = "0.9.1"
 prost-types = "0.14"
+chrono = { version = "0.4.44", default-features = false, features = ["clock"] }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
