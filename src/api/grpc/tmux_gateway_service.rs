@@ -1,7 +1,8 @@
 use tonic::{Request, Response, Status};
 
 use super::messages::{
-    CapturePaneRequest, CapturePaneResponse, CreateSessionWithWindowsRequest,
+    CapturePaneRequest, CapturePaneResponse, CapturePaneWithOptionsRequest,
+    CapturePaneWithOptionsResponse, CreateSessionWithWindowsRequest,
     CreateSessionWithWindowsResponse, KillPaneRequest, KillPaneResponse, KillSessionRequest,
     KillSessionResponse, KillWindowRequest, KillWindowResponse, ListPanesRequest,
     ListPanesResponse, ListWindowsRequest, ListWindowsResponse, LsRequest, LsResponse,
@@ -70,6 +71,14 @@ impl TmuxCommands for TmuxGatewayServiceImpl {
 
     async fn capture_pane(&self, target: &str) -> Result<String, TmuxError> {
         tmux::capture_pane(&RealTmuxExecutor, target).await
+    }
+
+    async fn capture_pane_with_options(
+        &self,
+        target: &str,
+        opts: &tmux::CaptureOptions,
+    ) -> Result<String, TmuxError> {
+        tmux::capture_pane_with_options(&RealTmuxExecutor, target, opts).await
     }
 
     async fn create_session_with_windows(
@@ -288,6 +297,30 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
             .await
             .map_err(tmux_err_to_status)?;
         Ok(Response::new(CapturePaneResponse { content }))
+    }
+
+    async fn capture_pane_with_options(
+        &self,
+        request: Request<CapturePaneWithOptionsRequest>,
+    ) -> Result<Response<CapturePaneWithOptionsResponse>, Status> {
+        let inner = request.into_inner();
+        let opts = tmux::CaptureOptions {
+            start_line: if inner.has_start_line {
+                Some(inner.start_line)
+            } else {
+                None
+            },
+            end_line: if inner.has_end_line {
+                Some(inner.end_line)
+            } else {
+                None
+            },
+            escape_sequences: inner.escape_sequences,
+        };
+        let content = TmuxCommands::capture_pane_with_options(self, &inner.target, &opts)
+            .await
+            .map_err(tmux_err_to_status)?;
+        Ok(Response::new(CapturePaneWithOptionsResponse { content }))
     }
 
     async fn create_session_with_windows(
