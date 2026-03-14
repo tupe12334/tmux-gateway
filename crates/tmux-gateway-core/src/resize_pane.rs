@@ -30,7 +30,11 @@ pub async fn resize_pane(
         .execute(&["resize-pane", flag, "-t", target, &amount_str])
         .await?;
     if !output.success {
-        return Err(TmuxError::from_stderr("resize-pane", &output.stderr, target));
+        return Err(TmuxError::from_stderr(
+            "resize-pane",
+            &output.stderr,
+            target,
+        ));
     }
     Ok(())
 }

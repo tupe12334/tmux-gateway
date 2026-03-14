@@ -1,4 +1,4 @@
-.PHONY: build run clean schemas docker-up docker-down
+.PHONY: build run clean schemas docker-up docker-down test lint check
 
 build: schemas
 
@@ -18,3 +18,17 @@ docker-up:
 
 docker-down:
 	docker compose down
+
+test:
+	cargo test --workspace
+
+lint:
+	cargo fmt --all -- --check
+	cargo clippy --workspace -- -D warnings
+
+check: lint test
+	cargo doc --workspace --no-deps
+	cargo deny check
+	cargo audit
+	cargo machete
+	cspell --no-progress "**"

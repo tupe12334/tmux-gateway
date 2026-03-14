@@ -61,6 +61,14 @@ make build   # compiles + exports schemas to schemas/
 cargo run
 ```
 
+### Testing & Validation
+
+```bash
+make test    # run workspace tests
+make lint    # cargo fmt check + clippy
+make check   # full pre-push validation suite (lint, test, doc, deny, audit, machete, cspell)
+```
+
 ### Docker
 
 Run everything with Docker Compose:
