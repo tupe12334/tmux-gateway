@@ -1,19 +1,16 @@
-use serde::{Deserialize, Serialize};
-
 use crate::executor::TmuxExecutor;
 use crate::validation::{validate_option_name, validate_option_scope_target};
 
 use super::TmuxError;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TmuxOption {
     pub name: String,
     pub value: String,
     pub scope: OptionScope,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OptionScope {
     Global,
     Session,
@@ -207,7 +204,7 @@ mod tests {
             }),
         };
         let result = get_option(&executor, "", "$(inject)", OptionScope::Global).await;
-        assert!(matches!(result, Err(TmuxError::InvalidTarget(_))));
+        assert!(matches!(result, Err(TmuxError::Validation(_))));
     }
 
     #[tokio::test]
@@ -220,7 +217,7 @@ mod tests {
             }),
         };
         let result = set_option(&executor, "", "foo;bar", "on", OptionScope::Global).await;
-        assert!(matches!(result, Err(TmuxError::InvalidTarget(_))));
+        assert!(matches!(result, Err(TmuxError::Validation(_))));
     }
 
     #[tokio::test]
@@ -259,7 +256,7 @@ mod tests {
             }),
         };
         let result = get_option(&executor, "", "mouse", OptionScope::Session).await;
-        assert!(matches!(result, Err(TmuxError::InvalidTarget(_))));
+        assert!(matches!(result, Err(TmuxError::Validation(_))));
     }
 
     #[tokio::test]
@@ -272,6 +269,6 @@ mod tests {
             }),
         };
         let result = get_option(&executor, "", "mouse", OptionScope::Window).await;
-        assert!(matches!(result, Err(TmuxError::InvalidTarget(_))));
+        assert!(matches!(result, Err(TmuxError::Validation(_))));
     }
 }
