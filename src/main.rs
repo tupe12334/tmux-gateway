@@ -67,9 +67,7 @@ async fn main() {
     let http_app = axum::Router::new()
         .merge(rest::router())
         .merge(graphql::router())
-        .merge(
-            SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", rest::ApiDoc::openapi()),
-        )
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", rest::ApiDoc::openapi()))
         .layer(cors);
 
     let http_addr = format!("0.0.0.0:{http_port}");
