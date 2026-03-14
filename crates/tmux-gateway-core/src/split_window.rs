@@ -14,7 +14,7 @@ pub async fn split_window(target: &str, horizontal: bool) -> Result<TmuxPane, Tm
             .detached()
             .target_pane(target.as_str())
             .print()
-            .format("#{pane_id}\t#{pane_width}\t#{pane_height}\t#{pane_active}");
+            .format("#{pane_id}\t#{pane_width}\t#{pane_height}\t#{pane_active}\t#{pane_current_path}\t#{pane_current_command}");
         if horizontal {
             cmd = cmd.horizontal();
         } else {
