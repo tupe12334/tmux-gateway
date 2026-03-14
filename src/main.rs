@@ -22,7 +22,7 @@ async fn main() -> anyhow::Result<()> {
 
     init_tracing();
 
-    let config = preflight::run();
+    let config = preflight::run().await;
 
     export_schemas::export_all();
 
@@ -218,10 +218,12 @@ async fn main() -> anyhow::Result<()> {
                 const CHECK_TIMEOUT: Duration = Duration::from_secs(3);
 
                 loop {
-                    let healthy =
-                        tokio::time::timeout(CHECK_TIMEOUT, tmux_gateway_core::is_available())
-                            .await
-                            .unwrap_or(false);
+                    let healthy = tokio::time::timeout(
+                        CHECK_TIMEOUT,
+                        tmux_gateway_core::is_available(&tmux_gateway_core::RealTmuxExecutor),
+                    )
+                    .await
+                    .unwrap_or(false);
 
                     if healthy {
                         reporter
