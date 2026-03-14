@@ -123,7 +123,9 @@ fn validate_target_chars(target: &str) -> Result<(), ValidationError> {
         .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | ':'))
     {
         return Err(ValidationError::InvalidTarget {
-            reason: "must contain only alphanumeric characters, hyphens, underscores, dots, or colons".to_string(),
+            reason:
+                "must contain only alphanumeric characters, hyphens, underscores, dots, or colons"
+                    .to_string(),
         });
     }
     Ok(())
