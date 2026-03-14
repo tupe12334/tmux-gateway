@@ -50,9 +50,8 @@ async fn main() -> anyhow::Result<()> {
     let mut grpc_shutdown_rx = shutdown_tx.subscribe();
 
     let cors = {
-        let origins_raw = env::var("CORS_ORIGINS").unwrap_or_else(|_| {
-            format!("http://localhost:{},http://localhost:3000", http_port)
-        });
+        let origins_raw = env::var("CORS_ORIGINS")
+            .unwrap_or_else(|_| format!("http://localhost:{},http://localhost:3000", http_port));
         let raw_entries: Vec<&str> = origins_raw.split(',').map(|s| s.trim()).collect();
         let total = raw_entries.len();
         let mut origins: Vec<http::HeaderValue> = Vec::with_capacity(total);

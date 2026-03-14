@@ -222,4 +222,30 @@ proto_messages! {
     message CapturePaneResponse {
         string content = "1";
     }
+
+    message CreateSessionWithWindowsRequest {
+        string name = "1";
+        repeated_string window_names = "2";
+    }
+
+    message CreateSessionWithWindowsResponse {
+        string name = "1";
+        uint32 windows = "2";
+        int64 created = "3";
+        bool attached = "4";
+    }
+
+    message SwapPanesRequest {
+        string src = "1";
+        string dst = "2";
+    }
+
+    message SwapPanesResponse {}
+
+    message MoveWindowRequest {
+        string source = "1";
+        string destination_session = "2";
+    }
+
+    message MoveWindowResponse {}
 }

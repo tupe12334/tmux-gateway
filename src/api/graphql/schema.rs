@@ -83,6 +83,22 @@ impl TmuxCommands for GraphqlHandler {
     async fn capture_pane(&self, target: &str) -> Result<String, TmuxError> {
         tmux::capture_pane(target).await
     }
+
+    async fn create_session_with_windows(
+        &self,
+        name: &str,
+        window_names: &[String],
+    ) -> Result<tmux::TmuxSession, TmuxError> {
+        tmux::create_session_with_windows(name, window_names).await
+    }
+
+    async fn swap_panes(&self, src: &str, dst: &str) -> Result<(), TmuxError> {
+        tmux::swap_panes(src, dst).await
+    }
+
+    async fn move_window(&self, source: &str, destination_session: &str) -> Result<(), TmuxError> {
+        tmux::move_window(source, destination_session).await
+    }
 }
 
 pub struct QueryRoot;
@@ -227,6 +243,46 @@ impl MutationRoot {
     async fn split_window(&self, target: String, horizontal: bool) -> async_graphql::Result<bool> {
         GraphqlHandler
             .split_window(&target, horizontal)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+        Ok(true)
+    }
+
+    async fn create_session_with_windows(
+        &self,
+        name: String,
+        window_names: Vec<String>,
+    ) -> async_graphql::Result<Session> {
+        let session = GraphqlHandler
+            .create_session_with_windows(&name, &window_names)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+
+        Ok(Session {
+            name: session.name,
+            windows: session.windows,
+            created: DateTime::<Utc>::from_timestamp(session.created, 0)
+                .map(|dt| dt.to_rfc3339())
+                .unwrap_or_else(|| session.created.to_string()),
+            attached: session.attached,
+        })
+    }
+
+    async fn swap_panes(&self, src: String, dst: String) -> async_graphql::Result<bool> {
+        GraphqlHandler
+            .swap_panes(&src, &dst)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+        Ok(true)
+    }
+
+    async fn move_window(
+        &self,
+        source: String,
+        destination_session: String,
+    ) -> async_graphql::Result<bool> {
+        GraphqlHandler
+            .move_window(&source, &destination_session)
             .await
             .map_err(|e| async_graphql::Error::new(e.to_string()))?;
         Ok(true)

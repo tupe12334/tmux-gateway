@@ -150,5 +150,8 @@ grpc_service! {
         rpc NewWindow / new_window(NewWindowRequest) -> NewWindowResponse;
         rpc SplitWindow / split_window(SplitWindowRequest) -> SplitWindowResponse;
         rpc CapturePane / capture_pane(CapturePaneRequest) -> CapturePaneResponse;
+        rpc CreateSessionWithWindows / create_session_with_windows(CreateSessionWithWindowsRequest) -> CreateSessionWithWindowsResponse;
+        rpc SwapPanes / swap_panes(SwapPanesRequest) -> SwapPanesResponse;
+        rpc MoveWindow / move_window(MoveWindowRequest) -> MoveWindowResponse;
     }
 }
