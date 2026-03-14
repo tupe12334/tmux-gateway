@@ -259,4 +259,14 @@ proto_messages! {
     }
 
     message MoveWindowResponse {}
+
+    message StreamPaneOutputRequest {
+        string target = "1";
+        uint32 interval_ms = "2";
+    }
+
+    message StreamPaneOutputResponse {
+        string content = "1";
+        int64 timestamp = "2";
+    }
 }

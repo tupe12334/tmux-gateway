@@ -16,7 +16,10 @@ license.workspace = true
 [dependencies]
 tmux-gateway-core = { path = "crates/tmux-gateway-core" }
 tokio = { version = "1", features = ["full"] }
-axum = "0.8"
+tokio-stream = "0.1"
+async-stream = "0.3"
+futures-core = "0.3"
+axum = { version = "0.8", features = ["ws"] }
 async-graphql = "7"
 async-graphql-axum = "7"
 tonic = "0.14"

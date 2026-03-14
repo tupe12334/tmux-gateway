@@ -12,6 +12,7 @@ macro_rules! grpc_service {
         package = $package:literal;
         service $trait_name:ident ($server_name:ident) {
             $(rpc $rpc_name:ident / $method:ident ( $req:ident ) -> $res:ident;)*
+            $(stream_rpc $srpc_name:ident / $smethod:ident [$stype:ident] ( $sreq:ident ) -> $sres:ident;)*
         }
     ) => {
         #[tonic::async_trait]
@@ -21,6 +22,14 @@ macro_rules! grpc_service {
                     &self,
                     request: tonic::Request<super::messages::$req>,
                 ) -> Result<tonic::Response<super::messages::$res>, tonic::Status>;
+            )*
+            $(
+                type $stype: futures_core::Stream<Item = Result<super::messages::$sres, tonic::Status>> + Send + 'static;
+
+                async fn $smethod(
+                    &self,
+                    request: tonic::Request<super::messages::$sreq>,
+                ) -> Result<tonic::Response<Self::$stype>, tonic::Status>;
             )*
         }
 
@@ -98,6 +107,36 @@ macro_rules! grpc_service {
                             Box::pin(fut)
                         }
                     )*
+                    $(
+                        concat!("/", $package, ".", stringify!($trait_name), "/", stringify!($srpc_name)) => {
+                            struct Svc<T: $trait_name>(Arc<T>);
+                            impl<T: $trait_name> tonic::server::ServerStreamingService<super::messages::$sreq> for Svc<T> {
+                                type Response = super::messages::$sres;
+                                type ResponseStream = T::$stype;
+                                type Future = BoxFuture<
+                                    tonic::Response<Self::ResponseStream>,
+                                    tonic::Status,
+                                >;
+                                fn call(
+                                    &mut self,
+                                    request: tonic::Request<super::messages::$sreq>,
+                                ) -> Self::Future {
+                                    let inner = Arc::clone(&self.0);
+                                    Box::pin(async move {
+                                        <T as $trait_name>::$smethod(&inner, request).await
+                                    })
+                                }
+                            }
+                            let fut = async move {
+                                let method = Svc(inner);
+                                let codec = tonic_prost::ProstCodec::default();
+                                let mut grpc = tonic::server::Grpc::new(codec);
+                                let res = grpc.server_streaming(method, req).await;
+                                Ok(res)
+                            };
+                            Box::pin(fut)
+                        }
+                    )*
                     _ => {
                         Box::pin(async move {
                             let mut response = http::Response::new(tonic::body::Body::default());
@@ -128,6 +167,10 @@ macro_rules! grpc_service {
                     "  rpc ", stringify!($rpc_name),
                     "(", stringify!($req), ") returns (", stringify!($res), ");\n",
                 )*
+                $(
+                    "  rpc ", stringify!($srpc_name),
+                    "(", stringify!($sreq), ") returns (stream ", stringify!($sres), ");\n",
+                )*
                 "}\n",
             )
         }
@@ -153,5 +196,6 @@ grpc_service! {
         rpc CreateSessionWithWindows / create_session_with_windows(CreateSessionWithWindowsRequest) -> CreateSessionWithWindowsResponse;
         rpc SwapPanes / swap_panes(SwapPanesRequest) -> SwapPanesResponse;
         rpc MoveWindow / move_window(MoveWindowRequest) -> MoveWindowResponse;
+        stream_rpc StreamPaneOutput / stream_pane_output [StreamPaneOutputStream] (StreamPaneOutputRequest) -> StreamPaneOutputResponse;
     }
 }

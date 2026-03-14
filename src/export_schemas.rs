@@ -107,6 +107,7 @@ mod tests {
         let sdl = graphql_sdl();
         assert!(sdl.contains("type Query"));
         assert!(sdl.contains("type Mutation"));
+        assert!(sdl.contains("type Subscription"));
     }
 
     #[test]
@@ -127,6 +128,7 @@ mod tests {
             "newWindow",
             "splitWindow",
             "capturePane",
+            "paneOutput",
         ];
         for op in &expected {
             assert!(sdl.contains(op), "missing GraphQL operation: {op}");
