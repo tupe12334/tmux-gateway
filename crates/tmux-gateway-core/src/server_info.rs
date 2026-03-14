@@ -1,7 +1,7 @@
 use serde::Serialize;
 use tmux_interface::Tmux;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct TmuxServerInfo {
     pub version: String,
     pub running: bool,

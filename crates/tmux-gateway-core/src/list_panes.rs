@@ -5,7 +5,7 @@ use super::TmuxError;
 use super::validation::validate_window_target;
 use crate::executor::{exec_tmux, run_tmux};
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct TmuxPane {
     pub id: String,
     pub width: u32,

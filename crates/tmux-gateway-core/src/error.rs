@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, PartialEq, Eq, thiserror::Error)]
 pub enum TmuxError {
     #[error("session not found: {0}")]
     SessionNotFound(String),
