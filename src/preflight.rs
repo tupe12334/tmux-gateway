@@ -2,8 +2,6 @@ use std::env;
 use std::fmt;
 use std::net::TcpListener;
 use std::path::Path;
-use tmux_gateway_core::tmux_interface::Tmux;
-
 pub struct ServerConfig {
     pub http_port: u16,
     pub grpc_port: u16,
@@ -40,33 +38,20 @@ pub fn run() -> ServerConfig {
     let mut tmux_version = String::new();
 
     // ── tmux binary ──────────────────────────────────────────────
-    match Tmux::new().version().output() {
-        Ok(output) => {
-            let raw = output.into_inner();
-            if raw.status.success() {
-                let version = String::from_utf8_lossy(&raw.stdout).trim().to_string();
-                tmux_version = version.clone();
-                checks.push(Check {
-                    name: "tmux binary".into(),
-                    status: Status::Pass,
-                    message: version,
-                });
-            } else {
-                let stderr = String::from_utf8_lossy(&raw.stderr).trim().to_string();
-                checks.push(Check {
-                    name: "tmux binary".into(),
-                    status: Status::Fail,
-                    message: format!("tmux returned error: {stderr}"),
-                });
-            }
-        }
-        Err(_) => {
-            checks.push(Check {
-                name: "tmux binary".into(),
-                status: Status::Fail,
-                message: "not found on PATH — install with: brew install tmux".into(),
-            });
-        }
+    let info = tmux_gateway_core::server_info_blocking();
+    if info.running {
+        tmux_version = info.version.clone();
+        checks.push(Check {
+            name: "tmux binary".into(),
+            status: Status::Pass,
+            message: info.version,
+        });
+    } else {
+        checks.push(Check {
+            name: "tmux binary".into(),
+            status: Status::Fail,
+            message: "tmux is not available — install with: brew install tmux".into(),
+        });
     }
 
     // ── HTTP_PORT ────────────────────────────────────────────────

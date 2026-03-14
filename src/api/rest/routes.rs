@@ -4,7 +4,7 @@ use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use utoipa::{OpenApi, ToSchema};
 
-use crate::tmux::{self, TmuxCommands, TmuxError, tmux_interface::Tmux};
+use crate::tmux::{self, TmuxCommands, TmuxError};
 
 struct RestHandler;
 
@@ -75,15 +75,6 @@ struct HealthResponse {
     detail: Option<String>,
 }
 
-/// Returns `true` if tmux is reachable and responding.
-pub fn check_tmux_available() -> bool {
-    Tmux::new()
-        .version()
-        .output()
-        .map(|o| o.into_inner().status.success())
-        .unwrap_or(false)
-}
-
 #[derive(Serialize, ToSchema)]
 struct SessionResponse {
     name: String,
@@ -117,7 +108,7 @@ struct PaneResponse {
     )
 )]
 async fn health() -> (axum::http::StatusCode, Json<HealthResponse>) {
-    if check_tmux_available() {
+    if tmux::is_available().await {
         (
             axum::http::StatusCode::OK,
             Json(HealthResponse {

@@ -147,7 +147,7 @@ async fn main() {
         let (health_reporter, health_service) = tonic_health::server::health_reporter();
 
         // Check tmux availability for gRPC health status
-        if rest::check_tmux_available() {
+        if tmux_gateway_core::is_available().await {
             health_reporter
                 .set_serving::<grpc::TmuxGatewayServerConcrete>()
                 .await;
