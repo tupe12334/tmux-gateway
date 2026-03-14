@@ -5,6 +5,7 @@ use tmux_gateway::{export_schemas, port_table, preflight};
 use tokio::net::TcpListener;
 use tokio::signal;
 use tokio::sync::watch;
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::request_id::{PropagateRequestIdLayer, SetRequestIdLayer};
 use tower_http::trace::TraceLayer;
 use tracing::Span;
@@ -45,14 +46,30 @@ async fn main() {
     let mut http_shutdown_rx = shutdown_tx.subscribe();
     let mut grpc_shutdown_rx = shutdown_tx.subscribe();
 
+    let cors = {
+        let origins = env::var("CORS_ORIGINS").unwrap_or_else(|_| {
+            format!(
+                "http://localhost:{},http://localhost:{}",
+                http_port, grpc_port
+            )
+        });
+        let origins: Vec<_> = origins
+            .split(',')
+            .filter_map(|s| s.trim().parse().ok())
+            .collect();
+        CorsLayer::new()
+            .allow_origin(AllowOrigin::list(origins))
+            .allow_methods(tower_http::cors::Any)
+            .allow_headers(tower_http::cors::Any)
+    };
+
     let x_request_id = http::HeaderName::from_static("x-request-id");
 
     let http_app = axum::Router::new()
         .merge(rest::router())
         .merge(graphql::router())
-        .merge(
-            SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", rest::ApiDoc::openapi()),
-        )
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", rest::ApiDoc::openapi()))
+        .layer(cors)
         .layer(PropagateRequestIdLayer::new(x_request_id.clone()))
         .layer(
             TraceLayer::new_for_http()
@@ -145,9 +162,7 @@ async fn main() {
         .await
         .is_err()
     {
-        tracing::warn!(
-            "Graceful shutdown timed out after {shutdown_timeout}s, forcing exit"
-        );
+        tracing::warn!("Graceful shutdown timed out after {shutdown_timeout}s, forcing exit");
     } else {
         tracing::info!("All servers shut down gracefully");
     }
@@ -178,8 +193,8 @@ async fn shutdown_signal() {
 
     #[cfg(unix)]
     {
-        let mut sigterm =
-            signal::unix::signal(signal::unix::SignalKind::terminate()).expect("failed to install SIGTERM handler");
+        let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install SIGTERM handler");
         tokio::select! {
             _ = ctrl_c => {}
             _ = sigterm.recv() => {}

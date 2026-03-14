@@ -1,8 +1,10 @@
+use crate::validation::validate_session_name;
 use tmux_interface::{NewSession, Tmux};
 
 use super::TmuxError;
 
 pub async fn new_session(name: &str) -> Result<String, TmuxError> {
+    validate_session_name(name)?;
     let name = name.to_string();
     tokio::task::spawn_blocking(move || {
         let output = Tmux::with_command(NewSession::new().detached().session_name(name.as_str()))

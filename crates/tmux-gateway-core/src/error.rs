@@ -35,8 +35,7 @@ impl TmuxError {
             return Self::SessionNotFound(target.to_string());
         }
 
-        if stderr_lower.contains("window not found") || stderr_lower.contains("can't find window")
-        {
+        if stderr_lower.contains("window not found") || stderr_lower.contains("can't find window") {
             return Self::WindowNotFound(target.to_string());
         }
 
@@ -68,6 +67,12 @@ impl TmuxError {
             Self::InvalidTarget(_) => GrpcCode::InvalidArgument,
             Self::TmuxNotRunning | Self::CommandFailed { .. } => GrpcCode::Internal,
         }
+    }
+}
+
+impl From<crate::validation::ValidationError> for TmuxError {
+    fn from(e: crate::validation::ValidationError) -> Self {
+        Self::InvalidTarget(e.to_string())
     }
 }
 
