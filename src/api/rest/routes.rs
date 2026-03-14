@@ -534,20 +534,30 @@ async fn capture_pane(
 )]
 pub struct ApiDoc;
 
-pub fn router() -> Router {
+/// Read-only (GET) routes — typically given a higher rate limit.
+pub fn read_router() -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/ls", get(ls))
+        .route("/list-windows", get(list_windows))
+        .route("/list-panes", get(list_panes))
+        .route("/capture-pane", get(capture_pane))
+}
+
+/// Mutating (POST) routes — typically given a lower rate limit.
+pub fn write_router() -> Router {
+    Router::new()
         .route("/new", post(new))
         .route("/kill-session", post(kill_session))
         .route("/kill-window", post(kill_window))
         .route("/kill-pane", post(kill_pane))
-        .route("/list-windows", get(list_windows))
-        .route("/list-panes", get(list_panes))
         .route("/send-keys", post(send_keys))
         .route("/rename-session", post(rename_session))
         .route("/rename-window", post(rename_window))
         .route("/new-window", post(new_window))
         .route("/split-window", post(split_window))
-        .route("/capture-pane", get(capture_pane))
+}
+
+pub fn router() -> Router {
+    read_router().merge(write_router())
 }
