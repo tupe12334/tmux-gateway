@@ -57,6 +57,21 @@ make build   # compiles + exports schemas to schemas/
 cargo run
 ```
 
+### Docker
+
+Run everything with Docker Compose:
+
+```bash
+make docker-up    # builds and starts tmux-gateway + grpcui
+make docker-down  # stops and removes containers
+```
+
+This starts:
+- **tmux-gateway** on ports `3020` (HTTP) and `50251` (gRPC), with a health check on `/health`
+- **grpcui** on port `8080` for interactive gRPC exploration
+
+Configure ports and settings via `.env.dev`.
+
 The `make build` command compiles the project and generates the API schema files (`schemas/openapi.json`, `schemas/schema.graphql`) alongside the hand-maintained `schemas/tmux_gateway.proto`.
 
 The server starts two listeners:

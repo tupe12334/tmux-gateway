@@ -1,0 +1,23 @@
+services:
+  tmux-gateway:
+    build: .
+    ports:
+      - "${HTTP_PORT:-3020}:${HTTP_PORT:-3020}"
+      - "${GRPC_PORT:-50251}:${GRPC_PORT:-50251}"
+    env_file:
+      - .env.dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${HTTP_PORT:-3020}/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  grpcui:
+    image: fullstorydev/grpcui:latest
+    ports:
+      - "8080:8080"
+    command: ["-plaintext", "-port", "8080", "-bind", "0.0.0.0", "tmux-gateway:${GRPC_PORT:-50251}"]
+    depends_on:
+      tmux-gateway:
+        condition: service_healthy

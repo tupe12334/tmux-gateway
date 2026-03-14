@@ -1,4 +1,4 @@
-.PHONY: build run clean schemas
+.PHONY: build run clean schemas docker-up docker-down
 
 build: schemas
 
@@ -12,3 +12,9 @@ run:
 clean:
 	cargo clean
 	rm -f schemas/openapi.json schemas/schema.graphql
+
+docker-up:
+	docker compose up --build -d
+
+docker-down:
+	docker compose down
