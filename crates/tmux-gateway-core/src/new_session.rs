@@ -29,7 +29,7 @@ pub async fn new_session_with_events(
             name,
             "-P",
             "-F",
-            "#{session_name}\t#{session_windows}\t#{session_created}\t#{session_attached}",
+            "#{session_id}\t#{session_name}\t#{session_windows}\t#{session_created}\t#{session_attached}",
         ])
         .await?;
     if !output.success {
