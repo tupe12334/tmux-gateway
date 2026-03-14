@@ -171,8 +171,7 @@ async fn main() {
 /// Initializes the tracing subscriber.
 /// Set `RUST_LOG_FORMAT=json` for JSON-formatted logs (recommended for production).
 fn init_tracing() {
-    let filter =
-        EnvFilter::from_default_env().add_directive("tmux_gateway=info".parse().unwrap());
+    let filter = EnvFilter::from_default_env().add_directive("tmux_gateway=info".parse().unwrap());
 
     let use_json = env::var("RUST_LOG_FORMAT")
         .map(|v| v.eq_ignore_ascii_case("json"))
