@@ -1,10 +1,9 @@
 use serde::Serialize;
-use tmux_interface::{ListSessions, Tmux};
 
 use super::TmuxError;
-use crate::executor::run_tmux;
+use crate::executor::TmuxExecutor;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct TmuxSession {
     pub name: String,
     pub windows: u32,
@@ -12,13 +11,19 @@ pub struct TmuxSession {
     pub attached: bool,
 }
 
-pub async fn session_exists(name: &str) -> Result<bool, TmuxError> {
-    let sessions = list_sessions().await?;
+pub async fn session_exists(
+    executor: &(impl TmuxExecutor + ?Sized),
+    name: &str,
+) -> Result<bool, TmuxError> {
+    let sessions = list_sessions(executor).await?;
     Ok(sessions.iter().any(|s| s.name == name))
 }
 
-pub async fn get_session(name: &str) -> Result<Option<TmuxSession>, TmuxError> {
-    let sessions = list_sessions().await?;
+pub async fn get_session(
+    executor: &(impl TmuxExecutor + ?Sized),
+    name: &str,
+) -> Result<Option<TmuxSession>, TmuxError> {
+    let sessions = list_sessions(executor).await?;
     Ok(sessions.into_iter().find(|s| s.name == name))
 }
 
@@ -54,35 +59,32 @@ pub(crate) fn parse_sessions(stdout: &str) -> Result<Vec<TmuxSession>, TmuxError
         .collect()
 }
 
-pub async fn list_sessions() -> Result<Vec<TmuxSession>, TmuxError> {
-    run_tmux("list-sessions", || {
-        let output = Tmux::with_command(ListSessions::new().format(
+pub async fn list_sessions(
+    executor: &(impl TmuxExecutor + ?Sized),
+) -> Result<Vec<TmuxSession>, TmuxError> {
+    let output = executor
+        .execute(&[
+            "list-sessions",
+            "-F",
             "#{session_name}\t#{session_windows}\t#{session_created}\t#{session_attached}",
-        ))
-        .output()
-        .map_err(|e| TmuxError::CommandFailed {
-            command: "list-sessions".to_string(),
-            stderr: e.to_string(),
-        })?
-        .into_inner();
+        ])
+        .await?;
 
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            if stderr.contains("no server running") || stderr.contains("no sessions") {
-                return Ok(vec![]);
-            }
-            return Err(TmuxError::from_stderr("list-sessions", &stderr, ""));
+    if !output.success {
+        let stderr = &output.stderr;
+        if stderr.contains("no server running") || stderr.contains("no sessions") {
+            return Ok(vec![]);
         }
+        return Err(TmuxError::from_stderr("list-sessions", stderr, ""));
+    }
 
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        parse_sessions(&stdout)
-    })
-    .await
+    parse_sessions(&output.stdout)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::executor::{RealTmuxExecutor, TmuxOutput};
 
     #[test]
     fn parse_session_line_valid() {
@@ -148,14 +150,15 @@ mod tests {
 
     #[tokio::test]
     async fn session_exists_returns_false_for_nonexistent() {
-        let result = session_exists("__tmux_gw_test_nonexistent_session__").await;
+        let result =
+            session_exists(&RealTmuxExecutor, "__tmux_gw_test_nonexistent_session__").await;
         assert!(result.is_ok());
         assert!(!result.unwrap());
     }
 
     #[tokio::test]
     async fn get_session_returns_none_for_nonexistent() {
-        let result = get_session("__tmux_gw_test_nonexistent_session__").await;
+        let result = get_session(&RealTmuxExecutor, "__tmux_gw_test_nonexistent_session__").await;
         assert!(result.is_ok());
         assert!(result.unwrap().is_none());
     }
@@ -164,22 +167,75 @@ mod tests {
     async fn session_exists_finds_created_session() {
         let name = "__tmux_gw_test_exists__";
         // Create a detached session for testing
-        let _ = Tmux::with_command(
-            tmux_interface::NewSession::new()
-                .detached()
-                .session_name(name),
-        )
-        .output();
+        let _ = std::process::Command::new("tmux")
+            .args(["new-session", "-d", "-s", name])
+            .output();
 
-        let exists = session_exists(name).await.unwrap();
+        let exists = session_exists(&RealTmuxExecutor, name).await.unwrap();
         assert!(exists);
 
-        let session = get_session(name).await.unwrap();
+        let session = get_session(&RealTmuxExecutor, name).await.unwrap();
         assert!(session.is_some());
         assert_eq!(session.unwrap().name, name);
 
         // Cleanup
-        let _ =
-            Tmux::with_command(tmux_interface::KillSession::new().target_session(name)).output();
+        let _ = std::process::Command::new("tmux")
+            .args(["kill-session", "-t", name])
+            .output();
+    }
+
+    // ── Mock executor tests ──
+
+    struct MockExecutor {
+        output: TmuxOutput,
+    }
+
+    impl TmuxExecutor for MockExecutor {
+        async fn execute(&self, _args: &[&str]) -> Result<TmuxOutput, TmuxError> {
+            Ok(self.output.clone())
+        }
+    }
+
+    #[tokio::test]
+    async fn list_sessions_parses_mock_output() {
+        let executor = MockExecutor {
+            output: TmuxOutput {
+                stdout: "dev\t2\t1700000000\t0\nprod\t5\t1700000100\t1\n".to_string(),
+                stderr: String::new(),
+                success: true,
+            },
+        };
+        let sessions = list_sessions(&executor).await.unwrap();
+        assert_eq!(sessions.len(), 2);
+        assert_eq!(sessions[0].name, "dev");
+        assert_eq!(sessions[0].windows, 2);
+        assert_eq!(sessions[1].name, "prod");
+        assert!(sessions[1].attached);
+    }
+
+    #[tokio::test]
+    async fn list_sessions_returns_empty_on_no_server() {
+        let executor = MockExecutor {
+            output: TmuxOutput {
+                stdout: String::new(),
+                stderr: "no server running on /tmp/tmux-1000/default".to_string(),
+                success: false,
+            },
+        };
+        let sessions = list_sessions(&executor).await.unwrap();
+        assert!(sessions.is_empty());
+    }
+
+    #[tokio::test]
+    async fn session_exists_with_mock() {
+        let executor = MockExecutor {
+            output: TmuxOutput {
+                stdout: "mysess\t1\t100\t0\n".to_string(),
+                stderr: String::new(),
+                success: true,
+            },
+        };
+        assert!(session_exists(&executor, "mysess").await.unwrap());
+        assert!(!session_exists(&executor, "other").await.unwrap());
     }
 }

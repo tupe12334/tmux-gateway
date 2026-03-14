@@ -1,38 +1,20 @@
 use serde::Serialize;
-use tmux_interface::Tmux;
 
-#[derive(Debug, Clone, Serialize)]
+use crate::executor::TmuxExecutor;
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct TmuxServerInfo {
     pub version: String,
     pub running: bool,
 }
 
 /// Returns tmux server info (version and running status).
-///
-/// This is a blocking call wrapped in `spawn_blocking` for async contexts.
-pub async fn server_info() -> TmuxServerInfo {
-    tokio::task::spawn_blocking(server_info_blocking)
-        .await
-        .unwrap_or(TmuxServerInfo {
-            version: String::new(),
-            running: false,
-        })
-}
-
-/// Returns `true` if tmux is reachable and responding.
-pub async fn is_available() -> bool {
-    server_info().await.running
-}
-
-/// Synchronous version of [`server_info`] for use outside async contexts.
-pub fn server_info_blocking() -> TmuxServerInfo {
-    match Tmux::new().version().output() {
+pub async fn server_info(executor: &(impl TmuxExecutor + ?Sized)) -> TmuxServerInfo {
+    match executor.execute(&["-V"]).await {
         Ok(output) => {
-            let raw = output.into_inner();
-            if raw.status.success() {
-                let version = String::from_utf8_lossy(&raw.stdout).trim().to_string();
+            if output.success {
                 TmuxServerInfo {
-                    version,
+                    version: output.stdout.trim().to_string(),
                     running: true,
                 }
             } else {
@@ -47,4 +29,9 @@ pub fn server_info_blocking() -> TmuxServerInfo {
             running: false,
         },
     }
+}
+
+/// Returns `true` if tmux is reachable and responding.
+pub async fn is_available(executor: &(impl TmuxExecutor + ?Sized)) -> bool {
+    server_info(executor).await.running
 }
