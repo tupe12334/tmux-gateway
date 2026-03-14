@@ -1,9 +1,10 @@
-use async_graphql::{EmptySubscription, Object, Schema, SimpleObject};
+use async_graphql::{Object, Schema, SimpleObject, Subscription};
 use chrono::{DateTime, Utc};
+use std::time::Duration;
 
 use crate::tmux::{self, RealTmuxExecutor, TmuxCommands, TmuxError};
 
-pub type AppSchema = Schema<QueryRoot, MutationRoot, EmptySubscription>;
+pub type AppSchema = Schema<QueryRoot, MutationRoot, SubscriptionRoot>;
 
 #[derive(SimpleObject)]
 struct Session {
@@ -400,6 +401,46 @@ impl MutationRoot {
     }
 }
 
+#[derive(SimpleObject)]
+struct PaneOutputEvent {
+    content: String,
+    timestamp: String,
+}
+
+pub struct SubscriptionRoot;
+
+#[Subscription]
+impl SubscriptionRoot {
+    async fn pane_output(
+        &self,
+        target: String,
+        #[graphql(default = 500)] interval_ms: i32,
+    ) -> impl futures_core::Stream<Item = PaneOutputEvent> {
+        let interval = Duration::from_millis((interval_ms as u64).clamp(100, 10000));
+
+        async_stream::stream! {
+            let mut last_content = String::new();
+            let mut ticker = tokio::time::interval(interval);
+
+            loop {
+                ticker.tick().await;
+                match tmux::capture_pane(&RealTmuxExecutor, &target).await {
+                    Ok(content) => {
+                        if content != last_content {
+                            last_content = content.clone();
+                            yield PaneOutputEvent {
+                                content,
+                                timestamp: Utc::now().to_rfc3339(),
+                            };
+                        }
+                    }
+                    Err(_) => break,
+                }
+            }
+        }
+    }
+}
+
 pub fn build_schema() -> AppSchema {
     let max_depth = std::env::var("GRAPHQL_MAX_DEPTH")
         .ok()
@@ -413,7 +454,7 @@ pub fn build_schema() -> AppSchema {
         .map(|v| v != "false")
         .unwrap_or(true);
 
-    let mut builder = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
+    let mut builder = Schema::build(QueryRoot, MutationRoot, SubscriptionRoot)
         .limit_depth(max_depth)
         .limit_complexity(max_complexity);
 

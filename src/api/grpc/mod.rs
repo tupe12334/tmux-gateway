@@ -90,6 +90,7 @@ mod tests {
             "rpc NewWindow(NewWindowRequest) returns (NewWindowResponse);",
             "rpc SplitWindow(SplitWindowRequest) returns (SplitWindowResponse);",
             "rpc CapturePane(CapturePaneRequest) returns (CapturePaneResponse);",
+            "rpc StreamPaneOutput(StreamPaneOutputRequest) returns (stream StreamPaneOutputResponse);",
         ];
         for rpc in &expected_rpcs {
             assert!(proto.contains(rpc), "missing RPC: {rpc}");
@@ -129,6 +130,8 @@ mod tests {
             "message SplitWindowResponse",
             "message CapturePaneRequest",
             "message CapturePaneResponse",
+            "message StreamPaneOutputRequest",
+            "message StreamPaneOutputResponse",
         ];
         for msg in &expected_messages {
             assert!(proto.contains(msg), "missing message: {msg}");

@@ -3,7 +3,7 @@ use axum::extract::DefaultBodyLimit;
 use std::env;
 use std::net::SocketAddr;
 use std::time::Duration;
-use tmux_gateway::api::{graphql, grpc, middleware, rest};
+use tmux_gateway::api::{graphql, grpc, middleware, rest, ws};
 use tmux_gateway::{export_schemas, port_table, preflight};
 use tokio::net::TcpListener;
 use tokio::signal;
@@ -127,6 +127,7 @@ async fn main() -> anyhow::Result<()> {
     let x_request_id = http::HeaderName::from_static("x-request-id");
 
     let http_app = axum::Router::new()
+        .merge(ws::router())
         .merge(
             rest::read_router().route_layer(axum::middleware::from_fn_with_state(
                 read_rate_limit,

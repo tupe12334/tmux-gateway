@@ -1,3 +1,6 @@
+use std::time::Duration;
+use tokio::sync::mpsc;
+use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status};
 
 use super::messages::{
@@ -10,8 +13,9 @@ use super::messages::{
     NewWindowResponse, RenameSessionRequest, RenameSessionResponse, RenameWindowRequest,
     RenameWindowResponse, ResizePaneRequest, ResizePaneResponse, SelectPaneRequest,
     SelectPaneResponse, SelectWindowRequest, SelectWindowResponse, SendKeysRequest,
-    SendKeysResponse, SplitWindowRequest, SplitWindowResponse, SwapPanesRequest, SwapPanesResponse,
-    TmuxPaneMsg, TmuxSession, TmuxWindow,
+    SendKeysResponse, SplitWindowRequest, SplitWindowResponse, StreamPaneOutputRequest,
+    StreamPaneOutputResponse, SwapPanesRequest, SwapPanesResponse, TmuxPaneMsg, TmuxSession,
+    TmuxWindow,
 };
 use super::server::{TmuxGateway, TmuxGatewayServer};
 use crate::tmux::{self, RealTmuxExecutor, TmuxCommands, TmuxError};
@@ -132,6 +136,8 @@ fn tmux_err_to_status(e: TmuxError) -> Status {
 
 #[tonic::async_trait]
 impl TmuxGateway for TmuxGatewayServiceImpl {
+    type StreamPaneOutputStream = ReceiverStream<Result<StreamPaneOutputResponse, Status>>;
+
     async fn ls(&self, _request: Request<LsRequest>) -> Result<Response<LsResponse>, Status> {
         let sessions = TmuxCommands::ls(self).await.map_err(tmux_err_to_status)?;
 
@@ -420,12 +426,62 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
             "down" | "Down" | "D" => tmux::ResizeDirection::Down(inner.amount),
             "left" | "Left" | "L" => tmux::ResizeDirection::Left(inner.amount),
             "right" | "Right" | "R" => tmux::ResizeDirection::Right(inner.amount),
-            _ => return Err(Status::invalid_argument(format!("invalid direction: {}", inner.direction))),
+            _ => {
+                return Err(Status::invalid_argument(format!(
+                    "invalid direction: {}",
+                    inner.direction
+                )))
+            }
         };
         TmuxCommands::resize_pane(self, &inner.target, direction)
             .await
             .map_err(tmux_err_to_status)?;
         Ok(Response::new(ResizePaneResponse {}))
+    }
+
+    async fn stream_pane_output(
+        &self,
+        request: Request<StreamPaneOutputRequest>,
+    ) -> Result<Response<Self::StreamPaneOutputStream>, Status> {
+        let inner = request.into_inner();
+        let target = inner.target;
+        let interval_ms = inner.interval_ms.max(100);
+
+        // Validate target by doing an initial capture
+        tmux::capture_pane(&RealTmuxExecutor, &target)
+            .await
+            .map_err(tmux_err_to_status)?;
+
+        let (tx, rx) = mpsc::channel(16);
+
+        tokio::spawn(async move {
+            let mut last_content = String::new();
+            let mut ticker = tokio::time::interval(Duration::from_millis(interval_ms as u64));
+
+            loop {
+                ticker.tick().await;
+                match tmux::capture_pane(&RealTmuxExecutor, &target).await {
+                    Ok(content) => {
+                        if content != last_content {
+                            last_content = content.clone();
+                            let response = StreamPaneOutputResponse {
+                                content,
+                                timestamp: chrono::Utc::now().timestamp(),
+                            };
+                            if tx.send(Ok(response)).await.is_err() {
+                                break;
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        let _ = tx.send(Err(tmux_err_to_status(e))).await;
+                        break;
+                    }
+                }
+            }
+        });
+
+        Ok(Response::new(ReceiverStream::new(rx)))
     }
 }
 
