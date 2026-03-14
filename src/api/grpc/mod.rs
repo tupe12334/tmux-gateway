@@ -38,9 +38,10 @@ mod tests {
         assert!(proto.contains("message LsRequest {}"));
         assert!(proto.contains("repeated TmuxSession sessions = 1;"));
         assert!(proto.contains("message TmuxSession {"));
-        assert!(proto.contains("string name = 1;"));
-        assert!(proto.contains("uint32 windows = 2;"));
-        assert!(proto.contains("bool attached = 4;"));
+        assert!(proto.contains("string id = 1;"));
+        assert!(proto.contains("string name = 2;"));
+        assert!(proto.contains("uint32 windows = 3;"));
+        assert!(proto.contains("bool attached = 5;"));
         // New operations
         assert!(
             proto.contains("rpc ListWindows(ListWindowsRequest) returns (ListWindowsResponse);")
@@ -144,6 +145,7 @@ mod tests {
         let _ = req;
 
         let session = TmuxSession {
+            id: "$0".to_string(),
             name: "test".to_string(),
             windows: 3,
             created: 1704067200,
