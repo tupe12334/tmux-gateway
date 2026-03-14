@@ -66,6 +66,14 @@ impl TmuxCommands for RestHandler {
         tmux::capture_pane(&RealTmuxExecutor, target).await
     }
 
+    async fn capture_pane_with_options(
+        &self,
+        target: &str,
+        opts: &tmux::CaptureOptions,
+    ) -> Result<String, TmuxError> {
+        tmux::capture_pane_with_options(&RealTmuxExecutor, target, opts).await
+    }
+
     async fn create_session_with_windows(
         &self,
         name: &str,
@@ -84,8 +92,16 @@ impl TmuxCommands for RestHandler {
 }
 
 fn tmux_err_to_http(e: TmuxError) -> (StatusCode, String) {
-    let status =
-        StatusCode::from_u16(e.http_status_code()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+    let status = match &e {
+        TmuxError::SessionNotFound(_)
+        | TmuxError::WindowNotFound(_)
+        | TmuxError::PaneNotFound(_) => StatusCode::NOT_FOUND,
+        TmuxError::SessionAlreadyExists(_) => StatusCode::CONFLICT,
+        TmuxError::InvalidTarget(_) | TmuxError::ParseError { .. } => StatusCode::BAD_REQUEST,
+        TmuxError::TmuxNotRunning | TmuxError::CommandFailed { .. } => {
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+    };
     (status, e.to_string())
 }
 
@@ -652,6 +668,43 @@ async fn capture_pane(
     Ok(Json(CapturePaneResponse { content }))
 }
 
+#[derive(Deserialize, ToSchema)]
+struct CapturePaneWithOptionsRequest {
+    target: String,
+    #[serde(default)]
+    start_line: Option<i32>,
+    #[serde(default)]
+    end_line: Option<i32>,
+    #[serde(default)]
+    escape_sequences: bool,
+}
+
+#[utoipa::path(
+    post,
+    path = "/capture-pane-with-options",
+    request_body = CapturePaneWithOptionsRequest,
+    responses(
+        (status = 200, description = "Pane content captured with options", body = CapturePaneResponse),
+        (status = 404, description = "Pane not found"),
+        (status = 500, description = "Failed to capture pane")
+    )
+)]
+async fn capture_pane_with_options(
+    Json(body): Json<CapturePaneWithOptionsRequest>,
+) -> Result<Json<CapturePaneResponse>, (axum::http::StatusCode, String)> {
+    let opts = tmux::CaptureOptions {
+        start_line: body.start_line,
+        end_line: body.end_line,
+        escape_sequences: body.escape_sequences,
+    };
+    let content = RestHandler
+        .capture_pane_with_options(&body.target, &opts)
+        .await
+        .map_err(tmux_err_to_http)?;
+
+    Ok(Json(CapturePaneResponse { content }))
+}
+
 #[derive(OpenApi)]
 #[openapi(
     paths(
@@ -669,6 +722,7 @@ async fn capture_pane(
         new_window,
         split_window,
         capture_pane,
+        capture_pane_with_options,
         create_session_with_windows,
         swap_panes,
         move_window
@@ -691,6 +745,7 @@ async fn capture_pane(
         SplitWindowResponse,
         CapturePaneRequest,
         CapturePaneResponse,
+        CapturePaneWithOptionsRequest,
         CreateSessionWithWindowsRequest,
         CreateSessionWithWindowsResponse,
         SwapPanesRequest,
@@ -729,6 +784,10 @@ pub fn write_router() -> Router {
         .route(
             "/create-session-with-windows",
             post(create_session_with_windows),
+        )
+        .route(
+            "/capture-pane-with-options",
+            post(capture_pane_with_options),
         )
         .route("/swap-panes", post(swap_panes))
         .route("/move-window", post(move_window))

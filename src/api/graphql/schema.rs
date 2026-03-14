@@ -88,6 +88,14 @@ impl TmuxCommands for GraphqlHandler {
         tmux::capture_pane(&RealTmuxExecutor, target).await
     }
 
+    async fn capture_pane_with_options(
+        &self,
+        target: &str,
+        opts: &tmux::CaptureOptions,
+    ) -> Result<String, TmuxError> {
+        tmux::capture_pane_with_options(&RealTmuxExecutor, target, opts).await
+    }
+
     async fn create_session_with_windows(
         &self,
         name: &str,
@@ -169,6 +177,24 @@ impl QueryRoot {
     async fn capture_pane(&self, target: String) -> async_graphql::Result<String> {
         GraphqlHandler
             .capture_pane(&target)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))
+    }
+
+    async fn capture_pane_with_options(
+        &self,
+        target: String,
+        start_line: Option<i32>,
+        end_line: Option<i32>,
+        #[graphql(default = false)] escape_sequences: bool,
+    ) -> async_graphql::Result<String> {
+        let opts = tmux::CaptureOptions {
+            start_line,
+            end_line,
+            escape_sequences,
+        };
+        GraphqlHandler
+            .capture_pane_with_options(&target, &opts)
             .await
             .map_err(|e| async_graphql::Error::new(e.to_string()))
     }
