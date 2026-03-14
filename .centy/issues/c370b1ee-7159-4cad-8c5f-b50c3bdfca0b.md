@@ -1,10 +1,10 @@
 ---
 # This file is managed by Centy. Use the Centy CLI to modify it.
 displayNumber: 35
-status: in-progress
+status: closed
 priority: 1
 createdAt: 2026-03-14T13:18:19.483037+00:00
-updatedAt: 2026-03-14T15:07:45.583185+00:00
+updatedAt: 2026-03-14T15:13:56.563968+00:00
 ---
 
 # Move transport-specific error mapping out of domain TmuxError

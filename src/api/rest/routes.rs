@@ -92,8 +92,16 @@ impl TmuxCommands for RestHandler {
 }
 
 fn tmux_err_to_http(e: TmuxError) -> (StatusCode, String) {
-    let status =
-        StatusCode::from_u16(e.http_status_code()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+    let status = match &e {
+        TmuxError::SessionNotFound(_)
+        | TmuxError::WindowNotFound(_)
+        | TmuxError::PaneNotFound(_) => StatusCode::NOT_FOUND,
+        TmuxError::SessionAlreadyExists(_) => StatusCode::CONFLICT,
+        TmuxError::InvalidTarget(_) | TmuxError::ParseError { .. } => StatusCode::BAD_REQUEST,
+        TmuxError::TmuxNotRunning | TmuxError::CommandFailed { .. } => {
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+    };
     (status, e.to_string())
 }
 
