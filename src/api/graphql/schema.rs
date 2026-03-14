@@ -1,4 +1,4 @@
-use async_graphql::{Object, Schema, SimpleObject, Subscription};
+use async_graphql::{Enum, Object, Schema, SimpleObject, Subscription};
 use chrono::{DateTime, Utc};
 use std::time::Duration;
 
@@ -30,6 +30,40 @@ struct Pane {
     active: bool,
     current_path: String,
     current_command: String,
+}
+
+#[derive(Enum, Copy, Clone, Eq, PartialEq)]
+enum GqlOptionScope {
+    Global,
+    Session,
+    Window,
+}
+
+impl From<GqlOptionScope> for tmux::OptionScope {
+    fn from(s: GqlOptionScope) -> Self {
+        match s {
+            GqlOptionScope::Global => tmux::OptionScope::Global,
+            GqlOptionScope::Session => tmux::OptionScope::Session,
+            GqlOptionScope::Window => tmux::OptionScope::Window,
+        }
+    }
+}
+
+impl From<tmux::OptionScope> for GqlOptionScope {
+    fn from(s: tmux::OptionScope) -> Self {
+        match s {
+            tmux::OptionScope::Global => GqlOptionScope::Global,
+            tmux::OptionScope::Session => GqlOptionScope::Session,
+            tmux::OptionScope::Window => GqlOptionScope::Window,
+        }
+    }
+}
+
+#[derive(SimpleObject)]
+struct TmuxOptionGql {
+    name: String,
+    value: String,
+    scope: GqlOptionScope,
 }
 
 struct GraphqlHandler;
@@ -122,6 +156,39 @@ impl QueryRoot {
             .capture_pane_with_options(&target, &opts)
             .await
             .map_err(|e| async_graphql::Error::new(e.to_string()))
+    }
+
+    async fn get_option(
+        &self,
+        name: String,
+        scope: GqlOptionScope,
+        #[graphql(default)] target: Option<String>,
+    ) -> async_graphql::Result<String> {
+        let opt = GraphqlHandler
+            .get_option(&name, scope.into(), target.as_deref())
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+        Ok(opt.value)
+    }
+
+    async fn list_options(
+        &self,
+        scope: GqlOptionScope,
+        #[graphql(default)] target: Option<String>,
+    ) -> async_graphql::Result<Vec<TmuxOptionGql>> {
+        let options = GraphqlHandler
+            .list_options(scope.into(), target.as_deref())
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+
+        Ok(options
+            .into_iter()
+            .map(|o| TmuxOptionGql {
+                name: o.name,
+                value: o.value,
+                scope: o.scope.into(),
+            })
+            .collect())
     }
 }
 
@@ -299,6 +366,20 @@ impl MutationRoot {
         };
         GraphqlHandler
             .resize_pane(&target, dir)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+        Ok(true)
+    }
+
+    async fn set_option(
+        &self,
+        name: String,
+        value: String,
+        scope: GqlOptionScope,
+        #[graphql(default)] target: Option<String>,
+    ) -> async_graphql::Result<bool> {
+        GraphqlHandler
+            .set_option(&name, &value, scope.into(), target.as_deref())
             .await
             .map_err(|e| async_graphql::Error::new(e.to_string()))?;
         Ok(true)

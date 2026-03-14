@@ -5,7 +5,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::{OpenApi, ToSchema};
 
-use crate::tmux::{self, RealTmuxExecutor, TmuxCommands, TmuxError};
+use crate::tmux::{self, OptionScope, RealTmuxExecutor, TmuxCommands, TmuxError};
 
 struct RestHandler;
 
@@ -720,6 +720,134 @@ async fn capture_pane_with_options(
     Ok(Json(CapturePaneResponse { content }))
 }
 
+fn parse_scope(s: &str) -> Result<OptionScope, (StatusCode, String)> {
+    match s {
+        "global" | "Global" | "g" => Ok(OptionScope::Global),
+        "session" | "Session" | "s" => Ok(OptionScope::Session),
+        "window" | "Window" | "w" => Ok(OptionScope::Window),
+        _ => Err((
+            StatusCode::BAD_REQUEST,
+            format!("invalid scope: {s}"),
+        )),
+    }
+}
+
+#[derive(Deserialize, ToSchema)]
+struct GetOptionRequest {
+    name: String,
+    scope: String,
+    #[serde(default)]
+    target: Option<String>,
+}
+
+#[derive(Serialize, ToSchema)]
+struct OptionResponse {
+    name: String,
+    value: String,
+    scope: String,
+}
+
+#[utoipa::path(
+    get,
+    path = "/get-option",
+    params(
+        ("name" = String, Query, description = "Option name"),
+        ("scope" = String, Query, description = "Option scope: global, session, or window"),
+        ("target" = Option<String>, Query, description = "Target (session or window) for non-global scopes")
+    ),
+    responses(
+        (status = 200, description = "Option value retrieved", body = OptionResponse),
+        (status = 400, description = "Invalid option name or scope"),
+        (status = 500, description = "Failed to get option")
+    )
+)]
+async fn get_option(
+    axum::extract::Query(params): axum::extract::Query<GetOptionRequest>,
+) -> Result<Json<OptionResponse>, (StatusCode, String)> {
+    let scope = parse_scope(&params.scope)?;
+    let opt = RestHandler
+        .get_option(&params.name, scope, params.target.as_deref())
+        .await
+        .map_err(tmux_err_to_http)?;
+
+    Ok(Json(OptionResponse {
+        name: opt.name,
+        value: opt.value,
+        scope: opt.scope.to_string(),
+    }))
+}
+
+#[derive(Deserialize, ToSchema)]
+struct SetOptionRequest {
+    name: String,
+    value: String,
+    scope: String,
+    #[serde(default)]
+    target: Option<String>,
+}
+
+#[utoipa::path(
+    post,
+    path = "/set-option",
+    request_body = SetOptionRequest,
+    responses(
+        (status = 200, description = "Option set"),
+        (status = 400, description = "Invalid option name or scope"),
+        (status = 500, description = "Failed to set option")
+    )
+)]
+async fn set_option(
+    Json(body): Json<SetOptionRequest>,
+) -> Result<StatusCode, (StatusCode, String)> {
+    let scope = parse_scope(&body.scope)?;
+    RestHandler
+        .set_option(&body.name, &body.value, scope, body.target.as_deref())
+        .await
+        .map_err(tmux_err_to_http)?;
+
+    Ok(StatusCode::OK)
+}
+
+#[derive(Deserialize, ToSchema)]
+struct ListOptionsRequest {
+    scope: String,
+    #[serde(default)]
+    target: Option<String>,
+}
+
+#[utoipa::path(
+    get,
+    path = "/list-options",
+    params(
+        ("scope" = String, Query, description = "Option scope: global, session, or window"),
+        ("target" = Option<String>, Query, description = "Target (session or window) for non-global scopes")
+    ),
+    responses(
+        (status = 200, description = "List options", body = Vec<OptionResponse>),
+        (status = 400, description = "Invalid scope"),
+        (status = 500, description = "Failed to list options")
+    )
+)]
+async fn list_options(
+    axum::extract::Query(params): axum::extract::Query<ListOptionsRequest>,
+) -> Result<Json<Vec<OptionResponse>>, (StatusCode, String)> {
+    let scope = parse_scope(&params.scope)?;
+    let opts = RestHandler
+        .list_options(scope, params.target.as_deref())
+        .await
+        .map_err(tmux_err_to_http)?;
+
+    Ok(Json(
+        opts.into_iter()
+            .map(|o| OptionResponse {
+                name: o.name,
+                value: o.value,
+                scope: o.scope.to_string(),
+            })
+            .collect(),
+    ))
+}
+
 #[derive(OpenApi)]
 #[openapi(
     paths(
@@ -743,7 +871,10 @@ async fn capture_pane_with_options(
         move_window,
         select_window,
         select_pane,
-        resize_pane
+        resize_pane,
+        get_option,
+        set_option,
+        list_options
     ),
     components(schemas(
         HealthResponse,
@@ -768,7 +899,11 @@ async fn capture_pane_with_options(
         CreateSessionWithWindowsResponse,
         SwapPanesRequest,
         MoveWindowRequest,
-        ResizePaneRequest
+        ResizePaneRequest,
+        GetOptionRequest,
+        SetOptionRequest,
+        ListOptionsRequest,
+        OptionResponse
     )),
     info(
         title = "tmux-gateway",
@@ -786,6 +921,8 @@ pub fn read_router() -> Router {
         .route("/list-windows", get(list_windows))
         .route("/list-panes", get(list_panes))
         .route("/capture-pane", get(capture_pane))
+        .route("/get-option", get(get_option))
+        .route("/list-options", get(list_options))
 }
 
 /// Mutating (POST) routes — typically given a lower rate limit.
@@ -813,6 +950,7 @@ pub fn write_router() -> Router {
         .route("/select-window", post(select_window))
         .route("/select-pane", post(select_pane))
         .route("/resize-pane", post(resize_pane))
+        .route("/set-option", post(set_option))
 }
 
 pub fn router() -> Router {

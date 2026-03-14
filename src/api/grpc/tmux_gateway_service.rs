@@ -6,24 +6,24 @@ use tonic::{Request, Response, Status};
 use super::messages::{
     CapturePaneRequest, CapturePaneResponse, CapturePaneWithOptionsRequest,
     CapturePaneWithOptionsResponse, CreateSessionWithWindowsRequest,
-    CreateSessionWithWindowsResponse, KillPaneRequest, KillPaneResponse, KillSessionRequest,
-    KillSessionResponse, KillWindowRequest, KillWindowResponse, ListPanesRequest,
+    CreateSessionWithWindowsResponse, GetOptionRequest, GetOptionResponse, KillPaneRequest,
+    KillPaneResponse, KillSessionRequest, KillSessionResponse, KillWindowRequest,
+    KillWindowResponse, ListOptionsRequest, ListOptionsResponse, ListPanesRequest,
     ListPanesResponse, ListWindowsRequest, ListWindowsResponse, LsRequest, LsResponse,
     MoveWindowRequest, MoveWindowResponse, NewSessionRequest, NewSessionResponse, NewWindowRequest,
     NewWindowResponse, RenameSessionRequest, RenameSessionResponse, RenameWindowRequest,
     RenameWindowResponse, ResizePaneRequest, ResizePaneResponse, SelectPaneRequest,
     SelectPaneResponse, SelectWindowRequest, SelectWindowResponse, SendKeysRequest,
-    SendKeysResponse, SplitWindowRequest, SplitWindowResponse, StreamPaneOutputRequest,
-    StreamPaneOutputResponse, SwapPanesRequest, SwapPanesResponse, TmuxPaneMsg, TmuxSession,
-    TmuxWindow,
+    SendKeysResponse, SetOptionRequest, SetOptionResponse, SplitWindowRequest, SplitWindowResponse,
+    StreamPaneOutputRequest, StreamPaneOutputResponse, SwapPanesRequest, SwapPanesResponse,
+    TmuxOptionMsg, TmuxPaneMsg, TmuxSession, TmuxWindow,
 };
 use super::server::{TmuxGateway, TmuxGatewayServer};
 use crate::tmux::{self, RealTmuxExecutor, TmuxCommands, TmuxError};
 
 pub struct TmuxGatewayServiceImpl;
 
-impl TmuxCommands for TmuxGatewayServiceImpl {
-}
+impl TmuxCommands for TmuxGatewayServiceImpl {}
 
 fn tmux_err_to_status(e: TmuxError) -> Status {
     let msg = e.to_string();
@@ -36,6 +36,25 @@ fn tmux_err_to_status(e: TmuxError) -> Status {
             Status::invalid_argument(msg)
         }
         TmuxError::TmuxNotRunning | TmuxError::CommandFailed { .. } => Status::internal(msg),
+    }
+}
+
+fn parse_scope(s: &str) -> Result<tmux::OptionScope, Status> {
+    match s {
+        "global" | "Global" => Ok(tmux::OptionScope::Global),
+        "session" | "Session" => Ok(tmux::OptionScope::Session),
+        "window" | "Window" => Ok(tmux::OptionScope::Window),
+        _ => Err(Status::invalid_argument(format!(
+            "invalid scope: {s} (expected global, session, or window)"
+        ))),
+    }
+}
+
+fn scope_to_str(scope: tmux::OptionScope) -> &'static str {
+    match scope {
+        tmux::OptionScope::Global => "global",
+        tmux::OptionScope::Session => "session",
+        tmux::OptionScope::Window => "window",
     }
 }
 
@@ -342,6 +361,73 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
             .await
             .map_err(tmux_err_to_status)?;
         Ok(Response::new(ResizePaneResponse {}))
+    }
+
+    async fn get_option(
+        &self,
+        request: Request<GetOptionRequest>,
+    ) -> Result<Response<GetOptionResponse>, Status> {
+        let inner = request.into_inner();
+        let scope = parse_scope(&inner.scope)?;
+        let target = if inner.target.is_empty() {
+            None
+        } else {
+            Some(inner.target.as_str())
+        };
+        let opt = TmuxCommands::get_option(self, &inner.name, scope, target)
+            .await
+            .map_err(tmux_err_to_status)?;
+        Ok(Response::new(GetOptionResponse {
+            name: opt.name,
+            value: opt.value,
+            scope: scope_to_str(opt.scope).to_string(),
+        }))
+    }
+
+    async fn set_option(
+        &self,
+        request: Request<SetOptionRequest>,
+    ) -> Result<Response<SetOptionResponse>, Status> {
+        let inner = request.into_inner();
+        let scope = parse_scope(&inner.scope)?;
+        let target = if inner.target.is_empty() {
+            None
+        } else {
+            Some(inner.target.as_str())
+        };
+        TmuxCommands::set_option(self, &inner.name, &inner.value, scope, target)
+            .await
+            .map_err(tmux_err_to_status)?;
+        Ok(Response::new(SetOptionResponse {}))
+    }
+
+    async fn list_options(
+        &self,
+        request: Request<ListOptionsRequest>,
+    ) -> Result<Response<ListOptionsResponse>, Status> {
+        let inner = request.into_inner();
+        let scope = parse_scope(&inner.scope)?;
+        let target = if inner.target.is_empty() {
+            None
+        } else {
+            Some(inner.target.as_str())
+        };
+        let options = TmuxCommands::list_options(self, scope, target)
+            .await
+            .map_err(tmux_err_to_status)?;
+
+        let proto_options = options
+            .into_iter()
+            .map(|o| TmuxOptionMsg {
+                name: o.name,
+                value: o.value,
+                scope: scope_to_str(o.scope).to_string(),
+            })
+            .collect();
+
+        Ok(Response::new(ListOptionsResponse {
+            options: proto_options,
+        }))
     }
 
     async fn stream_pane_output(

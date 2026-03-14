@@ -307,6 +307,42 @@ proto_messages! {
 
     message ResizePaneResponse {}
 
+    message GetOptionRequest {
+        string name = "1";
+        string scope = "2";
+        string target = "3";
+    }
+
+    message GetOptionResponse {
+        string name = "1";
+        string value = "2";
+        string scope = "3";
+    }
+
+    message SetOptionRequest {
+        string name = "1";
+        string value = "2";
+        string scope = "3";
+        string target = "4";
+    }
+
+    message SetOptionResponse {}
+
+    message ListOptionsRequest {
+        string scope = "1";
+        string target = "2";
+    }
+
+    message ListOptionsResponse {
+        repeated TmuxOptionMsg options = "1";
+    }
+
+    message TmuxOptionMsg {
+        string name = "1";
+        string value = "2";
+        string scope = "3";
+    }
+
     message StreamPaneOutputRequest {
         string target = "1";
         uint32 interval_ms = "2";

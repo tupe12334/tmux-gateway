@@ -1,9 +1,10 @@
 use super::{
-    CaptureOptions, RealTmuxExecutor, ResizeDirection, TmuxError, TmuxPane, TmuxSession,
-    TmuxWindow, capture_pane, capture_pane_with_options, create_session_with_windows, kill_pane,
-    kill_session, kill_window, list_panes, list_sessions, list_windows, move_window, new_session,
-    new_window, rename_session, rename_window, resize_pane, select_pane, select_window, send_keys,
-    split_window, swap_panes,
+    CaptureOptions, OptionScope, RealTmuxExecutor, ResizeDirection, TmuxError, TmuxOption,
+    TmuxPane, TmuxSession, TmuxWindow, capture_pane, capture_pane_with_options,
+    create_session_with_windows, get_option, kill_pane, kill_session, kill_window, list_options,
+    list_panes, list_sessions, list_windows, move_window, new_session, new_window, rename_session,
+    rename_window, resize_pane, select_pane, select_window, send_keys, set_option, split_window,
+    swap_panes,
 };
 
 /// All API layers (REST, gRPC, GraphQL) must implement this trait.
@@ -136,5 +137,29 @@ pub trait TmuxCommands {
         direction: ResizeDirection,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         async move { resize_pane(&RealTmuxExecutor, target, direction).await }
+    }
+    fn get_option(
+        &self,
+        name: &str,
+        scope: OptionScope,
+        target: Option<&str>,
+    ) -> impl std::future::Future<Output = Result<TmuxOption, TmuxError>> + Send {
+        async move { get_option(&RealTmuxExecutor, name, scope, target).await }
+    }
+    fn set_option(
+        &self,
+        name: &str,
+        value: &str,
+        scope: OptionScope,
+        target: Option<&str>,
+    ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
+        async move { set_option(&RealTmuxExecutor, name, value, scope, target).await }
+    }
+    fn list_options(
+        &self,
+        scope: OptionScope,
+        target: Option<&str>,
+    ) -> impl std::future::Future<Output = Result<Vec<TmuxOption>, TmuxError>> + Send {
+        async move { list_options(&RealTmuxExecutor, scope, target).await }
     }
 }
