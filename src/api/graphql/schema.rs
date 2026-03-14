@@ -12,6 +12,22 @@ struct Session {
     attached: bool,
 }
 
+#[derive(SimpleObject)]
+struct Window {
+    index: u32,
+    name: String,
+    panes: u32,
+    active: bool,
+}
+
+#[derive(SimpleObject)]
+struct Pane {
+    id: String,
+    width: u32,
+    height: u32,
+    active: bool,
+}
+
 struct GraphqlHandler;
 
 impl TmuxCommands for GraphqlHandler {
@@ -33,6 +49,38 @@ impl TmuxCommands for GraphqlHandler {
 
     async fn kill_pane(&self, target: &str) -> Result<(), TmuxError> {
         tmux::kill_pane(target).await
+    }
+
+    async fn list_windows(&self, session: &str) -> Result<Vec<tmux::TmuxWindow>, TmuxError> {
+        tmux::list_windows(session).await
+    }
+
+    async fn list_panes(&self, target: &str) -> Result<Vec<tmux::TmuxPane>, TmuxError> {
+        tmux::list_panes(target).await
+    }
+
+    async fn send_keys(&self, target: &str, keys: &[String]) -> Result<(), TmuxError> {
+        tmux::send_keys(target, keys).await
+    }
+
+    async fn rename_session(&self, target: &str, new_name: &str) -> Result<(), TmuxError> {
+        tmux::rename_session(target, new_name).await
+    }
+
+    async fn rename_window(&self, target: &str, new_name: &str) -> Result<(), TmuxError> {
+        tmux::rename_window(target, new_name).await
+    }
+
+    async fn new_window(&self, session: &str, name: &str) -> Result<String, TmuxError> {
+        tmux::new_window(session, name).await
+    }
+
+    async fn split_window(&self, target: &str, horizontal: bool) -> Result<(), TmuxError> {
+        tmux::split_window(target, horizontal).await
+    }
+
+    async fn capture_pane(&self, target: &str) -> Result<String, TmuxError> {
+        tmux::capture_pane(target).await
     }
 }
 
@@ -59,6 +107,47 @@ impl QueryRoot {
                 attached: s.attached,
             })
             .collect())
+    }
+
+    async fn list_windows(&self, session: String) -> async_graphql::Result<Vec<Window>> {
+        let windows = GraphqlHandler
+            .list_windows(&session)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+
+        Ok(windows
+            .into_iter()
+            .map(|w| Window {
+                index: w.index,
+                name: w.name,
+                panes: w.panes,
+                active: w.active,
+            })
+            .collect())
+    }
+
+    async fn list_panes(&self, target: String) -> async_graphql::Result<Vec<Pane>> {
+        let panes = GraphqlHandler
+            .list_panes(&target)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+
+        Ok(panes
+            .into_iter()
+            .map(|p| Pane {
+                id: p.id,
+                width: p.width,
+                height: p.height,
+                active: p.active,
+            })
+            .collect())
+    }
+
+    async fn capture_pane(&self, target: String) -> async_graphql::Result<String> {
+        GraphqlHandler
+            .capture_pane(&target)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))
     }
 }
 
@@ -92,6 +181,57 @@ impl MutationRoot {
     async fn kill_pane(&self, target: String) -> async_graphql::Result<bool> {
         GraphqlHandler
             .kill_pane(&target)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+        Ok(true)
+    }
+
+    async fn send_keys(&self, target: String, keys: Vec<String>) -> async_graphql::Result<bool> {
+        GraphqlHandler
+            .send_keys(&target, &keys)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+        Ok(true)
+    }
+
+    async fn rename_session(
+        &self,
+        target: String,
+        new_name: String,
+    ) -> async_graphql::Result<bool> {
+        GraphqlHandler
+            .rename_session(&target, &new_name)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+        Ok(true)
+    }
+
+    async fn rename_window(
+        &self,
+        target: String,
+        new_name: String,
+    ) -> async_graphql::Result<bool> {
+        GraphqlHandler
+            .rename_window(&target, &new_name)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))?;
+        Ok(true)
+    }
+
+    async fn new_window(&self, session: String, name: String) -> async_graphql::Result<String> {
+        GraphqlHandler
+            .new_window(&session, &name)
+            .await
+            .map_err(|e| async_graphql::Error::new(e.to_string()))
+    }
+
+    async fn split_window(
+        &self,
+        target: String,
+        horizontal: bool,
+    ) -> async_graphql::Result<bool> {
+        GraphqlHandler
+            .split_window(&target, horizontal)
             .await
             .map_err(|e| async_graphql::Error::new(e.to_string()))?;
         Ok(true)

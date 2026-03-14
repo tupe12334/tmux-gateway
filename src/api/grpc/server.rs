@@ -142,5 +142,13 @@ grpc_service! {
         rpc KillSession / kill_session(KillSessionRequest) -> KillSessionResponse;
         rpc KillWindow / kill_window(KillWindowRequest) -> KillWindowResponse;
         rpc KillPane / kill_pane(KillPaneRequest) -> KillPaneResponse;
+        rpc ListWindows / list_windows(ListWindowsRequest) -> ListWindowsResponse;
+        rpc ListPanes / list_panes(ListPanesRequest) -> ListPanesResponse;
+        rpc SendKeys / send_keys(SendKeysRequest) -> SendKeysResponse;
+        rpc RenameSession / rename_session(RenameSessionRequest) -> RenameSessionResponse;
+        rpc RenameWindow / rename_window(RenameWindowRequest) -> RenameWindowResponse;
+        rpc NewWindow / new_window(NewWindowRequest) -> NewWindowResponse;
+        rpc SplitWindow / split_window(SplitWindowRequest) -> SplitWindowResponse;
+        rpc CapturePane / capture_pane(CapturePaneRequest) -> CapturePaneResponse;
     }
 }

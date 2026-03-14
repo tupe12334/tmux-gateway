@@ -1,19 +1,35 @@
+mod capture_pane;
 mod commands;
 mod error;
 mod kill_pane;
 mod kill_session;
 mod kill_window;
+mod list_panes;
+mod list_windows;
 mod new_session;
+mod new_window;
+mod rename_session;
+mod rename_window;
+mod send_keys;
 mod sessions;
+mod split_window;
 pub mod validation;
 
+pub use capture_pane::capture_pane;
 pub use commands::TmuxCommands;
 pub use error::{GrpcCode, TmuxError};
 pub use kill_pane::kill_pane;
 pub use kill_session::kill_session;
 pub use kill_window::kill_window;
+pub use list_panes::{TmuxPane, list_panes};
+pub use list_windows::{TmuxWindow, list_windows};
 pub use new_session::new_session;
+pub use new_window::new_window;
+pub use rename_session::rename_session;
+pub use rename_window::rename_window;
+pub use send_keys::send_keys;
 pub use sessions::{TmuxSession, list_sessions};
+pub use split_window::split_window;
 pub use validation::ValidationError;
 
 pub use tmux_interface;

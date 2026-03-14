@@ -41,6 +41,18 @@ mod tests {
         assert!(proto.contains("string name = 1;"));
         assert!(proto.contains("uint32 windows = 2;"));
         assert!(proto.contains("bool attached = 4;"));
+        // New operations
+        assert!(proto.contains("rpc ListWindows(ListWindowsRequest) returns (ListWindowsResponse);"));
+        assert!(proto.contains("rpc ListPanes(ListPanesRequest) returns (ListPanesResponse);"));
+        assert!(proto.contains("rpc SendKeys(SendKeysRequest) returns (SendKeysResponse);"));
+        assert!(proto.contains("rpc RenameSession(RenameSessionRequest) returns (RenameSessionResponse);"));
+        assert!(proto.contains("rpc RenameWindow(RenameWindowRequest) returns (RenameWindowResponse);"));
+        assert!(proto.contains("rpc NewWindow(NewWindowRequest) returns (NewWindowResponse);"));
+        assert!(proto.contains("rpc SplitWindow(SplitWindowRequest) returns (SplitWindowResponse);"));
+        assert!(proto.contains("rpc CapturePane(CapturePaneRequest) returns (CapturePaneResponse);"));
+        assert!(proto.contains("message TmuxWindow {"));
+        assert!(proto.contains("message TmuxPaneMsg {"));
+        assert!(proto.contains("repeated string keys = 2;"));
     }
 
     #[test]
