@@ -21,7 +21,8 @@
       "Bash(centy init:*)",
       "Bash(centy list:*)",
       "Bash(centy create:*)",
-      "Bash(docker run:*)"
+      "Bash(docker run:*)",
+      "Bash(docker stop:*)"
     ],
     "deny": ["Bash(gh issue create:*)"]
   },
