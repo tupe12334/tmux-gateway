@@ -2,6 +2,7 @@ mod capture_pane;
 mod commands;
 mod create_session_with_windows;
 mod error;
+mod executor;
 mod kill_pane;
 mod kill_session;
 mod kill_window;

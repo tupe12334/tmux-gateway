@@ -1,8 +1,9 @@
 use serde::Serialize;
-use tmux_interface::{ListWindows, Tmux};
+use tmux_interface::ListWindows;
 
 use super::TmuxError;
 use super::validation::validate_session_target;
+use crate::executor::{exec_tmux, run_tmux};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct TmuxWindow {
@@ -47,32 +48,18 @@ pub(crate) fn parse_windows(stdout: &str) -> Result<Vec<TmuxWindow>, TmuxError> 
 pub async fn list_windows(session: &str) -> Result<Vec<TmuxWindow>, TmuxError> {
     validate_session_target(session)?;
     let session = session.to_string();
-    tokio::task::spawn_blocking(move || {
-        let output = Tmux::with_command(
+    run_tmux("list-windows", move || {
+        let output = exec_tmux(
+            "list-windows",
+            &session,
             ListWindows::new()
                 .target_session(session.as_str())
                 .format("#{window_index}\t#{window_name}\t#{window_panes}\t#{window_active}"),
-        )
-        .output()
-        .map_err(|e| TmuxError::CommandFailed {
-            command: "list-windows".to_string(),
-            stderr: e.to_string(),
-        })?
-        .into_inner();
-
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            return Err(TmuxError::from_stderr("list-windows", &stderr, &session));
-        }
-
+        )?;
         let stdout = String::from_utf8_lossy(&output.stdout);
         parse_windows(&stdout)
     })
     .await
-    .map_err(|e| TmuxError::CommandFailed {
-        command: "list-windows".to_string(),
-        stderr: format!("task join error: {e}"),
-    })?
 }
 
 #[cfg(test)]
