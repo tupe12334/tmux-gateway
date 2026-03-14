@@ -48,12 +48,12 @@ mod tests {
         async fn execute(&self, args: &[&str]) -> Result<TmuxOutput, TmuxError> {
             match args.first() {
                 Some(&"list-windows") => Ok(TmuxOutput {
-                    stdout: "0\tbash\t1\t1\n".to_string(),
+                    stdout: "@0\t0\tbash\t1\t1\n".to_string(),
                     stderr: String::new(),
                     success: true,
                 }),
                 Some(&"new-window") => Ok(TmuxOutput {
-                    stdout: "1\tmy-win\t1\t0\n".to_string(),
+                    stdout: "@1\t1\tmy-win\t1\t0\n".to_string(),
                     stderr: String::new(),
                     success: true,
                 }),
@@ -78,7 +78,7 @@ mod tests {
         async fn execute(&self, args: &[&str]) -> Result<TmuxOutput, TmuxError> {
             match args.first() {
                 Some(&"list-windows") => Ok(TmuxOutput {
-                    stdout: "0\tbash\t1\t1\n2\tmy-win\t3\t0\n".to_string(),
+                    stdout: "@0\t0\tbash\t1\t1\n@2\t2\tmy-win\t3\t0\n".to_string(),
                     stderr: String::new(),
                     success: true,
                 }),

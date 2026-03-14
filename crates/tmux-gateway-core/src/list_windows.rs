@@ -101,6 +101,7 @@ mod tests {
     #[test]
     fn display_active_window() {
         let window = TmuxWindow {
+            id: "@0".to_string(),
             index: 0,
             name: "bash".to_string(),
             panes: 2,
@@ -112,6 +113,7 @@ mod tests {
     #[test]
     fn display_inactive_window() {
         let window = TmuxWindow {
+            id: "@1".to_string(),
             index: 1,
             name: "vim".to_string(),
             panes: 1,

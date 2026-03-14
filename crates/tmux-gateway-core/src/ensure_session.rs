@@ -40,7 +40,7 @@ mod tests {
         async fn execute(&self, args: &[&str]) -> Result<TmuxOutput, TmuxError> {
             if args.first() == Some(&"new-session") {
                 Ok(TmuxOutput {
-                    stdout: "test-sess\t1\t1700000000\t0\n".to_string(),
+                    stdout: "$0\ttest-sess\t1\t1700000000\t0\n".to_string(),
                     stderr: String::new(),
                     success: true,
                 })
@@ -68,7 +68,7 @@ mod tests {
                     success: false,
                 }),
                 Some(&"list-sessions") => Ok(TmuxOutput {
-                    stdout: "existing\t3\t1700000000\t1\n".to_string(),
+                    stdout: "$1\texisting\t3\t1700000000\t1\n".to_string(),
                     stderr: String::new(),
                     success: true,
                 }),
