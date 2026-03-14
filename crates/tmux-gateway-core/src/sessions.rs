@@ -21,6 +21,38 @@ pub async fn get_session(name: &str) -> Result<Option<TmuxSession>, TmuxError> {
     Ok(sessions.into_iter().find(|s| s.name == name))
 }
 
+pub(crate) fn parse_session_line(line: &str) -> Result<TmuxSession, TmuxError> {
+    let parts: Vec<&str> = line.splitn(4, '\t').collect();
+    if parts.len() < 4 {
+        return Err(TmuxError::ParseError {
+            command: "list-sessions".to_string(),
+            details: format!("expected 4 tab-separated fields, got: {line}"),
+        });
+    }
+    let windows = parts[1].parse::<u32>().map_err(|e| TmuxError::ParseError {
+        command: "list-sessions".to_string(),
+        details: format!("invalid window count '{}': {e}", parts[1]),
+    })?;
+    let created = parts[2].parse::<i64>().map_err(|e| TmuxError::ParseError {
+        command: "list-sessions".to_string(),
+        details: format!("invalid session_created timestamp '{}': {e}", parts[2]),
+    })?;
+    Ok(TmuxSession {
+        name: parts[0].to_string(),
+        windows,
+        created,
+        attached: parts[3] == "1",
+    })
+}
+
+pub(crate) fn parse_sessions(stdout: &str) -> Result<Vec<TmuxSession>, TmuxError> {
+    stdout
+        .lines()
+        .filter(|line| !line.is_empty())
+        .map(parse_session_line)
+        .collect()
+}
+
 pub async fn list_sessions() -> Result<Vec<TmuxSession>, TmuxError> {
     tokio::task::spawn_blocking(|| {
         let output = Tmux::with_command(ListSessions::new().format(
@@ -42,35 +74,7 @@ pub async fn list_sessions() -> Result<Vec<TmuxSession>, TmuxError> {
         }
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        let sessions = stdout
-            .lines()
-            .filter(|line| !line.is_empty())
-            .map(|line| {
-                let parts: Vec<&str> = line.splitn(4, '\t').collect();
-                if parts.len() < 4 {
-                    return Err(TmuxError::ParseError {
-                        command: "list-sessions".to_string(),
-                        details: format!("expected 4 tab-separated fields, got: {line}"),
-                    });
-                }
-                let windows = parts[1].parse::<u32>().map_err(|e| TmuxError::ParseError {
-                    command: "list-sessions".to_string(),
-                    details: format!("invalid window count '{}': {e}", parts[1]),
-                })?;
-                let created = parts[2].parse::<i64>().map_err(|e| TmuxError::ParseError {
-                    command: "list-sessions".to_string(),
-                    details: format!("invalid session_created timestamp '{}': {e}", parts[2]),
-                })?;
-                Ok(TmuxSession {
-                    name: parts[0].to_string(),
-                    windows,
-                    created,
-                    attached: parts[3] == "1",
-                })
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-
-        Ok(sessions)
+        parse_sessions(&stdout)
     })
     .await
     .map_err(|e| TmuxError::CommandFailed {
@@ -82,6 +86,68 @@ pub async fn list_sessions() -> Result<Vec<TmuxSession>, TmuxError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parse_session_line_valid() {
+        let session = parse_session_line("mysession\t3\t1700000000\t1").unwrap();
+        assert_eq!(session.name, "mysession");
+        assert_eq!(session.windows, 3);
+        assert_eq!(session.created, 1700000000);
+        assert!(session.attached);
+    }
+
+    #[test]
+    fn parse_session_line_not_attached() {
+        let session = parse_session_line("dev\t1\t1700000000\t0").unwrap();
+        assert!(!session.attached);
+    }
+
+    #[test]
+    fn parse_session_line_missing_fields() {
+        let result = parse_session_line("only\ttwo");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_session_line_invalid_window_count() {
+        let result = parse_session_line("s\tnotanum\t1700000000\t0");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_session_line_invalid_timestamp() {
+        let result = parse_session_line("s\t1\tbadts\t0");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_sessions_multiple_lines() {
+        let input = "a\t1\t100\t0\nb\t2\t200\t1\n";
+        let sessions = parse_sessions(input).unwrap();
+        assert_eq!(sessions.len(), 2);
+        assert_eq!(sessions[0].name, "a");
+        assert_eq!(sessions[1].name, "b");
+    }
+
+    #[test]
+    fn parse_sessions_empty_input() {
+        let sessions = parse_sessions("").unwrap();
+        assert!(sessions.is_empty());
+    }
+
+    #[test]
+    fn parse_sessions_skips_empty_lines() {
+        let input = "\na\t1\t100\t0\n\n";
+        let sessions = parse_sessions(input).unwrap();
+        assert_eq!(sessions.len(), 1);
+    }
+
+    #[test]
+    fn parse_sessions_propagates_error() {
+        let input = "good\t1\t100\t0\nbad line";
+        let result = parse_sessions(input);
+        assert!(result.is_err());
+    }
 
     #[tokio::test]
     async fn session_exists_returns_false_for_nonexistent() {

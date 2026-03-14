@@ -50,16 +50,31 @@ async fn main() -> anyhow::Result<()> {
     let mut grpc_shutdown_rx = shutdown_tx.subscribe();
 
     let cors = {
-        let origins_raw = env::var("CORS_ORIGINS").unwrap_or_else(|_| {
-            format!(
-                "http://localhost:{},http://localhost:{}",
-                http_port, grpc_port
-            )
-        });
+        let origins_raw = env::var("CORS_ORIGINS")
+            .unwrap_or_else(|_| format!("http://localhost:{},http://localhost:3000", http_port));
         let raw_entries: Vec<&str> = origins_raw.split(',').map(|s| s.trim()).collect();
         let total = raw_entries.len();
-        let origins: Vec<http::HeaderValue> =
-            raw_entries.iter().filter_map(|s| s.parse().ok()).collect();
+        let mut origins: Vec<http::HeaderValue> = Vec::with_capacity(total);
+
+        for entry in &raw_entries {
+            match entry.parse::<http::HeaderValue>() {
+                Ok(val) => origins.push(val),
+                Err(e) => {
+                    tracing::warn!(origin = %entry, error = %e, "Invalid CORS origin, skipping");
+                }
+            }
+        }
+
+        if origins.is_empty() {
+            anyhow::bail!(
+                "No valid CORS origins after parsing CORS_ORIGINS={:?}. \
+                 All {} entries failed to parse. \
+                 Fix the CORS_ORIGINS environment variable or remove it to use defaults.",
+                origins_raw,
+                total,
+            );
+        }
+
         let valid = origins.len();
         let invalid = total - valid;
 
@@ -189,18 +204,43 @@ async fn main() -> anyhow::Result<()> {
         .build_v1()
         .context("failed to build gRPC reflection service")?;
 
+    let mut health_shutdown_rx = shutdown_tx.subscribe();
+
     let grpc_handle = tokio::spawn(async move {
         let (health_reporter, health_service) = tonic_health::server::health_reporter();
 
-        // Check tmux availability for gRPC health status
-        if tmux_gateway_core::is_available().await {
-            health_reporter
-                .set_serving::<grpc::TmuxGatewayServerConcrete>()
-                .await;
-        } else {
-            health_reporter
-                .set_not_serving::<grpc::TmuxGatewayServerConcrete>()
-                .await;
+        // Spawn a background task that periodically verifies tmux is responsive
+        // and updates the gRPC health status accordingly.
+        {
+            let reporter = health_reporter.clone();
+            tokio::spawn(async move {
+                const CHECK_INTERVAL: Duration = Duration::from_secs(5);
+                const CHECK_TIMEOUT: Duration = Duration::from_secs(3);
+
+                loop {
+                    let healthy =
+                        tokio::time::timeout(CHECK_TIMEOUT, tmux_gateway_core::is_available())
+                            .await
+                            .unwrap_or(false);
+
+                    if healthy {
+                        reporter
+                            .set_serving::<grpc::TmuxGatewayServerConcrete>()
+                            .await;
+                    } else {
+                        reporter
+                            .set_not_serving::<grpc::TmuxGatewayServerConcrete>()
+                            .await;
+                    }
+
+                    tokio::select! {
+                        _ = tokio::time::sleep(CHECK_INTERVAL) => {}
+                        _ = health_shutdown_rx.wait_for(|&v| v) => break,
+                    }
+                }
+
+                tracing::info!("Health check loop stopped");
+            });
         }
 
         let x_request_id = http::HeaderName::from_static("x-request-id");
