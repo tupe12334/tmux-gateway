@@ -1,11 +1,14 @@
 use std::env;
 use std::time::Duration;
-use tmux_gateway::api::{graphql, grpc, rest};
+use tmux_gateway::api::{graphql, grpc, middleware, rest};
 use tmux_gateway::{export_schemas, port_table, preflight};
 use tokio::net::TcpListener;
 use tokio::signal;
 use tokio::sync::watch;
 use tower_http::cors::{AllowOrigin, CorsLayer};
+use tower_http::request_id::{PropagateRequestIdLayer, SetRequestIdLayer};
+use tower_http::trace::TraceLayer;
+use tracing::Span;
 use tracing_subscriber::EnvFilter;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -14,11 +17,7 @@ use utoipa_swagger_ui::SwaggerUi;
 async fn main() {
     dotenvy::dotenv().ok();
 
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            EnvFilter::from_default_env().add_directive("tmux_gateway=info".parse().unwrap()),
-        )
-        .init();
+    init_tracing();
 
     let config = preflight::run();
 
@@ -64,11 +63,43 @@ async fn main() {
             .allow_headers(tower_http::cors::Any)
     };
 
+    let x_request_id = http::HeaderName::from_static("x-request-id");
+
     let http_app = axum::Router::new()
         .merge(rest::router())
         .merge(graphql::router())
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", rest::ApiDoc::openapi()))
-        .layer(cors);
+        .layer(cors)
+        .layer(PropagateRequestIdLayer::new(x_request_id.clone()))
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(|request: &http::Request<_>| {
+                    let request_id = request
+                        .headers()
+                        .get("x-request-id")
+                        .and_then(|v| v.to_str().ok())
+                        .unwrap_or("-");
+                    tracing::info_span!(
+                        "http_request",
+                        method = %request.method(),
+                        path = %request.uri().path(),
+                        request_id = %request_id,
+                    )
+                })
+                .on_response(
+                    |response: &http::Response<_>, latency: Duration, _span: &Span| {
+                        tracing::info!(
+                            status = response.status().as_u16(),
+                            latency_ms = latency.as_millis(),
+                            "response"
+                        );
+                    },
+                ),
+        )
+        .layer(SetRequestIdLayer::new(
+            x_request_id,
+            middleware::UuidRequestId,
+        ));
 
     let http_addr = format!("0.0.0.0:{http_port}");
     let http_handle = tokio::spawn(async move {
@@ -91,9 +122,18 @@ async fn main() {
             .build_v1()
             .unwrap();
         let (health_reporter, health_service) = tonic_health::server::health_reporter();
-        health_reporter
-            .set_serving::<grpc::TmuxGatewayServerConcrete>()
-            .await;
+
+        // Check tmux availability for gRPC health status
+        if rest::check_tmux_available() {
+            health_reporter
+                .set_serving::<grpc::TmuxGatewayServerConcrete>()
+                .await;
+        } else {
+            health_reporter
+                .set_not_serving::<grpc::TmuxGatewayServerConcrete>()
+                .await;
+        }
+
         tracing::info!("gRPC server listening on {}", addr);
         tonic::transport::Server::builder()
             .add_service(health_service)
@@ -125,6 +165,26 @@ async fn main() {
         tracing::warn!("Graceful shutdown timed out after {shutdown_timeout}s, forcing exit");
     } else {
         tracing::info!("All servers shut down gracefully");
+    }
+}
+
+/// Initializes the tracing subscriber.
+/// Set `RUST_LOG_FORMAT=json` for JSON-formatted logs (recommended for production).
+fn init_tracing() {
+    let filter =
+        EnvFilter::from_default_env().add_directive("tmux_gateway=info".parse().unwrap());
+
+    let use_json = env::var("RUST_LOG_FORMAT")
+        .map(|v| v.eq_ignore_ascii_case("json"))
+        .unwrap_or(false);
+
+    if use_json {
+        tracing_subscriber::fmt()
+            .json()
+            .with_env_filter(filter)
+            .init();
+    } else {
+        tracing_subscriber::fmt().with_env_filter(filter).init();
     }
 }
 

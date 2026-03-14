@@ -3,11 +3,26 @@ type MutationRoot {
 	killSession(target: String!): Boolean!
 	killWindow(target: String!): Boolean!
 	killPane(target: String!): Boolean!
+	sendKeys(target: String!, keys: [String!]!): Boolean!
+	renameSession(target: String!, newName: String!): Boolean!
+	renameWindow(target: String!, newName: String!): Boolean!
+	newWindow(session: String!, name: String!): String!
+	splitWindow(target: String!, horizontal: Boolean!): Boolean!
+}
+
+type Pane {
+	id: String!
+	width: Int!
+	height: Int!
+	active: Boolean!
 }
 
 type QueryRoot {
 	health: String!
 	ls: [Session!]!
+	listWindows(session: String!): [Window!]!
+	listPanes(target: String!): [Pane!]!
+	capturePane(target: String!): String!
 }
 
 type Session {
@@ -15,6 +30,13 @@ type Session {
 	windows: Int!
 	created: String!
 	attached: Boolean!
+}
+
+type Window {
+	index: Int!
+	name: String!
+	panes: Int!
+	active: Boolean!
 }
 
 """

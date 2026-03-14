@@ -4,7 +4,7 @@ use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use utoipa::{OpenApi, ToSchema};
 
-use crate::tmux::{self, TmuxCommands, TmuxError};
+use crate::tmux::{self, TmuxCommands, TmuxError, tmux_interface::Tmux};
 
 struct RestHandler;
 
@@ -71,6 +71,17 @@ fn tmux_err_to_http(e: TmuxError) -> (StatusCode, String) {
 #[derive(Serialize, ToSchema)]
 struct HealthResponse {
     status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    detail: Option<String>,
+}
+
+/// Returns `true` if tmux is reachable and responding.
+pub fn check_tmux_available() -> bool {
+    Tmux::new()
+        .version()
+        .output()
+        .map(|o| o.into_inner().status.success())
+        .unwrap_or(false)
 }
 
 #[derive(Serialize, ToSchema)]
@@ -101,13 +112,28 @@ struct PaneResponse {
     get,
     path = "/health",
     responses(
-        (status = 200, description = "Health check", body = HealthResponse)
+        (status = 200, description = "Healthy — tmux is reachable", body = HealthResponse),
+        (status = 503, description = "Degraded — tmux is not available", body = HealthResponse)
     )
 )]
-async fn health() -> Json<HealthResponse> {
-    Json(HealthResponse {
-        status: "healthy".to_string(),
-    })
+async fn health() -> (axum::http::StatusCode, Json<HealthResponse>) {
+    if check_tmux_available() {
+        (
+            axum::http::StatusCode::OK,
+            Json(HealthResponse {
+                status: "healthy".to_string(),
+                detail: None,
+            }),
+        )
+    } else {
+        (
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            Json(HealthResponse {
+                status: "degraded".to_string(),
+                detail: Some("tmux is not available".to_string()),
+            }),
+        )
+    }
 }
 
 #[utoipa::path(
