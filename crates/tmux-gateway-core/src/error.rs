@@ -21,6 +21,9 @@ pub enum TmuxError {
     #[error("invalid target: {0}")]
     InvalidTarget(String),
 
+    #[error("validation error: {0}")]
+    Validation(#[from] crate::validation::ValidationError),
+
     #[error("failed to parse tmux output for {command}: {details}")]
     ParseError { command: String, details: String },
 }
@@ -55,12 +58,6 @@ impl TmuxError {
             command: command.to_string(),
             stderr: stderr.trim().to_string(),
         }
-    }
-}
-
-impl From<crate::validation::ValidationError> for TmuxError {
-    fn from(e: crate::validation::ValidationError) -> Self {
-        Self::InvalidTarget(e.to_string())
     }
 }
 
@@ -233,5 +230,56 @@ mod tests {
         // TmuxNotRunning should win because it's checked first.
         let err = TmuxError::from_stderr("cmd", "no server running on... session not found", "s");
         assert!(matches!(err, TmuxError::TmuxNotRunning));
+    }
+
+    // --- Validation variant ---
+
+    #[test]
+    fn validation_error_preserves_empty_input() {
+        let ve = crate::validation::ValidationError::EmptyInput { field: "name" };
+        let err: TmuxError = ve.into();
+        assert!(matches!(
+            err,
+            TmuxError::Validation(crate::validation::ValidationError::EmptyInput {
+                field: "name"
+            })
+        ));
+        assert_eq!(err.to_string(), "validation error: name must not be empty");
+    }
+
+    #[test]
+    fn validation_error_preserves_invalid_session_name() {
+        let ve = crate::validation::ValidationError::InvalidSessionName {
+            reason: "too long".to_string(),
+        };
+        let err: TmuxError = ve.into();
+        assert!(matches!(
+            err,
+            TmuxError::Validation(crate::validation::ValidationError::InvalidSessionName { .. })
+        ));
+    }
+
+    #[test]
+    fn validation_error_preserves_invalid_window_name() {
+        let ve = crate::validation::ValidationError::InvalidWindowName {
+            reason: "bad chars".to_string(),
+        };
+        let err: TmuxError = ve.into();
+        assert!(matches!(
+            err,
+            TmuxError::Validation(crate::validation::ValidationError::InvalidWindowName { .. })
+        ));
+    }
+
+    #[test]
+    fn validation_error_preserves_invalid_target() {
+        let ve = crate::validation::ValidationError::InvalidTarget {
+            reason: "missing colon".to_string(),
+        };
+        let err: TmuxError = ve.into();
+        assert!(matches!(
+            err,
+            TmuxError::Validation(crate::validation::ValidationError::InvalidTarget { .. })
+        ));
     }
 }

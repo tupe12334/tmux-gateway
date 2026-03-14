@@ -105,7 +105,9 @@ fn tmux_err_to_http(e: TmuxError) -> (StatusCode, String) {
         | TmuxError::WindowNotFound(_)
         | TmuxError::PaneNotFound(_) => StatusCode::NOT_FOUND,
         TmuxError::SessionAlreadyExists(_) => StatusCode::CONFLICT,
-        TmuxError::InvalidTarget(_) | TmuxError::ParseError { .. } => StatusCode::BAD_REQUEST,
+        TmuxError::InvalidTarget(_) | TmuxError::Validation(_) | TmuxError::ParseError { .. } => {
+            StatusCode::BAD_REQUEST
+        }
         TmuxError::TmuxNotRunning | TmuxError::CommandFailed { .. } => {
             StatusCode::INTERNAL_SERVER_ERROR
         }

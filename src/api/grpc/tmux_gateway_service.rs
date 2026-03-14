@@ -114,7 +114,7 @@ fn tmux_err_to_status(e: TmuxError) -> Status {
         | TmuxError::WindowNotFound(_)
         | TmuxError::PaneNotFound(_) => Status::not_found(msg),
         TmuxError::SessionAlreadyExists(_) => Status::already_exists(msg),
-        TmuxError::InvalidTarget(_) | TmuxError::ParseError { .. } => {
+        TmuxError::InvalidTarget(_) | TmuxError::Validation(_) | TmuxError::ParseError { .. } => {
             Status::invalid_argument(msg)
         }
         TmuxError::TmuxNotRunning | TmuxError::CommandFailed { .. } => Status::internal(msg),
