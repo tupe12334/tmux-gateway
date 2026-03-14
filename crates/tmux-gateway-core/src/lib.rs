@@ -23,7 +23,7 @@ pub mod validation;
 pub use capture_pane::capture_pane;
 pub use commands::TmuxCommands;
 pub use create_session_with_windows::create_session_with_windows;
-pub use error::{GrpcCode, TmuxError};
+pub use error::TmuxError;
 pub use executor::{RealTmuxExecutor, TmuxExecutor, TmuxOutput};
 pub use kill_pane::kill_pane;
 pub use kill_session::kill_session;

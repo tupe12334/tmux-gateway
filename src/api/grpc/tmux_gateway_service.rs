@@ -11,7 +11,7 @@ use super::messages::{
     SplitWindowResponse, SwapPanesRequest, SwapPanesResponse, TmuxPaneMsg, TmuxSession, TmuxWindow,
 };
 use super::server::{TmuxGateway, TmuxGatewayServer};
-use crate::tmux::{self, GrpcCode, RealTmuxExecutor, TmuxCommands, TmuxError};
+use crate::tmux::{self, RealTmuxExecutor, TmuxCommands, TmuxError};
 
 pub struct TmuxGatewayServiceImpl;
 
@@ -91,11 +91,15 @@ impl TmuxCommands for TmuxGatewayServiceImpl {
 
 fn tmux_err_to_status(e: TmuxError) -> Status {
     let msg = e.to_string();
-    match e.grpc_code() {
-        GrpcCode::NotFound => Status::not_found(msg),
-        GrpcCode::AlreadyExists => Status::already_exists(msg),
-        GrpcCode::InvalidArgument => Status::invalid_argument(msg),
-        GrpcCode::Internal => Status::internal(msg),
+    match e {
+        TmuxError::SessionNotFound(_)
+        | TmuxError::WindowNotFound(_)
+        | TmuxError::PaneNotFound(_) => Status::not_found(msg),
+        TmuxError::SessionAlreadyExists(_) => Status::already_exists(msg),
+        TmuxError::InvalidTarget(_) | TmuxError::ParseError { .. } => {
+            Status::invalid_argument(msg)
+        }
+        TmuxError::TmuxNotRunning | TmuxError::CommandFailed { .. } => Status::internal(msg),
     }
 }
 
