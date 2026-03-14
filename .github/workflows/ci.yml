@@ -112,6 +112,21 @@ jobs:
       - name: Check for unused dependencies
         run: cargo machete
 
+  dylint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@nightly
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-dylint and dylint-link
+        run: cargo install cargo-dylint dylint-link
+
+      - name: Run dylint lints
+        run: cargo dylint --all --workspace
+
   cspell:
     runs-on: ubuntu-latest
     steps:
