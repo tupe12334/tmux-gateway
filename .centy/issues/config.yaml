@@ -11,10 +11,11 @@ features:
   move: true
   duplicate: true
 statuses:
-- open
-- planning
-- in-progress
-- closed
+  - open
+  - in-queue
+  - planning
+  - in-progress
+  - closed
 defaultStatus: open
 priorityLevels: 3
 template: template.md
