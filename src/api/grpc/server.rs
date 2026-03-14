@@ -156,5 +156,6 @@ grpc_service! {
         rpc MoveWindow / move_window(MoveWindowRequest) -> MoveWindowResponse;
         rpc SelectWindow / select_window(SelectWindowRequest) -> SelectWindowResponse;
         rpc SelectPane / select_pane(SelectPaneRequest) -> SelectPaneResponse;
+        rpc ResizePane / resize_pane(ResizePaneRequest) -> ResizePaneResponse;
     }
 }

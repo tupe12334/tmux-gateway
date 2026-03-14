@@ -8,9 +8,10 @@ use super::messages::{
     ListPanesResponse, ListWindowsRequest, ListWindowsResponse, LsRequest, LsResponse,
     MoveWindowRequest, MoveWindowResponse, NewSessionRequest, NewSessionResponse, NewWindowRequest,
     NewWindowResponse, RenameSessionRequest, RenameSessionResponse, RenameWindowRequest,
-    RenameWindowResponse, SelectPaneRequest, SelectPaneResponse, SelectWindowRequest,
-    SelectWindowResponse, SendKeysRequest, SendKeysResponse, SplitWindowRequest,
-    SplitWindowResponse, SwapPanesRequest, SwapPanesResponse, TmuxPaneMsg, TmuxSession, TmuxWindow,
+    RenameWindowResponse, ResizePaneRequest, ResizePaneResponse, SelectPaneRequest,
+    SelectPaneResponse, SelectWindowRequest, SelectWindowResponse, SendKeysRequest,
+    SendKeysResponse, SplitWindowRequest, SplitWindowResponse, SwapPanesRequest, SwapPanesResponse,
+    TmuxPaneMsg, TmuxSession, TmuxWindow,
 };
 use super::server::{TmuxGateway, TmuxGatewayServer};
 use crate::tmux::{self, RealTmuxExecutor, TmuxCommands, TmuxError};
@@ -104,6 +105,14 @@ impl TmuxCommands for TmuxGatewayServiceImpl {
 
     async fn select_pane(&self, target: &str) -> Result<(), TmuxError> {
         tmux::select_pane(&RealTmuxExecutor, target).await
+    }
+
+    async fn resize_pane(
+        &self,
+        target: &str,
+        direction: tmux::ResizeDirection,
+    ) -> Result<(), TmuxError> {
+        tmux::resize_pane(&RealTmuxExecutor, target, direction).await
     }
 }
 
@@ -399,6 +408,24 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
             .await
             .map_err(tmux_err_to_status)?;
         Ok(Response::new(SelectPaneResponse {}))
+    }
+
+    async fn resize_pane(
+        &self,
+        request: Request<ResizePaneRequest>,
+    ) -> Result<Response<ResizePaneResponse>, Status> {
+        let inner = request.into_inner();
+        let direction = match inner.direction.as_str() {
+            "up" | "Up" | "U" => tmux::ResizeDirection::Up(inner.amount),
+            "down" | "Down" | "D" => tmux::ResizeDirection::Down(inner.amount),
+            "left" | "Left" | "L" => tmux::ResizeDirection::Left(inner.amount),
+            "right" | "Right" | "R" => tmux::ResizeDirection::Right(inner.amount),
+            _ => return Err(Status::invalid_argument(format!("invalid direction: {}", inner.direction))),
+        };
+        TmuxCommands::resize_pane(self, &inner.target, direction)
+            .await
+            .map_err(tmux_err_to_status)?;
+        Ok(Response::new(ResizePaneResponse {}))
     }
 }
 

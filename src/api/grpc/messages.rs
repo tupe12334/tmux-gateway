@@ -298,4 +298,12 @@ proto_messages! {
     }
 
     message SelectPaneResponse {}
+
+    message ResizePaneRequest {
+        string target = "1";
+        string direction = "2";
+        uint32 amount = "3";
+    }
+
+    message ResizePaneResponse {}
 }
