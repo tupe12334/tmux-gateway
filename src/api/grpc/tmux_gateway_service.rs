@@ -19,7 +19,7 @@ impl TmuxCommands for TmuxGatewayServiceImpl {
         tmux::list_sessions().await
     }
 
-    async fn create_session(&self, name: &str) -> Result<String, TmuxError> {
+    async fn create_session(&self, name: &str) -> Result<tmux::TmuxSession, TmuxError> {
         tmux::new_session(name).await
     }
 
@@ -55,11 +55,15 @@ impl TmuxCommands for TmuxGatewayServiceImpl {
         tmux::rename_window(target, new_name).await
     }
 
-    async fn new_window(&self, session: &str, name: &str) -> Result<String, TmuxError> {
+    async fn new_window(&self, session: &str, name: &str) -> Result<tmux::TmuxWindow, TmuxError> {
         tmux::new_window(session, name).await
     }
 
-    async fn split_window(&self, target: &str, horizontal: bool) -> Result<(), TmuxError> {
+    async fn split_window(
+        &self,
+        target: &str,
+        horizontal: bool,
+    ) -> Result<tmux::TmuxPane, TmuxError> {
         tmux::split_window(target, horizontal).await
     }
 
@@ -103,10 +107,15 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
         request: Request<NewSessionRequest>,
     ) -> Result<Response<NewSessionResponse>, Status> {
         let name = &request.into_inner().name;
-        let created_name = TmuxCommands::create_session(self, name)
+        let session = TmuxCommands::create_session(self, name)
             .await
             .map_err(tmux_err_to_status)?;
-        Ok(Response::new(NewSessionResponse { name: created_name }))
+        Ok(Response::new(NewSessionResponse {
+            name: session.name,
+            windows: session.windows,
+            created: session.created,
+            attached: session.attached,
+        }))
     }
 
     async fn kill_session(
@@ -226,10 +235,15 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
         request: Request<NewWindowRequest>,
     ) -> Result<Response<NewWindowResponse>, Status> {
         let inner = request.into_inner();
-        let name = TmuxCommands::new_window(self, &inner.session, &inner.name)
+        let window = TmuxCommands::new_window(self, &inner.session, &inner.name)
             .await
             .map_err(tmux_err_to_status)?;
-        Ok(Response::new(NewWindowResponse { name }))
+        Ok(Response::new(NewWindowResponse {
+            index: window.index,
+            name: window.name,
+            panes: window.panes,
+            active: window.active,
+        }))
     }
 
     async fn split_window(
@@ -237,10 +251,15 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
         request: Request<SplitWindowRequest>,
     ) -> Result<Response<SplitWindowResponse>, Status> {
         let inner = request.into_inner();
-        TmuxCommands::split_window(self, &inner.target, inner.horizontal)
+        let pane = TmuxCommands::split_window(self, &inner.target, inner.horizontal)
             .await
             .map_err(tmux_err_to_status)?;
-        Ok(Response::new(SplitWindowResponse {}))
+        Ok(Response::new(SplitWindowResponse {
+            id: pane.id,
+            width: pane.width,
+            height: pane.height,
+            active: pane.active,
+        }))
     }
 
     async fn capture_pane(
