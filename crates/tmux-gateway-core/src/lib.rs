@@ -22,6 +22,7 @@ mod server_info;
 mod sessions;
 mod split_window;
 mod swap_panes;
+mod swap_window;
 pub mod validation;
 
 pub use capture_pane::{CaptureOptions, capture_pane, capture_pane_with_options};
@@ -48,4 +49,5 @@ pub use server_info::{TmuxServerInfo, is_available, server_info};
 pub use sessions::{TmuxSession, get_session, list_sessions, session_exists};
 pub use split_window::split_window;
 pub use swap_panes::swap_panes;
+pub use swap_window::swap_window;
 pub use validation::ValidationError;
