@@ -234,5 +234,25 @@ impl MutationRoot {
 }
 
 pub fn build_schema() -> AppSchema {
-    Schema::build(QueryRoot, MutationRoot, EmptySubscription).finish()
+    let max_depth = std::env::var("GRAPHQL_MAX_DEPTH")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(10);
+    let max_complexity = std::env::var("GRAPHQL_MAX_COMPLEXITY")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(100);
+    let introspection = std::env::var("GRAPHQL_INTROSPECTION")
+        .map(|v| v != "false")
+        .unwrap_or(true);
+
+    let mut builder = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
+        .limit_depth(max_depth)
+        .limit_complexity(max_complexity);
+
+    if !introspection {
+        builder = builder.disable_introspection();
+    }
+
+    builder.finish()
 }
