@@ -14,6 +14,7 @@ pub async fn new_session(
     new_session_with_events(executor, name, None).await
 }
 
+#[tracing::instrument(skip(executor, event_tx))]
 pub async fn new_session_with_events(
     executor: &(impl TmuxExecutor + ?Sized),
     name: &str,

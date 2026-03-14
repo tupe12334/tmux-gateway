@@ -12,6 +12,7 @@ pub enum ResizeDirection {
     Right(u32),
 }
 
+#[tracing::instrument(skip(executor))]
 pub async fn resize_pane(
     executor: &(impl TmuxExecutor + ?Sized),
     target: &str,
