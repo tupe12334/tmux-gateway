@@ -1,6 +1,10 @@
+use std::env;
+use std::time::Duration;
 use tmux_gateway::api::{graphql, grpc, rest};
 use tmux_gateway::{export_schemas, port_table, preflight};
 use tokio::net::TcpListener;
+use tokio::signal;
+use tokio::sync::watch;
 use tracing_subscriber::EnvFilter;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -22,6 +26,11 @@ async fn main() {
     let http_port = config.http_port;
     let grpc_port = config.grpc_port;
 
+    let shutdown_timeout = env::var("SHUTDOWN_TIMEOUT_SECS")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(30);
+
     let swagger_url = format!("http://localhost:{}/swagger-ui", http_port);
     let graphql_url = format!("http://localhost:{}/graphql", http_port);
     let grpcui_cmd = format!("grpcui -plaintext localhost:{}", grpc_port);
@@ -31,6 +40,11 @@ async fn main() {
         ("GraphQL", http_port, graphql_url.as_str()),
         ("gRPC", grpc_port, grpcui_cmd.as_str()),
     ]);
+
+    // Shutdown signal: sender notifies both servers to begin graceful shutdown.
+    let (shutdown_tx, _) = watch::channel(false);
+    let mut http_shutdown_rx = shutdown_tx.subscribe();
+    let mut grpc_shutdown_rx = shutdown_tx.subscribe();
 
     let http_app = axum::Router::new()
         .merge(rest::router())
@@ -43,7 +57,13 @@ async fn main() {
     let http_handle = tokio::spawn(async move {
         let listener = TcpListener::bind(&http_addr).await.unwrap();
         tracing::info!("HTTP server (REST + GraphQL + Swagger) listening on {http_addr}");
-        axum::serve(listener, http_app).await.unwrap();
+        axum::serve(listener, http_app)
+            .with_graceful_shutdown(async move {
+                let _ = http_shutdown_rx.wait_for(|&v| v).await;
+                tracing::info!("HTTP server shutting down...");
+            })
+            .await
+            .unwrap();
     });
 
     let grpc_addr = format!("0.0.0.0:{grpc_port}");
@@ -62,10 +82,52 @@ async fn main() {
             .add_service(health_service)
             .add_service(grpc::grpc_server())
             .add_service(reflection_service)
-            .serve(addr)
+            .serve_with_shutdown(addr, async move {
+                let _ = grpc_shutdown_rx.wait_for(|&v| v).await;
+                tracing::info!("gRPC server shutting down...");
+            })
             .await
             .unwrap();
     });
 
-    tokio::try_join!(http_handle, grpc_handle).unwrap();
+    // Wait for shutdown signal (Ctrl+C or SIGTERM).
+    shutdown_signal().await;
+    tracing::info!("Shutdown signal received, draining in-flight requests...");
+
+    // Notify both servers to begin graceful shutdown.
+    let _ = shutdown_tx.send(true);
+
+    // Wait for servers to drain, with a timeout.
+    let drain = async {
+        let _ = tokio::join!(http_handle, grpc_handle);
+    };
+    if tokio::time::timeout(Duration::from_secs(shutdown_timeout), drain)
+        .await
+        .is_err()
+    {
+        tracing::warn!(
+            "Graceful shutdown timed out after {shutdown_timeout}s, forcing exit"
+        );
+    } else {
+        tracing::info!("All servers shut down gracefully");
+    }
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = signal::ctrl_c();
+
+    #[cfg(unix)]
+    {
+        let mut sigterm =
+            signal::unix::signal(signal::unix::SignalKind::terminate()).expect("failed to install SIGTERM handler");
+        tokio::select! {
+            _ = ctrl_c => {}
+            _ = sigterm.recv() => {}
+        }
+    }
+
+    #[cfg(not(unix))]
+    {
+        ctrl_c.await.expect("failed to listen for Ctrl+C");
+    }
 }
