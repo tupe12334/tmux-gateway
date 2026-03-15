@@ -461,11 +461,11 @@ pub fn build_schema() -> AppSchema {
     let max_depth = std::env::var("GRAPHQL_MAX_DEPTH")
         .ok()
         .and_then(|v| v.parse().ok())
-        .unwrap_or(10);
+        .unwrap_or(15);
     let max_complexity = std::env::var("GRAPHQL_MAX_COMPLEXITY")
         .ok()
         .and_then(|v| v.parse().ok())
-        .unwrap_or(100);
+        .unwrap_or(500);
     let introspection = std::env::var("GRAPHQL_INTROSPECTION")
         .map(|v| v != "false")
         .unwrap_or(true);
