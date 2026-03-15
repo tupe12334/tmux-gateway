@@ -516,6 +516,36 @@
         }
       }
     },
+    "/select-layout": {
+      "post": {
+        "tags": [],
+        "operationId": "select_layout",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelectLayoutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Layout applied"
+          },
+          "400": {
+            "description": "Invalid target or layout"
+          },
+          "404": {
+            "description": "Window not found"
+          },
+          "500": {
+            "description": "Failed to select layout"
+          }
+        }
+      }
+    },
     "/select-pane": {
       "post": {
         "tags": [],
@@ -982,6 +1012,21 @@
             "minimum": 0
           },
           "direction": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          }
+        }
+      },
+      "SelectLayoutRequest": {
+        "type": "object",
+        "required": [
+          "target",
+          "layout"
+        ],
+        "properties": {
+          "layout": {
             "type": "string"
           },
           "target": {

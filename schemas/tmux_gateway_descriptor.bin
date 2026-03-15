@@ -1,5 +1,5 @@
 
-Ü&
+’(
 tmux_gateway.prototmux_gateway"
 	LsRequest"C
 
@@ -125,14 +125,18 @@ hasEndLine
 target (	Rtarget
 	direction (	R	direction
 amount (Ramount"
-ResizePaneResponse"R
+ResizePaneResponse"E
+SelectLayoutRequest
+target (	Rtarget
+layout (	Rlayout"
+SelectLayoutResponse"R
 StreamPaneOutputRequest
 target (	Rtarget
 interval_ms (R
 intervalMs"R
 StreamPaneOutputResponse
 content (	Rcontent
-	timestamp (R	timestamp2ˆ
+	timestamp (R	timestamp2ß
 TmuxGateway7
 Ls.tmux_gateway.LsRequest.tmux_gateway.LsResponseO
 
@@ -158,5 +162,6 @@ MoveWindow.tmux_gateway.MoveWindowRequest .tmux_gateway.MoveWindowResponseU
 
 SelectPane.tmux_gateway.SelectPaneRequest .tmux_gateway.SelectPaneResponseO
 
-ResizePane.tmux_gateway.ResizePaneRequest .tmux_gateway.ResizePaneResponsec
+ResizePane.tmux_gateway.ResizePaneRequest .tmux_gateway.ResizePaneResponseU
+SelectLayout!.tmux_gateway.SelectLayoutRequest".tmux_gateway.SelectLayoutResponsec
 StreamPaneOutput%.tmux_gateway.StreamPaneOutputRequest&.tmux_gateway.StreamPaneOutputResponse0bproto3

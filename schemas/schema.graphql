@@ -13,6 +13,7 @@ type MutationRoot {
 	moveWindow(source: String!, destinationSession: String!): Boolean!
 	selectWindow(target: String!): Boolean!
 	selectPane(target: String!): Boolean!
+	selectLayout(target: String!, layout: String!): Boolean!
 	resizePane(target: String!, direction: String!, amount: Int!): Boolean!
 }
 

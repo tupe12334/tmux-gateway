@@ -294,7 +294,7 @@ impl MutationRoot {
             "main-horizontal" => tmux::PaneLayout::MainHorizontal,
             "main-vertical" => tmux::PaneLayout::MainVertical,
             "tiled" => tmux::PaneLayout::Tiled,
-            other if other.is_empty() => {
+            "" => {
                 return Err(async_graphql::Error::new("layout must not be empty"));
             }
             other => tmux::PaneLayout::Custom(other.to_string()),
