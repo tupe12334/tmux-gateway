@@ -194,6 +194,7 @@ proto_messages! {
         bool active = "4";
         string current_path = "5";
         string current_command = "6";
+        uint32 pid = "7";
     }
 
     message SendKeysRequest {
@@ -242,6 +243,7 @@ proto_messages! {
         bool active = "4";
         string current_path = "5";
         string current_command = "6";
+        uint32 pid = "7";
     }
 
     message CapturePaneRequest {
@@ -318,6 +320,42 @@ proto_messages! {
     }
 
     message SelectLayoutResponse {}
+
+    message GetOptionRequest {
+        string name = "1";
+        string scope = "2";
+        string target = "3";
+    }
+
+    message GetOptionResponse {
+        string name = "1";
+        string value = "2";
+        string scope = "3";
+    }
+
+    message SetOptionRequest {
+        string name = "1";
+        string value = "2";
+        string scope = "3";
+        string target = "4";
+    }
+
+    message SetOptionResponse {}
+
+    message ListOptionsRequest {
+        string scope = "1";
+        string target = "2";
+    }
+
+    message ListOptionsResponse {
+        repeated TmuxOptionMsg options = "1";
+    }
+
+    message TmuxOptionMsg {
+        string name = "1";
+        string value = "2";
+        string scope = "3";
+    }
 
     message StreamPaneOutputRequest {
         string target = "1";

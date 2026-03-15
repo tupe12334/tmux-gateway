@@ -1,5 +1,5 @@
 
-’(
+µ.
 tmux_gateway.prototmux_gateway"
 	LsRequest"C
 
@@ -42,14 +42,15 @@ TmuxWindow
 ListPanesRequest
 target (	Rtarget"D
 ListPanesResponse/
-panes (2.tmux_gateway.TmuxPaneMsgRpanes"¯
+panes (2.tmux_gateway.TmuxPaneMsgRpanes"Á
 TmuxPaneMsg
 id (	Rid
 width (Rwidth
 height (Rheight
 active (Ractive!
 current_path (	RcurrentPath'
-current_command (	RcurrentCommand"=
+current_command (	RcurrentCommand
+pid (Rpid"=
 SendKeysRequest
 target (	Rtarget
 keys (	Rkeys"
@@ -75,14 +76,15 @@ TmuxWindow
 target (	Rtarget
 
 horizontal (R
-horizontal"·
+horizontal"É
 SplitWindowResponse
 id (	Rid
 width (Rwidth
 height (Rheight
 active (Ractive!
 current_path (	RcurrentPath'
-current_command (	RcurrentCommand",
+current_command (	RcurrentCommand
+pid (Rpid",
 CapturePaneRequest
 target (	Rtarget"/
 CapturePaneResponse
@@ -129,14 +131,37 @@ hasEndLine
 SelectLayoutRequest
 target (	Rtarget
 layout (	Rlayout"
-SelectLayoutResponse"R
+SelectLayoutResponse"T
+GetOptionRequest
+name (	Rname
+scope (	Rscope
+target (	Rtarget"S
+GetOptionResponse
+name (	Rname
+value (	Rvalue
+scope (	Rscope"j
+SetOptionRequest
+name (	Rname
+value (	Rvalue
+scope (	Rscope
+target (	Rtarget"
+SetOptionResponse"B
+ListOptionsRequest
+scope (	Rscope
+target (	Rtarget"L
+ListOptionsResponse5
+options (2.tmux_gateway.TmuxOptionMsgRoptions"O
+TmuxOptionMsg
+name (	Rname
+value (	Rvalue
+scope (	Rscope"R
 StreamPaneOutputRequest
 target (	Rtarget
 interval_ms (R
 intervalMs"R
 StreamPaneOutputResponse
 content (	Rcontent
-	timestamp (R	timestamp2ß
+	timestamp (R	timestamp2Ï
 TmuxGateway7
 Ls.tmux_gateway.LsRequest.tmux_gateway.LsResponseO
 
@@ -163,5 +188,8 @@ MoveWindow.tmux_gateway.MoveWindowRequest .tmux_gateway.MoveWindowResponseU
 SelectPane.tmux_gateway.SelectPaneRequest .tmux_gateway.SelectPaneResponseO
 
 ResizePane.tmux_gateway.ResizePaneRequest .tmux_gateway.ResizePaneResponseU
-SelectLayout!.tmux_gateway.SelectLayoutRequest".tmux_gateway.SelectLayoutResponsec
+SelectLayout!.tmux_gateway.SelectLayoutRequest".tmux_gateway.SelectLayoutResponseL
+	GetOption.tmux_gateway.GetOptionRequest.tmux_gateway.GetOptionResponseL
+	SetOption.tmux_gateway.SetOptionRequest.tmux_gateway.SetOptionResponseR
+ListOptions .tmux_gateway.ListOptionsRequest!.tmux_gateway.ListOptionsResponsec
 StreamPaneOutput%.tmux_gateway.StreamPaneOutputRequest&.tmux_gateway.StreamPaneOutputResponse0bproto3

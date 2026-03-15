@@ -116,6 +116,59 @@
         }
       }
     },
+    "/get-option": {
+      "get": {
+        "tags": [],
+        "operationId": "get_option",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Option name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "Option scope: global, session, or window",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "target",
+            "in": "query",
+            "description": "Target (session or window) for non-global scopes",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Option value retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OptionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid option name or scope"
+          },
+          "500": {
+            "description": "Failed to get option"
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": [],
@@ -230,6 +283,53 @@
           },
           "500": {
             "description": "Failed to kill window"
+          }
+        }
+      }
+    },
+    "/list-options": {
+      "get": {
+        "tags": [],
+        "operationId": "list_options",
+        "parameters": [
+          {
+            "name": "scope",
+            "in": "query",
+            "description": "Option scope: global, session, or window",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "target",
+            "in": "query",
+            "description": "Target (session or window) for non-global scopes",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List options",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OptionResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid scope"
+          },
+          "500": {
+            "description": "Failed to list options"
           }
         }
       }
@@ -633,6 +733,33 @@
         }
       }
     },
+    "/set-option": {
+      "post": {
+        "tags": [],
+        "operationId": "set_option",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetOptionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Option set"
+          },
+          "400": {
+            "description": "Invalid option name or scope"
+          },
+          "500": {
+            "description": "Failed to set option"
+          }
+        }
+      }
+    },
     "/split-window": {
       "post": {
         "tags": [],
@@ -797,6 +924,27 @@
           }
         }
       },
+      "GetOptionRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "scope"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
       "HealthResponse": {
         "type": "object",
         "required": [
@@ -822,6 +970,23 @@
         "properties": {
           "target": {
             "type": "string"
+          }
+        }
+      },
+      "ListOptionsRequest": {
+        "type": "object",
+        "required": [
+          "scope"
+        ],
+        "properties": {
+          "scope": {
+            "type": "string"
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -948,6 +1113,25 @@
           }
         }
       },
+      "OptionResponse": {
+        "type": "object",
+        "required": [
+          "name",
+          "value",
+          "scope"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
       "PaneResponse": {
         "type": "object",
         "required": [
@@ -956,7 +1140,8 @@
           "height",
           "active",
           "current_path",
-          "current_command"
+          "current_command",
+          "pid"
         ],
         "properties": {
           "active": {
@@ -975,6 +1160,11 @@
           },
           "id": {
             "type": "string"
+          },
+          "pid": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
           },
           "width": {
             "type": "integer",
@@ -1081,6 +1271,31 @@
           }
         }
       },
+      "SetOptionRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "value",
+          "scope"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
       "SplitWindowRequest": {
         "type": "object",
         "required": [
@@ -1104,7 +1319,8 @@
           "height",
           "active",
           "current_path",
-          "current_command"
+          "current_command",
+          "pid"
         ],
         "properties": {
           "active": {
@@ -1123,6 +1339,11 @@
           },
           "id": {
             "type": "string"
+          },
+          "pid": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
           },
           "width": {
             "type": "integer",
