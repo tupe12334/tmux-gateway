@@ -252,8 +252,7 @@ async fn main() -> anyhow::Result<()> {
         }
 
         let x_request_id = http::HeaderName::from_static("x-request-id");
-        let incoming =
-            tokio_stream::wrappers::TcpListenerStream::new(grpc_listener);
+        let incoming = tokio_stream::wrappers::TcpListenerStream::new(grpc_listener);
 
         tracing::info!("gRPC server listening on {grpc_addr}");
         if let Err(e) = tonic::transport::Server::builder()
