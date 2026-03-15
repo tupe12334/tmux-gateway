@@ -3,6 +3,7 @@ use std::fmt;
 use super::TmuxError;
 use super::validation::validate_window_target;
 use crate::executor::TmuxExecutor;
+use crate::pagination::{PaginatedResult, Pagination, paginate};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TmuxPane {
@@ -85,6 +86,16 @@ pub async fn list_panes(
         .filter(|line| !line.is_empty())
         .map(parse_pane_line)
         .collect()
+}
+
+#[tracing::instrument(skip(executor))]
+pub async fn list_panes_paginated(
+    executor: &(impl TmuxExecutor + ?Sized),
+    target: &str,
+    pagination: &Pagination,
+) -> Result<PaginatedResult<TmuxPane>, TmuxError> {
+    let all = list_panes(executor, target).await?;
+    Ok(paginate(all, pagination))
 }
 
 #[cfg(test)]
@@ -201,5 +212,83 @@ mod tests {
         let input = "%0\t80\t24\t1\t/home\tbash\t1234\nbad line";
         let result = parse_panes(input);
         assert!(result.is_err());
+    }
+
+    // ── Mock executor tests for pagination ──
+
+    use crate::executor::TmuxOutput;
+
+    struct MockExecutor {
+        output: TmuxOutput,
+    }
+
+    impl TmuxExecutor for MockExecutor {
+        async fn execute(&self, _args: &[&str]) -> Result<TmuxOutput, TmuxError> {
+            Ok(self.output.clone())
+        }
+    }
+
+    fn mock_panes_executor(count: usize) -> MockExecutor {
+        let stdout = (0..count)
+            .map(|i| format!("%{i}\t80\t24\t0\t/home\tbash\t{}", 1000 + i))
+            .collect::<Vec<_>>()
+            .join("\n")
+            + "\n";
+        MockExecutor {
+            output: TmuxOutput {
+                stdout,
+                stderr: String::new(),
+                success: true,
+            },
+        }
+    }
+
+    #[tokio::test]
+    async fn list_panes_paginated_default_returns_all() {
+        let executor = mock_panes_executor(4);
+        let result = list_panes_paginated(&executor, "sess:win", &Pagination::default())
+            .await
+            .unwrap();
+        assert_eq!(result.items.len(), 4);
+        assert_eq!(result.total, 4);
+        assert!(!result.has_more);
+    }
+
+    #[tokio::test]
+    async fn list_panes_paginated_with_limit() {
+        let executor = mock_panes_executor(4);
+        let result = list_panes_paginated(
+            &executor,
+            "sess:win",
+            &Pagination {
+                offset: 0,
+                limit: Some(2),
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(result.items.len(), 2);
+        assert_eq!(result.items[0].id, "%0");
+        assert_eq!(result.items[1].id, "%1");
+        assert_eq!(result.total, 4);
+        assert!(result.has_more);
+    }
+
+    #[tokio::test]
+    async fn list_panes_paginated_offset_beyond_total() {
+        let executor = mock_panes_executor(3);
+        let result = list_panes_paginated(
+            &executor,
+            "sess:win",
+            &Pagination {
+                offset: 50,
+                limit: Some(10),
+            },
+        )
+        .await
+        .unwrap();
+        assert!(result.items.is_empty());
+        assert_eq!(result.total, 3);
+        assert!(!result.has_more);
     }
 }

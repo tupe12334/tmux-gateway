@@ -3,6 +3,7 @@ use std::fmt;
 use super::TmuxError;
 use super::validation::validate_session_target;
 use crate::executor::TmuxExecutor;
+use crate::pagination::{PaginatedResult, Pagination, paginate};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TmuxWindow {
@@ -80,6 +81,16 @@ pub async fn list_windows(
         .filter(|line| !line.is_empty())
         .map(parse_window_line)
         .collect()
+}
+
+#[tracing::instrument(skip(executor))]
+pub async fn list_windows_paginated(
+    executor: &(impl TmuxExecutor + ?Sized),
+    session: &str,
+    pagination: &Pagination,
+) -> Result<PaginatedResult<TmuxWindow>, TmuxError> {
+    let all = list_windows(executor, session).await?;
+    Ok(paginate(all, pagination))
 }
 
 #[tracing::instrument(skip(executor))]
@@ -193,5 +204,83 @@ mod tests {
         let input = "@0\t0\tbash\t1\t1\nbad line";
         let result = parse_windows(input);
         assert!(result.is_err());
+    }
+
+    // ── Mock executor tests for pagination ──
+
+    use crate::executor::TmuxOutput;
+
+    struct MockExecutor {
+        output: TmuxOutput,
+    }
+
+    impl TmuxExecutor for MockExecutor {
+        async fn execute(&self, _args: &[&str]) -> Result<TmuxOutput, TmuxError> {
+            Ok(self.output.clone())
+        }
+    }
+
+    fn mock_windows_executor(count: usize) -> MockExecutor {
+        let stdout = (0..count)
+            .map(|i| format!("@{i}\t{i}\twin{i}\t1\t0"))
+            .collect::<Vec<_>>()
+            .join("\n")
+            + "\n";
+        MockExecutor {
+            output: TmuxOutput {
+                stdout,
+                stderr: String::new(),
+                success: true,
+            },
+        }
+    }
+
+    #[tokio::test]
+    async fn list_windows_paginated_default_returns_all() {
+        let executor = mock_windows_executor(4);
+        let result = list_windows_paginated(&executor, "test", &Pagination::default())
+            .await
+            .unwrap();
+        assert_eq!(result.items.len(), 4);
+        assert_eq!(result.total, 4);
+        assert!(!result.has_more);
+    }
+
+    #[tokio::test]
+    async fn list_windows_paginated_with_limit() {
+        let executor = mock_windows_executor(4);
+        let result = list_windows_paginated(
+            &executor,
+            "test",
+            &Pagination {
+                offset: 0,
+                limit: Some(2),
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(result.items.len(), 2);
+        assert_eq!(result.items[0].name, "win0");
+        assert_eq!(result.items[1].name, "win1");
+        assert_eq!(result.total, 4);
+        assert!(result.has_more);
+    }
+
+    #[tokio::test]
+    async fn list_windows_paginated_offset_beyond_total() {
+        let executor = mock_windows_executor(3);
+        let result = list_windows_paginated(
+            &executor,
+            "test",
+            &Pagination {
+                offset: 50,
+                limit: Some(10),
+            },
+        )
+        .await
+        .unwrap();
+        assert!(result.items.is_empty());
+        assert_eq!(result.total, 3);
+        assert!(!result.has_more);
     }
 }
