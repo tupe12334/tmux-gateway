@@ -1,9 +1,10 @@
 use super::{
-    CaptureOptions, HealthStatus, RealTmuxExecutor, ResizeDirection, TmuxError, TmuxPane,
-    TmuxSession, TmuxWindow, capture_pane, capture_pane_with_options, create_session_with_windows,
-    health_check, kill_pane, kill_session, kill_window, list_panes, list_sessions, list_windows,
+    CaptureOptions, HealthStatus, OptionScope, RealTmuxExecutor, ResizeDirection, TmuxError,
+    TmuxOption, TmuxPane, TmuxSession, TmuxWindow, capture_pane, capture_pane_with_options,
+    create_session_with_windows, ensure_session, ensure_window, get_option, health_check,
+    kill_pane, kill_session, kill_window, list_options, list_panes, list_sessions, list_windows,
     move_window, new_session, new_window, rename_session, rename_window, resize_pane, select_pane,
-    select_window, send_keys, split_window, swap_panes, swap_window,
+    select_window, send_keys, set_option, split_window, swap_panes, swap_window,
 };
 
 /// All API layers (REST, gRPC, GraphQL) must implement this trait.
@@ -144,7 +145,44 @@ pub trait TmuxCommands {
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         async move { resize_pane(&RealTmuxExecutor, target, direction).await }
     }
+    fn get_option(
+        &self,
+        name: &str,
+        scope: OptionScope,
+        target: Option<&str>,
+    ) -> impl std::future::Future<Output = Result<TmuxOption, TmuxError>> + Send {
+        async move { get_option(&RealTmuxExecutor, name, scope, target).await }
+    }
+    fn set_option(
+        &self,
+        name: &str,
+        value: &str,
+        scope: OptionScope,
+        target: Option<&str>,
+    ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
+        async move { set_option(&RealTmuxExecutor, name, value, scope, target).await }
+    }
+    fn list_options(
+        &self,
+        scope: OptionScope,
+        target: Option<&str>,
+    ) -> impl std::future::Future<Output = Result<Vec<TmuxOption>, TmuxError>> + Send {
+        async move { list_options(&RealTmuxExecutor, scope, target).await }
+    }
     fn health_check(&self) -> impl std::future::Future<Output = HealthStatus> + Send {
         async { health_check(&RealTmuxExecutor).await }
+    }
+    fn ensure_session(
+        &self,
+        name: &str,
+    ) -> impl std::future::Future<Output = Result<TmuxSession, TmuxError>> + Send {
+        async move { ensure_session(&RealTmuxExecutor, name).await }
+    }
+    fn ensure_window(
+        &self,
+        session: &str,
+        name: &str,
+    ) -> impl std::future::Future<Output = Result<TmuxWindow, TmuxError>> + Send {
+        async move { ensure_window(&RealTmuxExecutor, session, name).await }
     }
 }
