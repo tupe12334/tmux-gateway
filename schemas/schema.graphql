@@ -1,13 +1,19 @@
 type MutationRoot {
-	createSession(name: String!): String!
+	createSession(name: String!): Session!
 	killSession(target: String!): Boolean!
 	killWindow(target: String!): Boolean!
 	killPane(target: String!): Boolean!
 	sendKeys(target: String!, keys: [String!]!): Boolean!
 	renameSession(target: String!, newName: String!): Boolean!
 	renameWindow(target: String!, newName: String!): Boolean!
-	newWindow(session: String!, name: String!): String!
-	splitWindow(target: String!, horizontal: Boolean!): Boolean!
+	newWindow(session: String!, name: String!): Window!
+	splitWindow(target: String!, horizontal: Boolean!): Pane!
+	createSessionWithWindows(name: String!, windowNames: [String!]!): Session!
+	swapPanes(src: String!, dst: String!): Boolean!
+	moveWindow(source: String!, destinationSession: String!): Boolean!
+	selectWindow(target: String!): Boolean!
+	selectPane(target: String!): Boolean!
+	resizePane(target: String!, direction: String!, amount: Int!): Boolean!
 }
 
 type Pane {
@@ -15,6 +21,13 @@ type Pane {
 	width: Int!
 	height: Int!
 	active: Boolean!
+	currentPath: String!
+	currentCommand: String!
+}
+
+type PaneOutputEvent {
+	content: String!
+	timestamp: String!
 }
 
 type QueryRoot {
@@ -23,6 +36,7 @@ type QueryRoot {
 	listWindows(session: String!): [Window!]!
 	listPanes(target: String!): [Pane!]!
 	capturePane(target: String!): String!
+	capturePaneWithOptions(target: String!, startLine: Int, endLine: Int, escapeSequences: Boolean! = false): String!
 }
 
 type Session {
@@ -31,6 +45,10 @@ type Session {
 	windows: Int!
 	created: String!
 	attached: Boolean!
+}
+
+type SubscriptionRoot {
+	paneOutput(target: String!, intervalMs: Int! = 500): PaneOutputEvent!
 }
 
 type Window {
@@ -52,4 +70,5 @@ directive @skip(if: Boolean!) on FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT
 schema {
 	query: QueryRoot
 	mutation: MutationRoot
+	subscription: SubscriptionRoot
 }

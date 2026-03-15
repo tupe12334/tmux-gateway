@@ -1,19 +1,24 @@
 
-ß
+‹&
 tmux_gateway.prototmux_gateway"
 	LsRequest"C
 
 LsResponse5
-sessions (2.tmux_gateway.TmuxSessionRsessions"q
-TmuxSession
-name (	Rname
-windows (Rwindows
-created (Rcreated
-attached (Rattached"'
+sessions (2.tmux_gateway.TmuxSessionRsessions"Å
+TmuxSession
+id (	Rid
+name (	Rname
+windows (Rwindows
+created (Rcreated
+attached (Rattached"'
 NewSessionRequest
-name (	Rname"(
-NewSessionResponse
-name (	Rname",
+name (	Rname"à
+NewSessionResponse
+id (	Rid
+name (	Rname
+windows (Rwindows
+created (Rcreated
+attached (Rattached",
 KillSessionRequest
 target (	Rtarget"
 KillSessionResponse"+
@@ -26,22 +31,25 @@ LsResponse5
 ListWindowsRequest
 session (	Rsession"I
 ListWindowsResponse2
-windows (2.tmux_gateway.TmuxWindowRwindows"d
+windows (2.tmux_gateway.TmuxWindowRwindows"t
 
-TmuxWindow
-index (Rindex
-name (	Rname
-panes (Rpanes
-active (Ractive"*
+TmuxWindow
+id (	Rid
+index (Rindex
+name (	Rname
+panes (Rpanes
+active (Ractive"*
 ListPanesRequest
 target (	Rtarget"D
 ListPanesResponse/
-panes (2.tmux_gateway.TmuxPaneMsgRpanes"c
+panes (2.tmux_gateway.TmuxPaneMsgRpanes"Ø
 TmuxPaneMsg
 id (	Rid
 width (Rwidth
 height (Rheight
-active (Ractive"=
+active (Ractive!
+current_path (	RcurrentPath'
+current_command (	RcurrentCommand"=
 SendKeysRequest
 target (	Rtarget
 keys (	Rkeys"
@@ -56,19 +64,75 @@ TmuxWindow
 RenameWindowResponse"@
 NewWindowRequest
 session (	Rsession
-name (	Rname"'
-NewWindowResponse
-name (	Rname"L
+name (	Rname"{
+NewWindowResponse
+id (	Rid
+index (Rindex
+name (	Rname
+panes (Rpanes
+active (Ractive"L
 SplitWindowRequest
 target (	Rtarget
 
 horizontal (R
-horizontal"
-SplitWindowResponse",
+horizontal"∑
+SplitWindowResponse
+id (	Rid
+width (Rwidth
+height (Rheight
+active (Ractive!
+current_path (	RcurrentPath'
+current_command (	RcurrentCommand",
 CapturePaneRequest
 target (	Rtarget"/
 CapturePaneResponse
-content (	Rcontent2õ
+content (	Rcontent"‰
+CapturePaneWithOptionsRequest
+target (	Rtarget$
+has_start_line (RhasStartLine
+
+start_line (R	startLine 
+has_end_line (R
+hasEndLine
+end_line (RendLine)
+escape_sequences (RescapeSequences":
+CapturePaneWithOptionsResponse
+content (	Rcontent"X
+CreateSessionWithWindowsRequest
+name (	Rname!
+window_names (	RwindowNames"ñ
+ CreateSessionWithWindowsResponse
+id (	Rid
+name (	Rname
+windows (Rwindows
+created (Rcreated
+attached (Rattached"6
+SwapPanesRequest
+src (	Rsrc
+dst (	Rdst"
+SwapPanesResponse"\
+MoveWindowRequest
+source (	Rsource/
+destination_session (	RdestinationSession"
+MoveWindowResponse"-
+SelectWindowRequest
+target (	Rtarget"
+SelectWindowResponse"+
+SelectPaneRequest
+target (	Rtarget"
+SelectPaneResponse"a
+ResizePaneRequest
+target (	Rtarget
+	direction (	R	direction
+amount (Ramount"
+ResizePaneResponse"R
+StreamPaneOutputRequest
+target (	Rtarget
+interval_ms (R
+intervalMs"R
+StreamPaneOutputResponse
+content (	Rcontent
+	timestamp (R	timestamp2à
 TmuxGateway7
 Ls.tmux_gateway.LsRequest.tmux_gateway.LsResponseO
 
@@ -84,4 +148,15 @@ KillWindow.tmux_gateway.KillWindowRequest .tmux_gateway.KillWindowResponseI
 RenameWindow!.tmux_gateway.RenameWindowRequest".tmux_gateway.RenameWindowResponseL
 	NewWindow.tmux_gateway.NewWindowRequest.tmux_gateway.NewWindowResponseR
 SplitWindow .tmux_gateway.SplitWindowRequest!.tmux_gateway.SplitWindowResponseR
-CapturePane .tmux_gateway.CapturePaneRequest!.tmux_gateway.CapturePaneResponsebproto3
+CapturePane .tmux_gateway.CapturePaneRequest!.tmux_gateway.CapturePaneResponses
+CapturePaneWithOptions+.tmux_gateway.CapturePaneWithOptionsRequest,.tmux_gateway.CapturePaneWithOptionsResponsey
+CreateSessionWithWindows-.tmux_gateway.CreateSessionWithWindowsRequest..tmux_gateway.CreateSessionWithWindowsResponseL
+	SwapPanes.tmux_gateway.SwapPanesRequest.tmux_gateway.SwapPanesResponseO
+
+MoveWindow.tmux_gateway.MoveWindowRequest .tmux_gateway.MoveWindowResponseU
+SelectWindow!.tmux_gateway.SelectWindowRequest".tmux_gateway.SelectWindowResponseO
+
+SelectPane.tmux_gateway.SelectPaneRequest .tmux_gateway.SelectPaneResponseO
+
+ResizePane.tmux_gateway.ResizePaneRequest .tmux_gateway.ResizePaneResponsec
+StreamPaneOutput%.tmux_gateway.StreamPaneOutputRequest&.tmux_gateway.StreamPaneOutputResponse0bproto3
