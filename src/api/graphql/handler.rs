@@ -1,3 +1,5 @@
+#![allow(unknown_lints, no_wrapper_functions)]
+
 use async_graphql::http::GraphiQLSource;
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse, GraphQLSubscription};
 use axum::Router;

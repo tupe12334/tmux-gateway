@@ -1,3 +1,5 @@
+#![allow(unknown_lints, no_wrapper_functions)]
+
 use axum::http::StatusCode;
 use axum::routing::{get, post};
 use axum::{Json, Router};

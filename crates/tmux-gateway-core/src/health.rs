@@ -13,6 +13,7 @@ pub struct HealthStatus {
 }
 
 impl fmt::Display for HealthStatus {
+    #[allow(unknown_lints, no_wrapper_functions)]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.available {
             write!(

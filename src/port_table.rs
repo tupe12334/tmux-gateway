@@ -1,9 +1,5 @@
 use std::net::TcpStream;
 
-fn is_port_free(port: u16) -> bool {
-    TcpStream::connect(("127.0.0.1", port)).is_err()
-}
-
 pub fn format_port_table(ports: &[(&str, u16, &str)]) -> String {
     let mut out = String::new();
     out.push_str(
@@ -16,7 +12,7 @@ pub fn format_port_table(ports: &[(&str, u16, &str)]) -> String {
         "├──────────────┼───────┼────────┼─────────────────────────────────────────────┤\n",
     );
     for (name, port, explorer) in ports {
-        let status = if is_port_free(*port) {
+        let status = if TcpStream::connect(("127.0.0.1", *port)).is_err() {
             "free"
         } else {
             "in use"

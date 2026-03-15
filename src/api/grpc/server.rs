@@ -68,6 +68,7 @@ macro_rules! grpc_service {
             type Error = std::convert::Infallible;
             type Future = BoxFuture<Self::Response, Self::Error>;
 
+            #[allow(unknown_lints, no_wrapper_functions)]
             fn poll_ready(
                 &mut self,
                 _cx: &mut std::task::Context<'_>,

@@ -64,6 +64,7 @@ async fn handle_pane_stream(mut socket: WebSocket, target: String, interval: Dur
     }
 }
 
+#[allow(unknown_lints, no_wrapper_functions)]
 pub fn router() -> Router {
     Router::new().route("/ws/pane/{target}", get(ws_pane_handler))
 }

@@ -59,6 +59,7 @@ fn scope_to_str(scope: tmux::OptionScope) -> &'static str {
 }
 
 #[tonic::async_trait]
+#[allow(unknown_lints, no_wrapper_functions)]
 impl TmuxGateway for TmuxGatewayServiceImpl {
     type StreamPaneOutputStream = ReceiverStream<Result<StreamPaneOutputResponse, Status>>;
 

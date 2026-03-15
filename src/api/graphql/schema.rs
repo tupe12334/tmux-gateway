@@ -1,3 +1,5 @@
+#![allow(unknown_lints, no_wrapper_functions)]
+
 use async_graphql::{Enum, Object, Schema, SimpleObject, Subscription};
 use chrono::{DateTime, Utc};
 use std::time::Duration;

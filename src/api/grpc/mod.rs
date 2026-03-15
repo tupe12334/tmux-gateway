@@ -10,6 +10,7 @@ pub use tmux_gateway_service::{TmuxGatewayServiceImpl, grpc_server};
 pub type TmuxGatewayServerConcrete =
     TmuxGatewayServer<tmux_gateway_service::TmuxGatewayServiceImpl>;
 
+#[allow(unknown_lints, no_wrapper_functions)]
 pub fn proto_content() -> String {
     format!(
         "syntax = \"proto3\";\n\npackage {};\n\n{}\n{}",

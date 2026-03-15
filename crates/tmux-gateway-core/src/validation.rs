@@ -16,6 +16,7 @@ pub enum ValidationError {
 }
 
 impl fmt::Display for ValidationError {
+    #[allow(unknown_lints, no_wrapper_functions)]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::EmptyInput { field } => write!(f, "{field} must not be empty"),
