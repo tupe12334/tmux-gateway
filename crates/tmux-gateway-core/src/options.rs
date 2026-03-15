@@ -143,11 +143,7 @@ pub async fn list_options(
             } else {
                 (line.to_string(), String::new())
             };
-            TmuxOption {
-                name,
-                value,
-                scope,
-            }
+            TmuxOption { name, value, scope }
         })
         .collect();
 

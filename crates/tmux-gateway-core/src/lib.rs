@@ -19,6 +19,7 @@ pub mod options;
 mod rename_session;
 mod rename_window;
 mod resize_pane;
+mod select_layout;
 mod select_pane;
 mod select_window;
 mod send_keys;
@@ -50,6 +51,7 @@ pub use options::{OptionScope, TmuxOption, get_option, list_options, set_option}
 pub use rename_session::rename_session;
 pub use rename_window::rename_window;
 pub use resize_pane::{ResizeDirection, resize_pane};
+pub use select_layout::{PaneLayout, select_layout};
 pub use select_pane::select_pane;
 pub use select_window::select_window;
 pub use send_keys::send_keys;

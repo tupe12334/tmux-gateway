@@ -1,3 +1,9 @@
+enum GqlOptionScope {
+	GLOBAL
+	SESSION
+	WINDOW
+}
+
 type MutationRoot {
 	createSession(name: String!): Session!
 	killSession(target: String!): Boolean!
@@ -13,7 +19,9 @@ type MutationRoot {
 	moveWindow(source: String!, destinationSession: String!): Boolean!
 	selectWindow(target: String!): Boolean!
 	selectPane(target: String!): Boolean!
+	selectLayout(target: String!, layout: String!): Boolean!
 	resizePane(target: String!, direction: String!, amount: Int!): Boolean!
+	setOption(name: String!, value: String!, scope: GqlOptionScope!, target: String = null): Boolean!
 }
 
 type Pane {
@@ -38,6 +46,8 @@ type QueryRoot {
 	listPanes(target: String!): [Pane!]!
 	capturePane(target: String!): String!
 	capturePaneWithOptions(target: String!, startLine: Int, endLine: Int, escapeSequences: Boolean! = false): String!
+	getOption(name: String!, scope: GqlOptionScope!, target: String = null): String!
+	listOptions(scope: GqlOptionScope!, target: String = null): [TmuxOptionGql!]!
 }
 
 type Session {
@@ -50,6 +60,12 @@ type Session {
 
 type SubscriptionRoot {
 	paneOutput(target: String!, intervalMs: Int! = 500): PaneOutputEvent!
+}
+
+type TmuxOptionGql {
+	name: String!
+	value: String!
+	scope: GqlOptionScope!
 }
 
 type Window {

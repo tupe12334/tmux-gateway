@@ -314,6 +314,13 @@ proto_messages! {
 
     message ResizePaneResponse {}
 
+    message SelectLayoutRequest {
+        string target = "1";
+        string layout = "2";
+    }
+
+    message SelectLayoutResponse {}
+
     message GetOptionRequest {
         string name = "1";
         string scope = "2";

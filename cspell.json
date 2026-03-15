@@ -46,6 +46,8 @@
     "smethod",
     "stype",
     "sreq",
-    "sres"
+    "sres",
+    "TOCTOU",
+    "tnotanumber"
   ]
 }

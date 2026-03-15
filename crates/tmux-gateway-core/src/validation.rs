@@ -197,7 +197,8 @@ pub fn validate_option_name(name: &str) -> Result<(), ValidationError> {
         .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
     {
         return Err(ValidationError::InvalidOptionName {
-            reason: "must contain only alphanumeric characters, hyphens, or underscores".to_string(),
+            reason: "must contain only alphanumeric characters, hyphens, or underscores"
+                .to_string(),
         });
     }
     Ok(())
@@ -206,7 +207,10 @@ pub fn validate_option_name(name: &str) -> Result<(), ValidationError> {
 /// Validate a target for an option scope.
 /// Global scope requires no target, session scope requires a session name,
 /// window scope requires a window target (session:window).
-pub fn validate_option_scope_target(scope: OptionScope, target: &str) -> Result<(), ValidationError> {
+pub fn validate_option_scope_target(
+    scope: OptionScope,
+    target: &str,
+) -> Result<(), ValidationError> {
     match scope {
         OptionScope::Global => Ok(()),
         OptionScope::Session => validate_session_target(target),
