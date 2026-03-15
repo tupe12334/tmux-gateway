@@ -46,6 +46,7 @@ message TmuxSession {
 
 message NewSessionRequest {
   string name = 1;
+  string command = 2;
 }
 
 message NewSessionResponse {
@@ -132,6 +133,7 @@ message RenameWindowResponse {}
 message NewWindowRequest {
   string session = 1;
   string name = 2;
+  string command = 3;
 }
 
 message NewWindowResponse {
@@ -145,6 +147,7 @@ message NewWindowResponse {
 message SplitWindowRequest {
   string target = 1;
   bool horizontal = 2;
+  string command = 3;
 }
 
 message SplitWindowResponse {

@@ -135,6 +135,7 @@ proto_messages! {
 
     message NewSessionRequest {
         string name = "1";
+        string command = "2";
     }
 
     message NewSessionResponse {
@@ -221,6 +222,7 @@ proto_messages! {
     message NewWindowRequest {
         string session = "1";
         string name = "2";
+        string command = "3";
     }
 
     message NewWindowResponse {
@@ -234,6 +236,7 @@ proto_messages! {
     message SplitWindowRequest {
         string target = "1";
         bool horizontal = "2";
+        string command = "3";
     }
 
     message SplitWindowResponse {

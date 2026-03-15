@@ -18,8 +18,9 @@ pub trait TmuxCommands {
     fn create_session(
         &self,
         name: &str,
+        command: Option<&str>,
     ) -> impl std::future::Future<Output = Result<TmuxSession, TmuxError>> + Send {
-        async move { new_session(&RealTmuxExecutor, name).await }
+        async move { new_session(&RealTmuxExecutor, name, command).await }
     }
     fn kill_session(
         &self,
@@ -76,15 +77,17 @@ pub trait TmuxCommands {
         &self,
         session: &str,
         name: &str,
+        command: Option<&str>,
     ) -> impl std::future::Future<Output = Result<TmuxWindow, TmuxError>> + Send {
-        async move { new_window(&RealTmuxExecutor, session, name).await }
+        async move { new_window(&RealTmuxExecutor, session, name, command).await }
     }
     fn split_window(
         &self,
         target: &str,
         horizontal: bool,
+        command: Option<&str>,
     ) -> impl std::future::Future<Output = Result<TmuxPane, TmuxError>> + Send {
-        async move { split_window(&RealTmuxExecutor, target, horizontal).await }
+        async move { split_window(&RealTmuxExecutor, target, horizontal, command).await }
     }
     fn capture_pane(
         &self,

@@ -1,5 +1,5 @@
 
-µ.
+ƒ/
 tmux_gateway.prototmux_gateway"
 	LsRequest"C
 
@@ -10,9 +10,10 @@ LsResponse5
 name (	Rname
 windows (Rwindows
 created (Rcreated
-attached (Rattached"'
+attached (Rattached"A
 NewSessionRequest
-name (	Rname"ˆ
+name (	Rname
+command (	Rcommand"ˆ
 NewSessionResponse
 id (	Rid
 name (	Rname
@@ -62,21 +63,23 @@ TmuxWindow
 RenameWindowRequest
 target (	Rtarget
 new_name (	RnewName"
-RenameWindowResponse"@
+RenameWindowResponse"Z
 NewWindowRequest
 session (	Rsession
-name (	Rname"{
+name (	Rname
+command (	Rcommand"{
 NewWindowResponse
 id (	Rid
 index (Rindex
 name (	Rname
 panes (Rpanes
-active (Ractive"L
+active (Ractive"f
 SplitWindowRequest
 target (	Rtarget
 
 horizontal (R
-horizontal"É
+horizontal
+command (	Rcommand"É
 SplitWindowResponse
 id (	Rid
 width (Rwidth

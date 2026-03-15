@@ -163,6 +163,7 @@ mod tests {
 
         let new_req = NewSessionRequest {
             name: "s1".to_string(),
+            command: String::new(),
         };
         assert_eq!(new_req.name, "s1");
 

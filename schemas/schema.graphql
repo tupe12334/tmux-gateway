@@ -5,15 +5,15 @@ enum GqlOptionScope {
 }
 
 type MutationRoot {
-	createSession(name: String!): Session!
+	createSession(name: String!, command: String = null): Session!
 	killSession(target: String!): Boolean!
 	killWindow(target: String!): Boolean!
 	killPane(target: String!): Boolean!
 	sendKeys(target: String!, keys: [String!]!): Boolean!
 	renameSession(target: String!, newName: String!): Boolean!
 	renameWindow(target: String!, newName: String!): Boolean!
-	newWindow(session: String!, name: String!): Window!
-	splitWindow(target: String!, horizontal: Boolean!): Pane!
+	newWindow(session: String!, name: String!, command: String = null): Window!
+	splitWindow(target: String!, horizontal: Boolean!, command: String = null): Pane!
 	createSessionWithWindows(name: String!, windowNames: [String!]!): Session!
 	swapPanes(src: String!, dst: String!): Boolean!
 	moveWindow(source: String!, destinationSession: String!): Boolean!
