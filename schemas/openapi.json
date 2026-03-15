@@ -45,6 +45,77 @@
         }
       }
     },
+    "/capture-pane-with-options": {
+      "post": {
+        "tags": [],
+        "operationId": "capture_pane_with_options",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CapturePaneWithOptionsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Pane content captured with options",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CapturePaneResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Pane not found"
+          },
+          "500": {
+            "description": "Failed to capture pane"
+          }
+        }
+      }
+    },
+    "/create-session-with-windows": {
+      "post": {
+        "tags": [],
+        "operationId": "create_session_with_windows",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessionWithWindowsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Session created with windows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateSessionWithWindowsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid session or window name"
+          },
+          "409": {
+            "description": "Session already exists"
+          },
+          "500": {
+            "description": "Failed to create session"
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": [],
@@ -263,6 +334,36 @@
         }
       }
     },
+    "/move-window": {
+      "post": {
+        "tags": [],
+        "operationId": "move_window",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveWindowRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Window moved"
+          },
+          "400": {
+            "description": "Invalid target"
+          },
+          "404": {
+            "description": "Session or window not found"
+          },
+          "500": {
+            "description": "Failed to move window"
+          }
+        }
+      }
+    },
     "/new": {
       "post": {
         "tags": [],
@@ -385,6 +486,96 @@
         }
       }
     },
+    "/resize-pane": {
+      "post": {
+        "tags": [],
+        "operationId": "resize_pane",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResizePaneRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Pane resized"
+          },
+          "400": {
+            "description": "Invalid target or direction"
+          },
+          "404": {
+            "description": "Pane not found"
+          },
+          "500": {
+            "description": "Failed to resize pane"
+          }
+        }
+      }
+    },
+    "/select-pane": {
+      "post": {
+        "tags": [],
+        "operationId": "select_pane",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KillTargetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Pane selected"
+          },
+          "400": {
+            "description": "Invalid target"
+          },
+          "404": {
+            "description": "Pane not found"
+          },
+          "500": {
+            "description": "Failed to select pane"
+          }
+        }
+      }
+    },
+    "/select-window": {
+      "post": {
+        "tags": [],
+        "operationId": "select_window",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KillTargetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Window selected"
+          },
+          "400": {
+            "description": "Invalid target"
+          },
+          "404": {
+            "description": "Window not found"
+          },
+          "500": {
+            "description": "Failed to select window"
+          }
+        }
+      }
+    },
     "/send-keys": {
       "post": {
         "tags": [],
@@ -428,13 +619,50 @@
         },
         "responses": {
           "200": {
-            "description": "Window split"
+            "description": "Window split",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SplitWindowResponse"
+                }
+              }
+            }
           },
           "404": {
             "description": "Target not found"
           },
           "500": {
             "description": "Failed to split window"
+          }
+        }
+      }
+    },
+    "/swap-panes": {
+      "post": {
+        "tags": [],
+        "operationId": "swap_panes",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwapPanesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Panes swapped"
+          },
+          "400": {
+            "description": "Invalid target"
+          },
+          "404": {
+            "description": "Pane not found"
+          },
+          "500": {
+            "description": "Failed to swap panes"
           }
         }
       }
@@ -461,6 +689,81 @@
         "properties": {
           "content": {
             "type": "string"
+          }
+        }
+      },
+      "CapturePaneWithOptionsRequest": {
+        "type": "object",
+        "required": [
+          "target"
+        ],
+        "properties": {
+          "end_line": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "escape_sequences": {
+            "type": "boolean"
+          },
+          "start_line": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "target": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateSessionWithWindowsRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "window_names"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "window_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CreateSessionWithWindowsResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "windows",
+          "created",
+          "attached"
+        ],
+        "properties": {
+          "attached": {
+            "type": "boolean"
+          },
+          "created": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "windows": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
           }
         }
       },
@@ -514,6 +817,21 @@
           }
         }
       },
+      "MoveWindowRequest": {
+        "type": "object",
+        "required": [
+          "source",
+          "destination_session"
+        ],
+        "properties": {
+          "destination_session": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          }
+        }
+      },
       "NewSessionRequest": {
         "type": "object",
         "required": [
@@ -528,11 +846,29 @@
       "NewSessionResponse": {
         "type": "object",
         "required": [
-          "name"
+          "id",
+          "name",
+          "windows",
+          "created",
+          "attached"
         ],
         "properties": {
+          "attached": {
+            "type": "boolean"
+          },
+          "created": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
           "name": {
             "type": "string"
+          },
+          "windows": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
           }
         }
       },
@@ -554,11 +890,31 @@
       "NewWindowResponse": {
         "type": "object",
         "required": [
-          "name"
+          "id",
+          "index",
+          "name",
+          "panes",
+          "active"
         ],
         "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "index": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
           "name": {
             "type": "string"
+          },
+          "panes": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
           }
         }
       },
@@ -568,11 +924,19 @@
           "id",
           "width",
           "height",
-          "active"
+          "active",
+          "current_path",
+          "current_command"
         ],
         "properties": {
           "active": {
             "type": "boolean"
+          },
+          "current_command": {
+            "type": "string"
+          },
+          "current_path": {
+            "type": "string"
           },
           "height": {
             "type": "integer",
@@ -597,6 +961,27 @@
         ],
         "properties": {
           "new_name": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          }
+        }
+      },
+      "ResizePaneRequest": {
+        "type": "object",
+        "required": [
+          "target",
+          "direction",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "direction": {
             "type": "string"
           },
           "target": {
@@ -662,6 +1047,56 @@
             "type": "boolean"
           },
           "target": {
+            "type": "string"
+          }
+        }
+      },
+      "SplitWindowResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "width",
+          "height",
+          "active",
+          "current_path",
+          "current_command"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "current_command": {
+            "type": "string"
+          },
+          "current_path": {
+            "type": "string"
+          },
+          "height": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "id": {
+            "type": "string"
+          },
+          "width": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          }
+        }
+      },
+      "SwapPanesRequest": {
+        "type": "object",
+        "required": [
+          "src",
+          "dst"
+        ],
+        "properties": {
+          "dst": {
+            "type": "string"
+          },
+          "src": {
             "type": "string"
           }
         }
