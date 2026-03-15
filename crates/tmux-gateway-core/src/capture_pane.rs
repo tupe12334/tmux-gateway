@@ -13,6 +13,60 @@ pub struct CaptureOptions {
     pub escape_sequences: bool,
 }
 
+/// A domain type representing normalized pane content.
+///
+/// Normalization contract:
+/// - Trailing whitespace on each line is trimmed
+/// - Trailing blank lines (from tmux pane height padding) are removed
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CapturedContent(String);
+
+impl CapturedContent {
+    pub fn new(raw: &str) -> Self {
+        Self(normalize_pane_content(raw))
+    }
+
+    pub fn into_inner(self) -> String {
+        self.0
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::fmt::Display for CapturedContent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl From<CapturedContent> for String {
+    fn from(c: CapturedContent) -> Self {
+        c.0
+    }
+}
+
+impl AsRef<str> for CapturedContent {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+/// Normalize raw tmux capture-pane output.
+///
+/// This is a pure function that:
+/// - Trims trailing whitespace from each line
+/// - Removes trailing blank lines (tmux pads output to pane height)
+pub fn normalize_pane_content(raw: &str) -> String {
+    let trimmed_lines: Vec<&str> = raw.lines().map(|line| line.trim_end()).collect();
+    let last_non_empty = trimmed_lines.iter().rposition(|line| !line.is_empty());
+    match last_non_empty {
+        Some(idx) => trimmed_lines[..=idx].join("\n"),
+        None => String::new(),
+    }
+}
+
 #[tracing::instrument(skip(executor))]
 pub async fn capture_pane(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -55,5 +109,59 @@ pub async fn capture_pane_with_options(
             target,
         ));
     }
-    Ok(output.stdout)
+    Ok(normalize_pane_content(&output.stdout))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn normalize_strips_trailing_blank_lines() {
+        let raw = "hello\nworld\n\n\n\n";
+        assert_eq!(normalize_pane_content(raw), "hello\nworld");
+    }
+
+    #[test]
+    fn normalize_strips_trailing_whitespace_per_line() {
+        let raw = "hello   \nworld  \n";
+        assert_eq!(normalize_pane_content(raw), "hello\nworld");
+    }
+
+    #[test]
+    fn normalize_empty_pane() {
+        assert_eq!(normalize_pane_content(""), "");
+        assert_eq!(normalize_pane_content("\n\n\n"), "");
+    }
+
+    #[test]
+    fn normalize_whitespace_only_pane() {
+        assert_eq!(normalize_pane_content("   \n  \n   \n"), "");
+    }
+
+    #[test]
+    fn normalize_preserves_content_lines() {
+        let raw = "line1\nline2\nline3";
+        assert_eq!(normalize_pane_content(raw), "line1\nline2\nline3");
+    }
+
+    #[test]
+    fn normalize_preserves_internal_blank_lines() {
+        let raw = "line1\n\nline3\n\n\n";
+        assert_eq!(normalize_pane_content(raw), "line1\n\nline3");
+    }
+
+    #[test]
+    fn normalize_handles_binary_replacement_chars() {
+        let raw = "hello\u{FFFD}world\n\n\n";
+        assert_eq!(normalize_pane_content(raw), "hello\u{FFFD}world");
+    }
+
+    #[test]
+    fn captured_content_type() {
+        let content = CapturedContent::new("hello  \n\n\n");
+        assert_eq!(content.as_str(), "hello");
+        assert_eq!(String::from(content.clone()), "hello");
+        assert_eq!(format!("{}", content), "hello");
+    }
 }

@@ -30,7 +30,10 @@ mod swap_panes;
 mod swap_window;
 pub mod validation;
 
-pub use capture_pane::{CaptureOptions, capture_pane, capture_pane_with_options};
+pub use capture_pane::{
+    CaptureOptions, CapturedContent, capture_pane, capture_pane_with_options,
+    normalize_pane_content,
+};
 pub use commands::TmuxCommands;
 pub use create_session_with_windows::create_session_with_windows;
 pub use ensure_session::ensure_session;
