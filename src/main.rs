@@ -202,9 +202,9 @@ async fn main() -> anyhow::Result<()> {
     });
 
     let grpc_addr = format!("0.0.0.0:{grpc_port}");
-    let addr = grpc_addr
-        .parse()
-        .with_context(|| format!("invalid gRPC address format: {grpc_addr}"))?;
+    let grpc_listener = TcpListener::bind(&grpc_addr).await.with_context(|| {
+        format!("failed to bind gRPC port {grpc_port} — port may already be in use")
+    })?;
     let reflection_service = tonic_reflection::server::Builder::configure()
         .register_file_descriptor_set(grpc::file_descriptor_set())
         .build_v1()
@@ -252,8 +252,9 @@ async fn main() -> anyhow::Result<()> {
         }
 
         let x_request_id = http::HeaderName::from_static("x-request-id");
+        let incoming = tokio_stream::wrappers::TcpListenerStream::new(grpc_listener);
 
-        tracing::info!("gRPC server listening on {}", addr);
+        tracing::info!("gRPC server listening on {grpc_addr}");
         if let Err(e) = tonic::transport::Server::builder()
             .layer(
                 tower::ServiceBuilder::new()
@@ -291,7 +292,7 @@ async fn main() -> anyhow::Result<()> {
             .add_service(health_service)
             .add_service(grpc::grpc_server())
             .add_service(reflection_service)
-            .serve_with_shutdown(addr, async move {
+            .serve_with_incoming_shutdown(incoming, async move {
                 let _ = grpc_shutdown_rx.wait_for(|&v| v).await;
                 tracing::info!("gRPC server shutting down...");
             })
