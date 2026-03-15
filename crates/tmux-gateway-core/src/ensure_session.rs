@@ -19,11 +19,9 @@ pub async fn ensure_session(
 
     match new_session(executor, name).await {
         Ok(session) => Ok(session),
-        Err(TmuxError::SessionAlreadyExists(_)) => {
-            get_session(executor, name).await?.ok_or_else(|| {
-                TmuxError::SessionNotFound(name.to_string())
-            })
-        }
+        Err(TmuxError::SessionAlreadyExists(_)) => get_session(executor, name)
+            .await?
+            .ok_or_else(|| TmuxError::SessionNotFound(name.to_string())),
         Err(e) => Err(e),
     }
 }
@@ -52,7 +50,9 @@ mod tests {
 
     #[tokio::test]
     async fn ensure_session_creates_new() {
-        let session = ensure_session(&MockCreateSuccess, "test-sess").await.unwrap();
+        let session = ensure_session(&MockCreateSuccess, "test-sess")
+            .await
+            .unwrap();
         assert_eq!(session.name, "test-sess");
     }
 
@@ -79,7 +79,9 @@ mod tests {
 
     #[tokio::test]
     async fn ensure_session_returns_existing() {
-        let session = ensure_session(&MockAlreadyExists, "existing").await.unwrap();
+        let session = ensure_session(&MockAlreadyExists, "existing")
+            .await
+            .unwrap();
         assert_eq!(session.name, "existing");
         assert_eq!(session.windows, 3);
     }

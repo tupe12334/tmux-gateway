@@ -785,10 +785,7 @@ fn parse_scope(s: &str) -> Result<OptionScope, (StatusCode, String)> {
         "global" | "Global" | "g" => Ok(OptionScope::Global),
         "session" | "Session" | "s" => Ok(OptionScope::Session),
         "window" | "Window" | "w" => Ok(OptionScope::Window),
-        _ => Err((
-            StatusCode::BAD_REQUEST,
-            format!("invalid scope: {s}"),
-        )),
+        _ => Err((StatusCode::BAD_REQUEST, format!("invalid scope: {s}"))),
     }
 }
 
