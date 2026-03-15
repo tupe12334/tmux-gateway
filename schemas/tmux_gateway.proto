@@ -23,7 +23,6 @@ service TmuxGateway {
   rpc SelectWindow(SelectWindowRequest) returns (SelectWindowResponse);
   rpc SelectPane(SelectPaneRequest) returns (SelectPaneResponse);
   rpc ResizePane(ResizePaneRequest) returns (ResizePaneResponse);
-  rpc SelectLayout(SelectLayoutRequest) returns (SelectLayoutResponse);
   rpc GetOption(GetOptionRequest) returns (GetOptionResponse);
   rpc SetOption(SetOptionRequest) returns (SetOptionResponse);
   rpc ListOptions(ListOptionsRequest) returns (ListOptionsResponse);
@@ -224,13 +223,6 @@ message ResizePaneRequest {
 }
 
 message ResizePaneResponse {}
-
-message SelectLayoutRequest {
-  string target = 1;
-  string layout = 2;
-}
-
-message SelectLayoutResponse {}
 
 message GetOptionRequest {
   string name = 1;

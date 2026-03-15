@@ -1,5 +1,5 @@
 
-µ.
+ÿ,
 tmux_gateway.prototmux_gateway"
 	LsRequest"C
 
@@ -127,11 +127,7 @@ hasEndLine
 target (	Rtarget
 	direction (	R	direction
 amount (Ramount"
-ResizePaneResponse"E
-SelectLayoutRequest
-target (	Rtarget
-layout (	Rlayout"
-SelectLayoutResponse"T
+ResizePaneResponse"T
 GetOptionRequest
 name (	Rname
 scope (	Rscope
@@ -161,7 +157,7 @@ hasEndLine
 intervalMs"R
 StreamPaneOutputResponse
 content (	Rcontent
-	timestamp (R	timestamp2Ï
+	timestamp (R	timestamp2ø
 TmuxGateway7
 Ls.tmux_gateway.LsRequest.tmux_gateway.LsResponseO
 
@@ -187,8 +183,7 @@ MoveWindow.tmux_gateway.MoveWindowRequest .tmux_gateway.MoveWindowResponseU
 
 SelectPane.tmux_gateway.SelectPaneRequest .tmux_gateway.SelectPaneResponseO
 
-ResizePane.tmux_gateway.ResizePaneRequest .tmux_gateway.ResizePaneResponseU
-SelectLayout!.tmux_gateway.SelectLayoutRequest".tmux_gateway.SelectLayoutResponseL
+ResizePane.tmux_gateway.ResizePaneRequest .tmux_gateway.ResizePaneResponseL
 	GetOption.tmux_gateway.GetOptionRequest.tmux_gateway.GetOptionResponseL
 	SetOption.tmux_gateway.SetOptionRequest.tmux_gateway.SetOptionResponseR
 ListOptions .tmux_gateway.ListOptionsRequest!.tmux_gateway.ListOptionsResponsec
