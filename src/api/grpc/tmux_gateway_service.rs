@@ -154,6 +154,7 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
                 active: p.active,
                 current_path: p.current_path,
                 current_command: p.current_command,
+                pid: p.pid,
             })
             .collect();
 
@@ -225,6 +226,7 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
             active: pane.active,
             current_path: pane.current_path,
             current_command: pane.current_command,
+            pid: pane.pid,
         }))
     }
 
