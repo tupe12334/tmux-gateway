@@ -82,7 +82,7 @@ This starts:
 - **tmux-gateway** on ports `8080` (HTTP) and `50051` (gRPC), with a health check on `/health`
 - **grpcui** on port `9090` for interactive gRPC exploration
 
-Configure ports and settings via `.env.dev`.
+Configure ports and settings via `.env`.
 
 The `make build` command compiles the project and generates all API schema files (`schemas/openapi.json`, `schemas/schema.graphql`, `schemas/tmux_gateway.proto`) — the proto is code-generated from Rust macros, not hand-maintained.
 
