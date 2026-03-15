@@ -2,6 +2,7 @@ use std::fmt;
 
 use super::TmuxError;
 use crate::executor::TmuxExecutor;
+use crate::pagination::{PaginatedResult, Pagination, paginate};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TmuxSession {
@@ -98,6 +99,15 @@ pub async fn list_sessions(
         .filter(|line| !line.is_empty())
         .map(parse_session_line)
         .collect()
+}
+
+#[tracing::instrument(skip(executor))]
+pub async fn list_sessions_paginated(
+    executor: &(impl TmuxExecutor + ?Sized),
+    pagination: &Pagination,
+) -> Result<PaginatedResult<TmuxSession>, TmuxError> {
+    let all = list_sessions(executor).await?;
+    Ok(paginate(all, pagination))
 }
 
 #[cfg(test)]
@@ -281,6 +291,87 @@ mod tests {
         };
         let sessions = list_sessions(&executor).await.unwrap();
         assert!(sessions.is_empty());
+    }
+
+    fn mock_sessions_executor(count: usize) -> MockExecutor {
+        let stdout = (0..count)
+            .map(|i| format!("${i}\tsess{i}\t1\t{}\t0", 1700000000 + i as i64))
+            .collect::<Vec<_>>()
+            .join("\n")
+            + "\n";
+        MockExecutor {
+            output: TmuxOutput {
+                stdout,
+                stderr: String::new(),
+                success: true,
+            },
+        }
+    }
+
+    #[tokio::test]
+    async fn list_sessions_paginated_default_returns_all() {
+        let executor = mock_sessions_executor(5);
+        let result = list_sessions_paginated(&executor, &Pagination::default())
+            .await
+            .unwrap();
+        assert_eq!(result.items.len(), 5);
+        assert_eq!(result.total, 5);
+        assert!(!result.has_more);
+    }
+
+    #[tokio::test]
+    async fn list_sessions_paginated_with_limit() {
+        let executor = mock_sessions_executor(5);
+        let result = list_sessions_paginated(
+            &executor,
+            &Pagination {
+                offset: 0,
+                limit: Some(2),
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(result.items.len(), 2);
+        assert_eq!(result.items[0].name, "sess0");
+        assert_eq!(result.items[1].name, "sess1");
+        assert_eq!(result.total, 5);
+        assert!(result.has_more);
+    }
+
+    #[tokio::test]
+    async fn list_sessions_paginated_with_offset() {
+        let executor = mock_sessions_executor(5);
+        let result = list_sessions_paginated(
+            &executor,
+            &Pagination {
+                offset: 3,
+                limit: Some(10),
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(result.items.len(), 2);
+        assert_eq!(result.items[0].name, "sess3");
+        assert_eq!(result.items[1].name, "sess4");
+        assert_eq!(result.total, 5);
+        assert!(!result.has_more);
+    }
+
+    #[tokio::test]
+    async fn list_sessions_paginated_offset_beyond_total() {
+        let executor = mock_sessions_executor(3);
+        let result = list_sessions_paginated(
+            &executor,
+            &Pagination {
+                offset: 100,
+                limit: Some(10),
+            },
+        )
+        .await
+        .unwrap();
+        assert!(result.items.is_empty());
+        assert_eq!(result.total, 3);
+        assert!(!result.has_more);
     }
 
     #[tokio::test]
