@@ -42,6 +42,8 @@
     "txyz",
     "dylint",
     "dylints",
+    "TOCTOU",
+    "tnotanumber",
     "srpc",
     "smethod",
     "stype",
