@@ -1,5 +1,7 @@
 cargo fmt --all -- --check
 cargo build --workspace
+cargo run --bin export_schemas
+git diff --exit-code schemas/ || { echo "Schema drift detected! Run 'make build' and commit the updated schemas."; exit 1; }
 cargo test --workspace
 cargo clippy --workspace -- -D warnings
 cargo doc --workspace --no-deps
