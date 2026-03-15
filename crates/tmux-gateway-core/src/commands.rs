@@ -1,11 +1,11 @@
 use super::{
     CaptureOptions, HealthStatus, OptionScope, PaneLayout, RealTmuxExecutor, ResizeDirection,
-    TmuxError, TmuxOption, TmuxPane, TmuxSession, TmuxWindow, capture_pane,
+    SessionDetail, TmuxError, TmuxOption, TmuxPane, TmuxSession, TmuxWindow, capture_pane,
     capture_pane_with_options, create_session_with_windows, ensure_session, ensure_window,
-    get_option, health_check, kill_pane, kill_session, kill_window, list_options, list_panes,
-    list_sessions, list_windows, move_window, new_session, new_window, rename_session,
-    rename_window, resize_pane, select_layout, select_pane, select_window, send_keys, set_option,
-    split_window, swap_panes, swap_window,
+    get_option, get_session_detail, health_check, kill_pane, kill_session, kill_window,
+    list_options, list_panes, list_sessions, list_windows, move_window, new_session, new_window,
+    rename_session, rename_window, resize_pane, select_layout, select_pane, select_window,
+    send_keys, set_option, split_window, swap_panes, swap_window,
 };
 
 /// All API layers (REST, gRPC, GraphQL) must implement this trait.
@@ -195,5 +195,11 @@ pub trait TmuxCommands {
         name: &str,
     ) -> impl std::future::Future<Output = Result<TmuxWindow, TmuxError>> + Send {
         async move { ensure_window(&RealTmuxExecutor, session, name).await }
+    }
+    fn get_session_detail(
+        &self,
+        name: &str,
+    ) -> impl std::future::Future<Output = Result<SessionDetail, TmuxError>> + Send {
+        async move { get_session_detail(&RealTmuxExecutor, name).await }
     }
 }

@@ -13,6 +13,7 @@ mod kill_window;
 mod list_panes;
 mod list_windows;
 mod move_window;
+pub mod pagination;
 mod new_session;
 mod new_window;
 pub mod options;
@@ -24,13 +25,17 @@ mod select_pane;
 mod select_window;
 mod send_keys;
 mod server_info;
+mod session_detail;
 mod sessions;
 mod split_window;
 mod swap_panes;
 mod swap_window;
 pub mod validation;
 
-pub use capture_pane::{CaptureOptions, capture_pane, capture_pane_with_options};
+pub use capture_pane::{
+    CaptureOptions, CapturedContent, capture_pane, capture_pane_with_options,
+    normalize_pane_content,
+};
 pub use commands::TmuxCommands;
 pub use create_session_with_windows::create_session_with_windows;
 pub use ensure_session::ensure_session;
@@ -42,8 +47,8 @@ pub use health::{HealthStatus, health_check};
 pub use kill_pane::kill_pane;
 pub use kill_session::kill_session;
 pub use kill_window::kill_window;
-pub use list_panes::{TmuxPane, list_panes};
-pub use list_windows::{TmuxWindow, get_window, list_windows};
+pub use list_panes::{TmuxPane, list_panes, list_panes_paginated};
+pub use list_windows::{TmuxWindow, get_window, list_windows, list_windows_paginated};
 pub use move_window::move_window;
 pub use new_session::{new_session, new_session_with_events};
 pub use new_window::new_window;
@@ -56,7 +61,9 @@ pub use select_pane::select_pane;
 pub use select_window::select_window;
 pub use send_keys::send_keys;
 pub use server_info::{TmuxServerInfo, is_available, server_info};
-pub use sessions::{TmuxSession, get_session, list_sessions, session_exists};
+pub use pagination::{PaginatedResult, Pagination};
+pub use session_detail::{SessionDetail, WindowDetail, get_session_detail};
+pub use sessions::{TmuxSession, get_session, list_sessions, list_sessions_paginated, session_exists};
 pub use split_window::split_window;
 pub use swap_panes::swap_panes;
 pub use swap_window::swap_window;
