@@ -1,6 +1,7 @@
 use std::fmt;
 
 const MAX_SESSION_NAME_LEN: usize = 128;
+const MAX_TARGET_LEN: usize = 256;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValidationError {
@@ -85,6 +86,14 @@ pub fn validate_session_target(target: &str) -> Result<(), ValidationError> {
     if target.is_empty() {
         return Err(ValidationError::EmptyInput { field: "target" });
     }
+    if target.len() > MAX_TARGET_LEN {
+        return Err(ValidationError::InvalidTarget {
+            reason: format!(
+                "must be at most {MAX_TARGET_LEN} characters, got {}",
+                target.len()
+            ),
+        });
+    }
     validate_target_chars(target)?;
     // Session target is just a session name — no colons or dots required
     if target.contains(':') || target.contains('.') {
@@ -100,6 +109,14 @@ pub fn validate_session_target(target: &str) -> Result<(), ValidationError> {
 pub fn validate_window_target(target: &str) -> Result<(), ValidationError> {
     if target.is_empty() {
         return Err(ValidationError::EmptyInput { field: "target" });
+    }
+    if target.len() > MAX_TARGET_LEN {
+        return Err(ValidationError::InvalidTarget {
+            reason: format!(
+                "must be at most {MAX_TARGET_LEN} characters, got {}",
+                target.len()
+            ),
+        });
     }
     validate_target_chars(target)?;
     let parts: Vec<&str> = target.split(':').collect();
@@ -121,6 +138,14 @@ pub fn validate_window_target(target: &str) -> Result<(), ValidationError> {
 pub fn validate_pane_target(target: &str) -> Result<(), ValidationError> {
     if target.is_empty() {
         return Err(ValidationError::EmptyInput { field: "target" });
+    }
+    if target.len() > MAX_TARGET_LEN {
+        return Err(ValidationError::InvalidTarget {
+            reason: format!(
+                "must be at most {MAX_TARGET_LEN} characters, got {}",
+                target.len()
+            ),
+        });
     }
     validate_target_chars(target)?;
     // Must contain both : and .
@@ -334,6 +359,59 @@ mod tests {
         assert!(validate_window_name("foo;bar").is_err());
         assert!(validate_window_name("foo&bar").is_err());
         assert!(validate_window_name("$(cmd)").is_err());
+    }
+
+    // ── Target max-length validation ──
+
+    #[test]
+    fn session_target_at_max_length() {
+        let target = "a".repeat(MAX_TARGET_LEN);
+        assert!(validate_session_target(&target).is_ok());
+    }
+
+    #[test]
+    fn session_target_over_max_length() {
+        let target = "a".repeat(MAX_TARGET_LEN + 1);
+        assert!(matches!(
+            validate_session_target(&target),
+            Err(ValidationError::InvalidTarget { .. })
+        ));
+    }
+
+    #[test]
+    fn window_target_at_max_length() {
+        let session = "a".repeat(MAX_TARGET_LEN - 2);
+        let target = format!("{session}:w");
+        assert_eq!(target.len(), MAX_TARGET_LEN);
+        assert!(validate_window_target(&target).is_ok());
+    }
+
+    #[test]
+    fn window_target_over_max_length() {
+        let session = "a".repeat(MAX_TARGET_LEN);
+        let target = format!("{session}:w");
+        assert!(matches!(
+            validate_window_target(&target),
+            Err(ValidationError::InvalidTarget { .. })
+        ));
+    }
+
+    #[test]
+    fn pane_target_at_max_length() {
+        let session = "a".repeat(MAX_TARGET_LEN - 4);
+        let target = format!("{session}:w.0");
+        assert_eq!(target.len(), MAX_TARGET_LEN);
+        assert!(validate_pane_target(&target).is_ok());
+    }
+
+    #[test]
+    fn pane_target_over_max_length() {
+        let session = "a".repeat(MAX_TARGET_LEN);
+        let target = format!("{session}:w.0");
+        assert!(matches!(
+            validate_pane_target(&target),
+            Err(ValidationError::InvalidTarget { .. })
+        ));
     }
 
     // ── Command injection prevention ──
