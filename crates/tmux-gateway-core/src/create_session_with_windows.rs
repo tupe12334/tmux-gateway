@@ -21,7 +21,7 @@ pub async fn create_session_with_windows(
     }
 
     // Step 1: Create the session
-    super::new_session(executor, name).await?;
+    super::new_session(executor, name, None).await?;
 
     // Step 2: If window names provided, rename the default window and create additional ones
     if let Some((first, rest)) = window_names.split_first() {
@@ -35,7 +35,7 @@ pub async fn create_session_with_windows(
 
         // Create remaining windows
         for wn in rest {
-            if let Err(e) = super::new_window(executor, name, wn).await {
+            if let Err(e) = super::new_window(executor, name, wn, None).await {
                 // Rollback: kill the session (cleans up all windows)
                 let _ = super::kill_session(executor, name).await;
                 return Err(e);

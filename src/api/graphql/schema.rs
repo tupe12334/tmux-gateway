@@ -204,9 +204,13 @@ pub struct MutationRoot;
 
 #[Object]
 impl MutationRoot {
-    async fn create_session(&self, name: String) -> async_graphql::Result<Session> {
+    async fn create_session(
+        &self,
+        name: String,
+        #[graphql(default)] command: Option<String>,
+    ) -> async_graphql::Result<Session> {
         let s = GraphqlHandler
-            .create_session(&name)
+            .create_session(&name, command.as_deref())
             .await
             .map_err(|e| async_graphql::Error::new(e.to_string()))?;
         Ok(Session {
@@ -272,9 +276,14 @@ impl MutationRoot {
         Ok(true)
     }
 
-    async fn new_window(&self, session: String, name: String) -> async_graphql::Result<Window> {
+    async fn new_window(
+        &self,
+        session: String,
+        name: String,
+        #[graphql(default)] command: Option<String>,
+    ) -> async_graphql::Result<Window> {
         let w = GraphqlHandler
-            .new_window(&session, &name)
+            .new_window(&session, &name, command.as_deref())
             .await
             .map_err(|e| async_graphql::Error::new(e.to_string()))?;
         Ok(Window {
@@ -286,9 +295,14 @@ impl MutationRoot {
         })
     }
 
-    async fn split_window(&self, target: String, horizontal: bool) -> async_graphql::Result<Pane> {
+    async fn split_window(
+        &self,
+        target: String,
+        horizontal: bool,
+        #[graphql(default)] command: Option<String>,
+    ) -> async_graphql::Result<Pane> {
         let p = GraphqlHandler
-            .split_window(&target, horizontal)
+            .split_window(&target, horizontal, command.as_deref())
             .await
             .map_err(|e| async_graphql::Error::new(e.to_string()))?;
         Ok(Pane {

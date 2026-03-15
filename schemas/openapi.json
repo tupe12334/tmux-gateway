@@ -1033,6 +1033,12 @@
           "name"
         ],
         "properties": {
+          "command": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "name": {
             "type": "string"
           }
@@ -1074,6 +1080,12 @@
           "name"
         ],
         "properties": {
+          "command": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "name": {
             "type": "string"
           },
@@ -1303,6 +1315,12 @@
           "horizontal"
         ],
         "properties": {
+          "command": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "horizontal": {
             "type": "boolean"
           },

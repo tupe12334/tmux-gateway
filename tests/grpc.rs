@@ -22,6 +22,7 @@ async fn new_session_returns_name() {
     let resp = service
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
+            command: String::new(),
         }))
         .await
         .unwrap();
@@ -35,6 +36,7 @@ async fn kill_session_after_create() {
     service
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
+            command: String::new(),
         }))
         .await
         .unwrap();
@@ -53,6 +55,7 @@ async fn kill_window_after_create() {
     service
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
+            command: String::new(),
         }))
         .await
         .unwrap();
@@ -71,6 +74,7 @@ async fn kill_pane_after_create() {
     service
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
+            command: String::new(),
         }))
         .await
         .unwrap();
@@ -89,6 +93,7 @@ async fn list_windows_after_create() {
     service
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
+            command: String::new(),
         }))
         .await
         .unwrap();
@@ -108,6 +113,7 @@ async fn list_panes_after_create() {
     service
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
+            command: String::new(),
         }))
         .await
         .unwrap();
@@ -127,6 +133,7 @@ async fn send_keys_after_create() {
     service
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
+            command: String::new(),
         }))
         .await
         .unwrap();
@@ -147,6 +154,7 @@ async fn rename_session_after_create() {
     service
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
+            command: String::new(),
         }))
         .await
         .unwrap();
@@ -166,6 +174,7 @@ async fn rename_window_after_create() {
     service
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
+            command: String::new(),
         }))
         .await
         .unwrap();
@@ -185,6 +194,7 @@ async fn new_window_after_create() {
     service
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
+            command: String::new(),
         }))
         .await
         .unwrap();
@@ -192,6 +202,7 @@ async fn new_window_after_create() {
         .new_window(Request::new(NewWindowRequest {
             session: session.name.clone(),
             name: "testwin".into(),
+            command: String::new(),
         }))
         .await
         .unwrap();
@@ -205,6 +216,7 @@ async fn split_window_after_create() {
     service
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
+            command: String::new(),
         }))
         .await
         .unwrap();
@@ -212,6 +224,7 @@ async fn split_window_after_create() {
         .split_window(Request::new(SplitWindowRequest {
             target: format!("{}:0.0", session.name),
             horizontal: false,
+            command: String::new(),
         }))
         .await;
     assert!(resp.is_ok());
@@ -224,6 +237,7 @@ async fn capture_pane_after_create() {
     service
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
+            command: String::new(),
         }))
         .await
         .unwrap();
@@ -278,6 +292,7 @@ async fn ls_includes_created_session() {
     service
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
+            command: String::new(),
         }))
         .await
         .unwrap();

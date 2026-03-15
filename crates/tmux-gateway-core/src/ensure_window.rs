@@ -33,7 +33,7 @@ pub async fn ensure_window(
     // If another caller created it between our check and this create,
     // we'll end up with a duplicate name. This is best-effort since
     // tmux doesn't support transactions or unique window name constraints.
-    new_window(executor, session, name).await
+    new_window(executor, session, name, None).await
 }
 
 #[cfg(test)]

@@ -86,8 +86,13 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
         &self,
         request: Request<NewSessionRequest>,
     ) -> Result<Response<NewSessionResponse>, Status> {
-        let name = &request.into_inner().name;
-        let session = TmuxCommands::create_session(self, name)
+        let inner = request.into_inner();
+        let command = if inner.command.is_empty() {
+            None
+        } else {
+            Some(inner.command.as_str())
+        };
+        let session = TmuxCommands::create_session(self, &inner.name, command)
             .await
             .map_err(tmux_err_to_status)?;
         Ok(Response::new(NewSessionResponse {
@@ -220,7 +225,12 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
         request: Request<NewWindowRequest>,
     ) -> Result<Response<NewWindowResponse>, Status> {
         let inner = request.into_inner();
-        let window = TmuxCommands::new_window(self, &inner.session, &inner.name)
+        let command = if inner.command.is_empty() {
+            None
+        } else {
+            Some(inner.command.as_str())
+        };
+        let window = TmuxCommands::new_window(self, &inner.session, &inner.name, command)
             .await
             .map_err(tmux_err_to_status)?;
         Ok(Response::new(NewWindowResponse {
@@ -237,7 +247,12 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
         request: Request<SplitWindowRequest>,
     ) -> Result<Response<SplitWindowResponse>, Status> {
         let inner = request.into_inner();
-        let pane = TmuxCommands::split_window(self, &inner.target, inner.horizontal)
+        let command = if inner.command.is_empty() {
+            None
+        } else {
+            Some(inner.command.as_str())
+        };
+        let pane = TmuxCommands::split_window(self, &inner.target, inner.horizontal, command)
             .await
             .map_err(tmux_err_to_status)?;
         Ok(Response::new(SplitWindowResponse {

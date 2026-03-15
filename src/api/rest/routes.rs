@@ -123,6 +123,8 @@ async fn ls() -> Result<Json<Vec<SessionResponse>>, (StatusCode, String)> {
 #[derive(Deserialize, ToSchema)]
 struct NewSessionRequest {
     name: String,
+    #[serde(default)]
+    command: Option<String>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -148,7 +150,7 @@ async fn new(
     Json(body): Json<NewSessionRequest>,
 ) -> Result<(StatusCode, Json<NewSessionResponse>), (StatusCode, String)> {
     let session = RestHandler
-        .create_session(&body.name)
+        .create_session(&body.name, body.command.as_deref())
         .await
         .map_err(tmux_err_to_http)?;
 
@@ -392,6 +394,8 @@ async fn rename_window(
 struct NewWindowRequest {
     session: String,
     name: String,
+    #[serde(default)]
+    command: Option<String>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -417,7 +421,7 @@ async fn new_window(
     Json(body): Json<NewWindowRequest>,
 ) -> Result<(axum::http::StatusCode, Json<NewWindowResponse>), (axum::http::StatusCode, String)> {
     let window = RestHandler
-        .new_window(&body.session, &body.name)
+        .new_window(&body.session, &body.name, body.command.as_deref())
         .await
         .map_err(tmux_err_to_http)?;
 
@@ -437,6 +441,8 @@ async fn new_window(
 struct SplitWindowRequest {
     target: String,
     horizontal: bool,
+    #[serde(default)]
+    command: Option<String>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -464,7 +470,7 @@ async fn split_window(
     Json(body): Json<SplitWindowRequest>,
 ) -> Result<Json<SplitWindowResponse>, (axum::http::StatusCode, String)> {
     let pane = RestHandler
-        .split_window(&body.target, body.horizontal)
+        .split_window(&body.target, body.horizontal, body.command.as_deref())
         .await
         .map_err(tmux_err_to_http)?;
 

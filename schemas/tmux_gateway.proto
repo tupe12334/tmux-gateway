@@ -23,6 +23,7 @@ service TmuxGateway {
   rpc SelectWindow(SelectWindowRequest) returns (SelectWindowResponse);
   rpc SelectPane(SelectPaneRequest) returns (SelectPaneResponse);
   rpc ResizePane(ResizePaneRequest) returns (ResizePaneResponse);
+  rpc SelectLayout(SelectLayoutRequest) returns (SelectLayoutResponse);
   rpc GetOption(GetOptionRequest) returns (GetOptionResponse);
   rpc SetOption(SetOptionRequest) returns (SetOptionResponse);
   rpc ListOptions(ListOptionsRequest) returns (ListOptionsResponse);
@@ -45,6 +46,7 @@ message TmuxSession {
 
 message NewSessionRequest {
   string name = 1;
+  string command = 2;
 }
 
 message NewSessionResponse {
@@ -131,6 +133,7 @@ message RenameWindowResponse {}
 message NewWindowRequest {
   string session = 1;
   string name = 2;
+  string command = 3;
 }
 
 message NewWindowResponse {
@@ -144,6 +147,7 @@ message NewWindowResponse {
 message SplitWindowRequest {
   string target = 1;
   bool horizontal = 2;
+  string command = 3;
 }
 
 message SplitWindowResponse {
@@ -223,6 +227,13 @@ message ResizePaneRequest {
 }
 
 message ResizePaneResponse {}
+
+message SelectLayoutRequest {
+  string target = 1;
+  string layout = 2;
+}
+
+message SelectLayoutResponse {}
 
 message GetOptionRequest {
   string name = 1;

@@ -5,6 +5,7 @@ use crate::options::OptionScope;
 const MAX_SESSION_NAME_LEN: usize = 128;
 const MAX_TARGET_LEN: usize = 256;
 const MAX_OPTION_NAME_LEN: usize = 128;
+const MAX_COMMAND_LEN: usize = 1024;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValidationError {
@@ -13,6 +14,7 @@ pub enum ValidationError {
     InvalidWindowName { reason: String },
     InvalidTarget { reason: String },
     InvalidOptionName { reason: String },
+    InvalidCommand { reason: String },
 }
 
 impl fmt::Display for ValidationError {
@@ -29,6 +31,9 @@ impl fmt::Display for ValidationError {
             Self::InvalidTarget { reason } => write!(f, "invalid target: {reason}"),
             Self::InvalidOptionName { reason } => {
                 write!(f, "invalid option name: {reason}")
+            }
+            Self::InvalidCommand { reason } => {
+                write!(f, "invalid command: {reason}")
             }
         }
     }
@@ -217,6 +222,36 @@ pub fn validate_option_scope_target(
         OptionScope::Session => validate_session_target(target),
         OptionScope::Window => validate_window_target(target),
     }
+}
+
+/// Validate a command string for safety.
+/// Allowed: alphanumeric, spaces, hyphens, underscores, dots, forward slashes,
+/// tildes, equals, colons, commas, plus, at signs. Rejects shell metacharacters.
+pub fn validate_command(command: &str) -> Result<(), ValidationError> {
+    if command.is_empty() {
+        return Err(ValidationError::EmptyInput { field: "command" });
+    }
+    if command.len() > MAX_COMMAND_LEN {
+        return Err(ValidationError::InvalidCommand {
+            reason: format!(
+                "must be at most {MAX_COMMAND_LEN} characters, got {}",
+                command.len()
+            ),
+        });
+    }
+    if !command.chars().all(|c| {
+        c.is_ascii_alphanumeric()
+            || matches!(
+                c,
+                ' ' | '-' | '_' | '.' | '/' | '~' | '=' | ':' | ',' | '+' | '@'
+            )
+    }) {
+        return Err(ValidationError::InvalidCommand {
+            reason: "must not contain shell metacharacters (;|&`$(){}\\<>!\"'#*?\n etc.)"
+                .to_string(),
+        });
+    }
+    Ok(())
 }
 
 /// Ensure target contains only safe characters (prevent command injection).
@@ -531,5 +566,44 @@ mod tests {
     #[test]
     fn option_scope_target_window_invalid() {
         assert!(validate_option_scope_target(OptionScope::Window, "sess").is_err());
+    }
+
+    // ── Command validation ──
+
+    #[test]
+    fn valid_commands() {
+        assert!(validate_command("vim").is_ok());
+        assert!(validate_command("htop").is_ok());
+        assert!(validate_command("tail -f /var/log/syslog").is_ok());
+        assert!(validate_command("python3 script.py --arg=value").is_ok());
+        assert!(validate_command("/usr/bin/top").is_ok());
+    }
+
+    #[test]
+    fn empty_command() {
+        assert_eq!(
+            validate_command(""),
+            Err(ValidationError::EmptyInput { field: "command" })
+        );
+    }
+
+    #[test]
+    fn command_too_long() {
+        let long = "a".repeat(MAX_COMMAND_LEN + 1);
+        assert!(matches!(
+            validate_command(&long),
+            Err(ValidationError::InvalidCommand { .. })
+        ));
+    }
+
+    #[test]
+    fn command_rejects_shell_metacharacters() {
+        assert!(validate_command("echo; rm -rf /").is_err());
+        assert!(validate_command("cat | grep foo").is_err());
+        assert!(validate_command("cmd && other").is_err());
+        assert!(validate_command("$(whoami)").is_err());
+        assert!(validate_command("`whoami`").is_err());
+        assert!(validate_command("cmd > file").is_err());
+        assert!(validate_command("cmd < file").is_err());
     }
 }
