@@ -14,6 +14,7 @@ pub struct TmuxWindow {
 }
 
 impl fmt::Display for TmuxWindow {
+    #[allow(unknown_lints, no_wrapper_functions)]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -51,14 +52,6 @@ pub(crate) fn parse_window_line(line: &str) -> Result<TmuxWindow, TmuxError> {
     })
 }
 
-pub(crate) fn parse_windows(stdout: &str) -> Result<Vec<TmuxWindow>, TmuxError> {
-    stdout
-        .lines()
-        .filter(|line| !line.is_empty())
-        .map(parse_window_line)
-        .collect()
-}
-
 #[tracing::instrument(skip(executor))]
 pub async fn list_windows(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -81,7 +74,12 @@ pub async fn list_windows(
             session,
         ));
     }
-    parse_windows(&output.stdout)
+    output
+        .stdout
+        .lines()
+        .filter(|line| !line.is_empty())
+        .map(parse_window_line)
+        .collect()
 }
 
 #[tracing::instrument(skip(executor))]
@@ -156,6 +154,14 @@ mod tests {
     fn parse_window_line_invalid_pane_count() {
         let result = parse_window_line("@0\t0\tbash\txyz\t1");
         assert!(result.is_err());
+    }
+
+    fn parse_windows(stdout: &str) -> Result<Vec<TmuxWindow>, TmuxError> {
+        stdout
+            .lines()
+            .filter(|line| !line.is_empty())
+            .map(parse_window_line)
+            .collect()
     }
 
     #[test]

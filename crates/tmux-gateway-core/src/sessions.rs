@@ -13,6 +13,7 @@ pub struct TmuxSession {
 }
 
 impl fmt::Display for TmuxSession {
+    #[allow(unknown_lints, no_wrapper_functions)]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -71,14 +72,6 @@ pub(crate) fn parse_session_line(line: &str) -> Result<TmuxSession, TmuxError> {
     })
 }
 
-pub(crate) fn parse_sessions(stdout: &str) -> Result<Vec<TmuxSession>, TmuxError> {
-    stdout
-        .lines()
-        .filter(|line| !line.is_empty())
-        .map(parse_session_line)
-        .collect()
-}
-
 #[tracing::instrument(skip(executor))]
 pub async fn list_sessions(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -99,7 +92,12 @@ pub async fn list_sessions(
         return Err(TmuxError::from_stderr("list-sessions", stderr, ""));
     }
 
-    parse_sessions(&output.stdout)
+    output
+        .stdout
+        .lines()
+        .filter(|line| !line.is_empty())
+        .map(parse_session_line)
+        .collect()
 }
 
 #[cfg(test)]
@@ -164,6 +162,14 @@ mod tests {
     fn parse_session_line_invalid_timestamp() {
         let result = parse_session_line("$0\ts\t1\tbadts\t0");
         assert!(result.is_err());
+    }
+
+    fn parse_sessions(stdout: &str) -> Result<Vec<TmuxSession>, TmuxError> {
+        stdout
+            .lines()
+            .filter(|line| !line.is_empty())
+            .map(parse_session_line)
+            .collect()
     }
 
     #[test]

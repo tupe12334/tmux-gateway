@@ -16,6 +16,7 @@ pub struct TmuxPane {
 }
 
 impl fmt::Display for TmuxPane {
+    #[allow(unknown_lints, no_wrapper_functions)]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -60,14 +61,6 @@ pub(crate) fn parse_pane_line(line: &str) -> Result<TmuxPane, TmuxError> {
     })
 }
 
-pub(crate) fn parse_panes(stdout: &str) -> Result<Vec<TmuxPane>, TmuxError> {
-    stdout
-        .lines()
-        .filter(|line| !line.is_empty())
-        .map(parse_pane_line)
-        .collect()
-}
-
 #[tracing::instrument(skip(executor))]
 pub async fn list_panes(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -86,7 +79,12 @@ pub async fn list_panes(
     if !output.success {
         return Err(TmuxError::from_stderr("list-panes", &output.stderr, target));
     }
-    parse_panes(&output.stdout)
+    output
+        .stdout
+        .lines()
+        .filter(|line| !line.is_empty())
+        .map(parse_pane_line)
+        .collect()
 }
 
 #[cfg(test)]
@@ -164,6 +162,14 @@ mod tests {
     fn parse_pane_line_invalid_pid() {
         let result = parse_pane_line("%0\t80\t24\t1\t/home\tbash\tnotanumber");
         assert!(result.is_err());
+    }
+
+    fn parse_panes(stdout: &str) -> Result<Vec<TmuxPane>, TmuxError> {
+        stdout
+            .lines()
+            .filter(|line| !line.is_empty())
+            .map(parse_pane_line)
+            .collect()
     }
 
     #[test]

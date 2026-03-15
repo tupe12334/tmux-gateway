@@ -22,18 +22,13 @@ pub type EventSender = tokio::sync::broadcast::Sender<TmuxEvent>;
 /// Broadcast receiver for domain events.
 pub type EventReceiver = tokio::sync::broadcast::Receiver<TmuxEvent>;
 
-/// Create a new event channel with the given capacity.
-pub fn event_channel(capacity: usize) -> (EventSender, EventReceiver) {
-    tokio::sync::broadcast::channel(capacity)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn event_channel_send_receive() {
-        let (tx, mut rx) = event_channel(16);
+        let (tx, mut rx) = tokio::sync::broadcast::channel(16);
         tx.send(TmuxEvent::SessionCreated {
             name: "test".to_string(),
         })
@@ -50,7 +45,7 @@ mod tests {
 
     #[test]
     fn event_channel_multiple_subscribers() {
-        let (tx, mut rx1) = event_channel(16);
+        let (tx, mut rx1) = tokio::sync::broadcast::channel(16);
         let mut rx2 = tx.subscribe();
 
         tx.send(TmuxEvent::SessionKilled {
@@ -85,7 +80,7 @@ mod tests {
 
     #[test]
     fn no_receivers_send_returns_err() {
-        let (tx, rx) = event_channel(16);
+        let (tx, rx) = tokio::sync::broadcast::channel::<TmuxEvent>(16);
         drop(rx);
         let result = tx.send(TmuxEvent::KeysSent {
             target: "s:w.0".to_string(),
