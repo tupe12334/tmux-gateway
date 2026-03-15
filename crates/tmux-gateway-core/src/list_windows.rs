@@ -84,6 +84,16 @@ pub async fn list_windows(
     parse_windows(&output.stdout)
 }
 
+#[tracing::instrument(skip(executor))]
+pub async fn get_window(
+    executor: &(impl TmuxExecutor + ?Sized),
+    session: &str,
+    name: &str,
+) -> Result<Option<TmuxWindow>, TmuxError> {
+    let windows = list_windows(executor, session).await?;
+    Ok(windows.into_iter().find(|w| w.name == name))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
