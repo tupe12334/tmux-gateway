@@ -23,7 +23,12 @@ use crate::tmux::{self, RealTmuxExecutor, TmuxCommands, TmuxError};
 
 pub struct TmuxGatewayServiceImpl;
 
-impl TmuxCommands for TmuxGatewayServiceImpl {}
+impl TmuxCommands for TmuxGatewayServiceImpl {
+    #[allow(unknown_lints, no_wrapper_functions)]
+    fn executor(&self) -> RealTmuxExecutor {
+        RealTmuxExecutor::new()
+    }
+}
 
 fn tmux_err_to_status(e: TmuxError) -> Status {
     let msg = e.to_string();

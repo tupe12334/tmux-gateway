@@ -1,3 +1,4 @@
+pub mod adapter;
 mod apply_session_spec;
 mod buffers;
 mod capture_pane;
@@ -45,6 +46,7 @@ mod swap_panes;
 mod swap_window;
 pub mod validation;
 
+pub use adapter::RealTmuxExecutor;
 pub use apply_session_spec::apply_session_spec;
 pub use buffers::{
     TmuxBuffer, build_delete_buffer_command, build_get_buffer_command, build_list_buffers_command,
@@ -62,9 +64,7 @@ pub use ensure_session::ensure_session;
 pub use ensure_window::ensure_window;
 pub use error::{ErrorRecoverability, TmuxError};
 pub use events::{EventReceiver, EventSender, TmuxEvent};
-pub use executor::{
-    OperationTimeout, RealTmuxExecutor, TmuxExecutor, TmuxOutput, execute_with_timeout,
-};
+pub use executor::{OperationTimeout, TmuxExecutor, TmuxOutput, execute_with_timeout};
 pub use has_session::{build_has_session_command, has_session, has_session_with_log};
 pub use health::{HealthStatus, health_check, health_check_with_log};
 pub use kill_pane::{build_kill_pane_command, kill_pane};

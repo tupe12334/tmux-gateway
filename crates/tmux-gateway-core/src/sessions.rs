@@ -159,7 +159,8 @@ pub async fn list_sessions_paginated(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::executor::{RealTmuxExecutor, TmuxOutput};
+    use crate::adapter::RealTmuxExecutor;
+    use crate::executor::TmuxOutput;
 
     #[test]
     fn display_attached_session() {
