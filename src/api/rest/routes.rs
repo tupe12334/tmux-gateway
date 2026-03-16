@@ -11,7 +11,11 @@ use crate::tmux::{self, OptionScope, RealTmuxExecutor, TmuxCommands, TmuxError};
 
 struct RestHandler;
 
-impl TmuxCommands for RestHandler {}
+impl TmuxCommands for RestHandler {
+    fn executor(&self) -> RealTmuxExecutor {
+        RealTmuxExecutor::new()
+    }
+}
 
 fn tmux_err_to_http(e: TmuxError) -> (StatusCode, String) {
     let status = match &e {

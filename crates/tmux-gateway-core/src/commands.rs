@@ -1,36 +1,38 @@
 use super::{
-    CaptureOptions, EnvVar, HealthStatus, OptionScope, PaneLayout, RealTmuxExecutor,
-    ResizeDirection, SessionDetail, TmuxBuffer, TmuxEnvVar, TmuxError, TmuxMessage, TmuxOption,
-    TmuxPane, TmuxSession, TmuxWindow, capture_pane, capture_pane_with_options,
-    create_session_with_windows, delete_buffer, ensure_session, ensure_window, get_buffer,
-    get_option, get_server_env, get_session_detail, has_session, health_check, kill_pane,
-    kill_server, kill_session, kill_window, list_buffers, list_options, list_panes,
-    list_server_environment, list_sessions, list_windows, move_window, new_session, new_window,
-    paste_buffer, rename_session, rename_window, resize_pane, respawn_pane, respawn_window,
-    select_layout, select_pane, select_window, send_keys, set_buffer, set_environment, set_option,
-    set_server_env, show_environment, show_messages, split_window, swap_panes, swap_window,
-    unset_environment, unset_server_env,
+    CaptureOptions, EnvVar, HealthStatus, OptionScope, PaneLayout, ResizeDirection, SessionDetail,
+    TmuxBuffer, TmuxEnvVar, TmuxError, TmuxMessage, TmuxOption, TmuxPane, TmuxSession, TmuxWindow,
+    capture_pane, capture_pane_with_options, create_session_with_windows, delete_buffer,
+    ensure_session, ensure_window, get_buffer, get_option, get_server_env, get_session_detail,
+    has_session, health_check, kill_pane, kill_server, kill_session, kill_window, list_buffers,
+    list_options, list_panes, list_server_environment, list_sessions, list_windows, move_window,
+    new_session, new_window, paste_buffer, rename_session, rename_window, resize_pane, respawn_pane,
+    respawn_window, select_layout, select_pane, select_window, send_keys, set_buffer,
+    set_environment, set_option, set_server_env, show_environment, show_messages, split_window,
+    swap_panes, swap_window, unset_environment, unset_server_env,
 };
+use crate::adapter::RealTmuxExecutor;
+use crate::executor::TmuxExecutor;
 use crate::validation::{PaneTarget, SessionName, WindowTarget};
 
 /// All API layers (REST, gRPC, GraphQL) must implement this trait.
-/// Default implementations delegate to the core free functions via `RealTmuxExecutor`.
+/// Default implementations delegate to the core free functions.
 /// Any layer can override individual methods if needed (e.g., for caching or metrics).
 ///
+/// The executor type parameter `E` determines which [`TmuxExecutor`] implementation
+/// is used. It defaults to [`RealTmuxExecutor`], so production code can simply
+/// write `impl TmuxCommands for MyHandler`. Test code can supply a mock executor:
+///
+/// ```ignore
+/// struct TestHandler(MockExecutor);
+/// impl TmuxCommands<MockExecutor> for TestHandler {
+///     fn executor(&self) -> MockExecutor { self.0.clone() }
+/// }
+/// ```
+///
 /// String parameters are validated and converted to domain newtypes at this boundary.
-/// Override [`executor`](TmuxCommands::executor) to target a specific tmux server socket.
-pub trait TmuxCommands {
+pub trait TmuxCommands<E: TmuxExecutor = RealTmuxExecutor> {
     /// Returns the executor used by all default method implementations.
-    ///
-    /// Override this to target a specific tmux server socket:
-    /// ```ignore
-    /// fn executor(&self) -> RealTmuxExecutor {
-    ///     RealTmuxExecutor::with_socket("/tmp/my-tmux-socket")
-    /// }
-    /// ```
-    fn executor(&self) -> RealTmuxExecutor {
-        RealTmuxExecutor::new()
-    }
+    fn executor(&self) -> E;
 
     fn ls(&self) -> impl std::future::Future<Output = Result<Vec<TmuxSession>, TmuxError>> + Send {
         let executor = self.executor();

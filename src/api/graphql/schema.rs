@@ -83,7 +83,11 @@ struct TmuxOptionGql {
 
 struct GraphqlHandler;
 
-impl TmuxCommands for GraphqlHandler {}
+impl TmuxCommands for GraphqlHandler {
+    fn executor(&self) -> RealTmuxExecutor {
+        RealTmuxExecutor::new()
+    }
+}
 
 pub struct QueryRoot;
 
