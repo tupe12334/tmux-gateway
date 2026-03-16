@@ -16,11 +16,7 @@ const SESSION_NAME: &str = "batch-setup-example";
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let executor = RealTmuxExecutor;
 
-    let window_names: Vec<String> = vec![
-        "editor".into(),
-        "server".into(),
-        "logs".into(),
-    ];
+    let window_names: Vec<String> = vec!["editor".into(), "server".into(), "logs".into()];
 
     // Create a session with multiple windows in one call
     println!("Creating session '{SESSION_NAME}' with windows: {window_names:?}");
