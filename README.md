@@ -1,6 +1,6 @@
 # tmux-gateway
 
-A Rust server that exposes a unified interface for interacting with your local [tmux](https://github.com/tmux/tmux) sessions through **gRPC**, **GraphQL**, and **REST** — all from a single process.
+A Rust server that exposes a unified interface for interacting with your local [tmux](https://github.com/tmux/tmux) sessions through multiple API protocols — all from a single process.
 
 ## Why?
 
@@ -42,12 +42,12 @@ graph TD
     end
 ```
 
-| Protocol  | Port  | Unix Socket                          | Use case                                                               |
-| --------- | ----- | ------------------------------------ | ---------------------------------------------------------------------- |
-| REST      | 8080  | `/tmp/tmux-gateway-http.sock`        | Simple integrations, curl, scripts                                     |
-| GraphQL   | 8080  | `/tmp/tmux-gateway-http.sock`        | Flexible queries, web UIs (includes GraphiQL playground at `/graphql`) |
-| WebSocket | 8080  | `/tmp/tmux-gateway-http.sock`        | Real-time pane streaming (`/ws/pane/{target}`)                         |
-| gRPC      | 50051 | `/tmp/tmux-gateway-grpc.sock`        | High-performance, typed clients, service-to-service                    |
+| Protocol  | Default Port | Unix Socket                   | Use case                                                               |
+| --------- | ------------ | ----------------------------- | ---------------------------------------------------------------------- |
+| REST      | 8080         | `/tmp/tmux-gateway-http.sock` | Simple integrations, curl, scripts                                     |
+| GraphQL   | 8080         | `/tmp/tmux-gateway-http.sock` | Flexible queries, web UIs (includes GraphiQL playground at `/graphql`) |
+| WebSocket | 8080         | `/tmp/tmux-gateway-http.sock` | Real-time pane streaming (`/ws/pane/{target}`)                         |
+| gRPC      | 50051        | `/tmp/tmux-gateway-grpc.sock` | High-performance, typed clients, service-to-service                    |
 
 ## Getting Started
 
@@ -82,6 +82,7 @@ make docker-down  # stops and removes containers
 ```
 
 This starts:
+
 - **tmux-gateway** on ports `8080` (HTTP) and `50051` (gRPC), with a health check on `/health`
 - **grpcui** on port `9090` for interactive gRPC exploration
 
@@ -96,11 +97,11 @@ The server starts two listeners (each available over TCP and optionally a Unix s
 
 ### Configuration
 
-| Variable      | Description                                          | Default |
-| ------------- | ---------------------------------------------------- | ------- |
-| `RUST_LOG`    | Logging filter                                       | —       |
-| `HTTP_SOCKET` | Unix socket path for HTTP server (empty = disabled)  | —       |
-| `GRPC_SOCKET` | Unix socket path for gRPC server (empty = disabled)  | —       |
+| Variable      | Description                                         | Default |
+| ------------- | --------------------------------------------------- | ------- |
+| `RUST_LOG`    | Logging filter                                      | —       |
+| `HTTP_SOCKET` | Unix socket path for HTTP server (empty = disabled) | —       |
+| `GRPC_SOCKET` | Unix socket path for gRPC server (empty = disabled) | —       |
 
 ```bash
 RUST_LOG=tmux_gateway=debug cargo run

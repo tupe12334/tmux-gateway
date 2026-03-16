@@ -32,7 +32,8 @@
       "Bash(centy:*)",
       "Bash(grep:*)",
       "Bash(ls:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(gh repo:*)"
     ],
     "deny": ["Bash(gh issue create:*)"]
   },
