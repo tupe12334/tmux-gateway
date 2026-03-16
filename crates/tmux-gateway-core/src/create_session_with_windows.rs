@@ -20,7 +20,7 @@ pub async fn create_session_with_windows(
     }
 
     // Step 1: Create the session
-    super::new_session(executor, name, None).await?;
+    super::new_session(executor, name, None, None).await?;
 
     // Step 2: If window names provided, rename the default window and create additional ones
     if let Some((first, rest)) = window_names.split_first() {

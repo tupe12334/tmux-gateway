@@ -9,6 +9,7 @@ const MAX_COMMAND_LEN: usize = 1024;
 const MAX_ENV_VAR_NAME_LEN: usize = 256;
 const MAX_ENV_VAR_VALUE_LEN: usize = 4096;
 const MAX_BUFFER_NAME_LEN: usize = 128;
+const MAX_WORKING_DIR_LEN: usize = 4096;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValidationError {
@@ -18,6 +19,7 @@ pub enum ValidationError {
     InvalidTarget { reason: String },
     InvalidOptionName { reason: String },
     InvalidCommand { reason: String },
+    InvalidWorkingDirectory { reason: String },
     InvalidEnvVarName { reason: String },
     InvalidEnvVarValue { reason: String },
     InvalidBufferName { reason: String },
@@ -40,6 +42,9 @@ impl fmt::Display for ValidationError {
             }
             Self::InvalidCommand { reason } => {
                 write!(f, "invalid command: {reason}")
+            }
+            Self::InvalidWorkingDirectory { reason } => {
+                write!(f, "invalid working directory: {reason}")
             }
             Self::InvalidEnvVarName { reason } => {
                 write!(f, "invalid environment variable name: {reason}")
@@ -264,6 +269,59 @@ pub fn validate_command(command: &str) -> Result<(), ValidationError> {
         return Err(ValidationError::InvalidCommand {
             reason: "must not contain shell metacharacters (;|&`$(){}\\<>!\"'#*?\n etc.)"
                 .to_string(),
+        });
+    }
+    Ok(())
+}
+
+/// Validate a working directory path.
+/// Allowed: alphanumeric, spaces, hyphens, underscores, dots, forward slashes, tildes.
+/// Rejects shell metacharacters. 1-4096 chars.
+pub fn validate_working_directory(path: &str) -> Result<(), ValidationError> {
+    if path.is_empty() {
+        return Err(ValidationError::EmptyInput {
+            field: "working_directory",
+        });
+    }
+    if path.len() > MAX_WORKING_DIR_LEN {
+        return Err(ValidationError::InvalidWorkingDirectory {
+            reason: format!(
+                "must be at most {MAX_WORKING_DIR_LEN} characters, got {}",
+                path.len()
+            ),
+        });
+    }
+    if !path
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, ' ' | '-' | '_' | '.' | '/' | '~'))
+    {
+        return Err(ValidationError::InvalidWorkingDirectory {
+            reason: "must contain only alphanumeric characters, spaces, hyphens, underscores, dots, forward slashes, or tildes".to_string(),
+        });
+    }
+    Ok(())
+}
+
+/// Validate a command argument for multi-arg exec.
+/// More permissive than [`validate_command`] since args are passed to exec directly
+/// (no shell interpretation). Rejects empty args, null bytes, and excessively long args.
+pub fn validate_command_arg(arg: &str) -> Result<(), ValidationError> {
+    if arg.is_empty() {
+        return Err(ValidationError::EmptyInput {
+            field: "command_arg",
+        });
+    }
+    if arg.len() > MAX_COMMAND_LEN {
+        return Err(ValidationError::InvalidCommand {
+            reason: format!(
+                "must be at most {MAX_COMMAND_LEN} characters, got {}",
+                arg.len()
+            ),
+        });
+    }
+    if arg.contains('\0') {
+        return Err(ValidationError::InvalidCommand {
+            reason: "must not contain null bytes".to_string(),
         });
     }
     Ok(())
@@ -1063,5 +1121,83 @@ mod tests {
     fn pane_target_try_from_string() {
         let target = PaneTarget::try_from("sess:0.1".to_string()).unwrap();
         assert_eq!(target.as_str(), "sess:0.1");
+    }
+
+    // ── Working directory validation ──
+
+    #[test]
+    fn valid_working_directories() {
+        assert!(validate_working_directory("/home/user").is_ok());
+        assert!(validate_working_directory("/tmp").is_ok());
+        assert!(validate_working_directory("~/projects").is_ok());
+        assert!(validate_working_directory("/home/user/my-project").is_ok());
+        assert!(validate_working_directory(".").is_ok());
+        assert!(validate_working_directory("..").is_ok());
+        assert!(validate_working_directory("/path/with spaces/dir").is_ok());
+    }
+
+    #[test]
+    fn empty_working_directory() {
+        assert_eq!(
+            validate_working_directory(""),
+            Err(ValidationError::EmptyInput {
+                field: "working_directory"
+            })
+        );
+    }
+
+    #[test]
+    fn working_directory_too_long() {
+        let long = "/".to_string() + &"a".repeat(4096);
+        assert!(matches!(
+            validate_working_directory(&long),
+            Err(ValidationError::InvalidWorkingDirectory { .. })
+        ));
+    }
+
+    #[test]
+    fn working_directory_rejects_metacharacters() {
+        assert!(validate_working_directory("/home/$(whoami)").is_err());
+        assert!(validate_working_directory("/home;rm -rf /").is_err());
+        assert!(validate_working_directory("/path|pipe").is_err());
+        assert!(validate_working_directory("/path&bg").is_err());
+    }
+
+    // ── Command arg validation ──
+
+    #[test]
+    fn valid_command_args() {
+        assert!(validate_command_arg("claude").is_ok());
+        assert!(validate_command_arg("-p").is_ok());
+        assert!(validate_command_arg("some prompt with spaces").is_ok());
+        assert!(validate_command_arg("--allowedTools").is_ok());
+        assert!(validate_command_arg("value=\"quoted\"").is_ok());
+    }
+
+    #[test]
+    fn empty_command_arg() {
+        assert_eq!(
+            validate_command_arg(""),
+            Err(ValidationError::EmptyInput {
+                field: "command_arg"
+            })
+        );
+    }
+
+    #[test]
+    fn command_arg_too_long() {
+        let long = "a".repeat(1025);
+        assert!(matches!(
+            validate_command_arg(&long),
+            Err(ValidationError::InvalidCommand { .. })
+        ));
+    }
+
+    #[test]
+    fn command_arg_with_null_byte() {
+        assert!(matches!(
+            validate_command_arg("arg\0val"),
+            Err(ValidationError::InvalidCommand { .. })
+        ));
     }
 }

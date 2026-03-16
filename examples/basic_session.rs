@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 1. Create a new session
     println!("Creating session '{SESSION_NAME}'...");
-    let created = new_session(&executor, &session, None).await?;
+    let created = new_session(&executor, &session, None, None).await?;
     println!(
         "Session created: {} (id={}, {} windows)",
         created.name, created.id, created.windows

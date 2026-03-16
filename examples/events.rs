@@ -51,7 +51,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // --- Create a session with event broadcasting ---
     println!("Creating session '{session_name}'...");
-    let session = new_session_with_events(&executor, &session_name, None, Some(&tx)).await?;
+    let session = new_session_with_events(&executor, &session_name, None, None, Some(&tx)).await?;
     println!(
         "Session ready: id={}, windows={}",
         session.id, session.windows

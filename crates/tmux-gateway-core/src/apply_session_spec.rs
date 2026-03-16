@@ -40,7 +40,7 @@ pub async fn apply_session_spec(
     let initial_command = spec.windows.first().and_then(|w| w.command.as_deref());
 
     // Step 1: Create the session
-    super::new_session(executor, &session_name, initial_command).await?;
+    super::new_session(executor, &session_name, initial_command, None).await?;
 
     // Step 2: Set up windows — rename default window to first, create rest
     if let Some((first_window, rest_windows)) = spec.windows.split_first() {

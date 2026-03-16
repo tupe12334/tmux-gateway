@@ -15,7 +15,7 @@ pub async fn ensure_session(
     executor: &(impl TmuxExecutor + ?Sized),
     name: &SessionName,
 ) -> Result<TmuxSession, TmuxError> {
-    match new_session(executor, name, None).await {
+    match new_session(executor, name, None, None).await {
         Ok(session) => Ok(session),
         Err(TmuxError::SessionAlreadyExists(_)) => get_session(executor, name.as_str())
             .await?

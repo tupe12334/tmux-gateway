@@ -166,7 +166,10 @@ mod tests {
         lock.cleanup().await;
 
         let map = lock.locks.lock().await;
-        assert!(map.contains_key("sess-1"), "active lock should be preserved");
+        assert!(
+            map.contains_key("sess-1"),
+            "active lock should be preserved"
+        );
         assert!(
             !map.contains_key("sess-2"),
             "released lock should be cleaned up"
@@ -195,9 +198,12 @@ mod tests {
         });
 
         // The task should not complete within a short timeout while guard is held
-        let result = timeout(Duration::from_millis(50), &mut Box::pin(async {
-            handle.await.unwrap();
-        }))
+        let result = timeout(
+            Duration::from_millis(50),
+            &mut Box::pin(async {
+                handle.await.unwrap();
+            }),
+        )
         .await;
         assert!(result.is_err(), "task2 should be blocked by task1's lock");
 
