@@ -5,8 +5,8 @@ use super::{
     ensure_session, ensure_window, get_buffer, get_option, get_server_env, get_session_detail,
     has_session, health_check, kill_pane, kill_server, kill_session, kill_window, list_buffers,
     list_options, list_panes, list_server_environment, list_sessions, list_windows, move_window,
-    new_session, new_window, paste_buffer, rename_session, rename_window, resize_pane, respawn_pane,
-    respawn_window, select_layout, select_pane, select_window, send_keys, set_buffer,
+    new_session, new_window, paste_buffer, rename_session, rename_window, resize_pane,
+    respawn_pane, respawn_window, select_layout, select_pane, select_window, send_keys, set_buffer,
     set_environment, set_option, set_server_env, show_environment, show_messages, split_window,
     swap_panes, swap_window, unset_environment, unset_server_env,
 };
