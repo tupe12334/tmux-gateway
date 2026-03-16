@@ -91,6 +91,7 @@ pub fn parse_buffer_line(line: &str) -> Result<TmuxBuffer, TmuxError> {
 }
 
 /// Pure: parse raw list-buffers stdout into domain types.
+#[allow(unknown_lints, no_wrapper_functions)]
 pub fn parse_list_buffers_output(stdout: &str) -> Result<Vec<TmuxBuffer>, TmuxError> {
     stdout
         .lines()

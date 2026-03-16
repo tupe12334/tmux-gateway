@@ -80,17 +80,14 @@ pub fn enrich_openapi(spec: &mut Value) {
     if let Some(paths) = spec.get_mut("paths").and_then(|v| v.as_object_mut()) {
         for (_path, path_item) in paths.iter_mut() {
             for method in &["get", "post", "put", "delete", "patch"] {
-                if let Some(operation) = path_item.get_mut(method) {
-                    if let Some(op_id) = operation.get("operationId").and_then(|v| v.as_str()) {
-                        if let Some((_, tmux_cmd)) =
-                            OPERATION_DOCS.iter().find(|(id, _)| *id == op_id)
-                        {
-                            operation["externalDocs"] = serde_json::json!({
-                                "description": format!("tmux {tmux_cmd}"),
-                                "url": format!("{TMUX_MANUAL_URL}#{tmux_cmd}"),
-                            });
-                        }
-                    }
+                if let Some(operation) = path_item.get_mut(method)
+                    && let Some(op_id) = operation.get("operationId").and_then(|v| v.as_str())
+                    && let Some((_, tmux_cmd)) = OPERATION_DOCS.iter().find(|(id, _)| *id == op_id)
+                {
+                    operation["externalDocs"] = serde_json::json!({
+                        "description": format!("tmux {tmux_cmd}"),
+                        "url": format!("{TMUX_MANUAL_URL}#{tmux_cmd}"),
+                    });
                 }
             }
         }

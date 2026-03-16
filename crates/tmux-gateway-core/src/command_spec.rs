@@ -8,6 +8,7 @@ pub struct TmuxCommandSpec {
     args: Vec<String>,
 }
 
+#[allow(unknown_lints, no_wrapper_functions)]
 impl TmuxCommandSpec {
     pub fn new(args: Vec<String>) -> Self {
         Self { args }

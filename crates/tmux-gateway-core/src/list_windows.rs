@@ -70,6 +70,7 @@ pub fn parse_window_line(line: &str) -> Result<TmuxWindow, TmuxError> {
 }
 
 /// Pure: parse raw list-windows stdout into domain types.
+#[allow(unknown_lints, no_wrapper_functions)]
 pub fn parse_list_windows_output(stdout: &str) -> Result<Vec<TmuxWindow>, TmuxError> {
     stdout
         .lines()

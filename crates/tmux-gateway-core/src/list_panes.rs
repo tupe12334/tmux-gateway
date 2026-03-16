@@ -79,6 +79,7 @@ pub fn parse_pane_line(line: &str) -> Result<TmuxPane, TmuxError> {
 }
 
 /// Pure: parse raw list-panes stdout into domain types.
+#[allow(unknown_lints, no_wrapper_functions)]
 pub fn parse_list_panes_output(stdout: &str) -> Result<Vec<TmuxPane>, TmuxError> {
     stdout
         .lines()

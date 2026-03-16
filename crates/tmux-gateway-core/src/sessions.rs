@@ -89,6 +89,7 @@ pub fn parse_session_line(line: &str) -> Result<TmuxSession, TmuxError> {
 }
 
 /// Pure: parse raw list-sessions stdout into domain types.
+#[allow(unknown_lints, no_wrapper_functions)]
 pub fn parse_list_sessions_output(stdout: &str) -> Result<Vec<TmuxSession>, TmuxError> {
     stdout
         .lines()
