@@ -7,8 +7,8 @@ use super::{
     list_options, list_panes, list_server_environment, list_sessions, list_windows, move_window,
     new_session, new_window, paste_buffer, rename_session, rename_window, resize_pane,
     select_layout, select_pane, select_window, send_keys, set_buffer, set_environment, set_option,
-    set_server_env, show_environment, split_window, swap_panes, swap_window, unset_environment,
-    unset_server_env,
+    respawn_pane, respawn_window, set_server_env, show_environment, split_window, swap_panes,
+    swap_window, unset_environment, unset_server_env,
 };
 
 /// All API layers (REST, gRPC, GraphQL) must implement this trait.
@@ -280,5 +280,21 @@ pub trait TmuxCommands {
         name: &str,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         async move { unset_environment(&RealTmuxExecutor, session, name).await }
+    }
+    fn respawn_pane(
+        &self,
+        target: &str,
+        command: Option<&str>,
+        kill_existing: bool,
+    ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
+        async move { respawn_pane(&RealTmuxExecutor, target, command, kill_existing).await }
+    }
+    fn respawn_window(
+        &self,
+        target: &str,
+        command: Option<&str>,
+        kill_existing: bool,
+    ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
+        async move { respawn_window(&RealTmuxExecutor, target, command, kill_existing).await }
     }
 }

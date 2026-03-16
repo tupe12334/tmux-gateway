@@ -21,6 +21,8 @@ pub mod options;
 pub mod pagination;
 mod rename_session;
 mod rename_window;
+mod respawn_pane;
+mod respawn_window;
 mod resize_pane;
 mod select_layout;
 mod select_pane;
@@ -62,6 +64,8 @@ pub use options::{OptionScope, TmuxOption, get_option, list_options, set_option}
 pub use pagination::{PaginatedResult, Pagination};
 pub use rename_session::rename_session;
 pub use rename_window::rename_window;
+pub use respawn_pane::respawn_pane;
+pub use respawn_window::respawn_window;
 pub use resize_pane::{ResizeDirection, resize_pane};
 pub use select_layout::{PaneLayout, select_layout};
 pub use select_pane::select_pane;
