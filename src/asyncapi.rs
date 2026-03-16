@@ -161,10 +161,7 @@ fn enrich_channels(obj: &mut serde_json::Map<String, Value>) {
         .get_mut("grpcStreamPaneOutput")
         .and_then(Value::as_object_mut)
     {
-        grpc.insert(
-            "title".into(),
-            json!("gRPC server-streaming pane output"),
-        );
+        grpc.insert("title".into(), json!("gRPC server-streaming pane output"));
         grpc.insert(
             "description".into(),
             json!("Server-side stream of pane output events via gRPC. The client sends a StreamPaneOutputRequest and receives a stream of StreamPaneOutputResponse messages, each containing pane content and a Unix timestamp. Only changed content is sent."),
@@ -179,10 +176,7 @@ fn enrich_channels(obj: &mut serde_json::Map<String, Value>) {
         .get_mut("graphqlPaneOutput")
         .and_then(Value::as_object_mut)
     {
-        gql.insert(
-            "title".into(),
-            json!("GraphQL pane output subscription"),
-        );
+        gql.insert("title".into(), json!("GraphQL pane output subscription"));
         gql.insert(
             "description".into(),
             json!("GraphQL subscription for pane output events over the /graphql/ws WebSocket endpoint. Yields PaneOutputEvent objects containing content and an RFC 3339 timestamp whenever the pane content changes."),
@@ -228,15 +222,12 @@ fn enrich_operations(obj: &mut serde_json::Map<String, Value>) {
 
 fn enrich_component_schemas(obj: &mut serde_json::Map<String, Value>) {
     let components = obj.entry("components").or_insert_with(|| json!({}));
-    let components = components
-        .as_object_mut()
-        .expect("components is an object");
+    let components = components.as_object_mut().expect("components is an object");
 
     let request_schema = serde_json::to_value(schemars::schema_for!(StreamPaneOutputRequest))
         .expect("schema serializes");
-    let response_schema =
-        serde_json::to_value(schemars::schema_for!(GrpcStreamPaneOutputResponse))
-            .expect("schema serializes");
+    let response_schema = serde_json::to_value(schemars::schema_for!(GrpcStreamPaneOutputResponse))
+        .expect("schema serializes");
     let event_schema = serde_json::to_value(schemars::schema_for!(GraphqlPaneOutputEvent))
         .expect("schema serializes");
 
