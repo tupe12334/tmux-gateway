@@ -59,6 +59,7 @@
     "TOCTOU",
     "txyz",
     "utoipa",
-    "websocat"
+    "websocat",
+    "asyncapi"
   ]
 }

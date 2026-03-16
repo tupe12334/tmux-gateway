@@ -6,6 +6,7 @@ use async_graphql::SDLExportOptions;
 use utoipa::OpenApi;
 
 use crate::api::{graphql, grpc, rest};
+use crate::asyncapi;
 
 pub fn openapi_json() -> String {
     let openapi = rest::ApiDoc::openapi();
@@ -15,6 +16,11 @@ pub fn openapi_json() -> String {
 pub fn graphql_sdl() -> String {
     let schema = graphql::build_schema();
     schema.sdl_with_options(SDLExportOptions::new())
+}
+
+pub fn asyncapi_json() -> String {
+    let spec = asyncapi::asyncapi_spec();
+    serde_json::to_string_pretty(&spec).expect("Failed to serialize AsyncAPI spec")
 }
 
 pub fn export_all() {
@@ -55,6 +61,12 @@ fn try_export_all() -> anyhow::Result<()> {
     fs::write(schemas_dir.join("tmux_gateway_descriptor.bin"), fds_bytes)
         .context("failed to write tmux_gateway_descriptor.bin")?;
     tracing::info!("Exported schemas/tmux_gateway_descriptor.bin");
+
+    // Export AsyncAPI specification
+    let asyncapi = asyncapi_json();
+    fs::write(schemas_dir.join("asyncapi.json"), asyncapi)
+        .context("failed to write asyncapi.json")?;
+    tracing::info!("Exported schemas/asyncapi.json");
 
     Ok(())
 }
@@ -151,5 +163,23 @@ mod tests {
         assert!(sdl.contains("name"));
         assert!(sdl.contains("windows"));
         assert!(sdl.contains("attached"));
+    }
+
+    #[test]
+    fn asyncapi_is_valid_json() {
+        let json_str = asyncapi_json();
+        let v: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+        assert_eq!(v["asyncapi"], "3.0.0");
+        assert_eq!(v["info"]["title"], "tmux-gateway");
+    }
+
+    #[test]
+    fn asyncapi_has_all_channels() {
+        let json_str = asyncapi_json();
+        let v: serde_json::Value = serde_json::from_str(&json_str).unwrap();
+        let channels = v["channels"].as_object().unwrap();
+        assert!(channels.contains_key("wsPaneOutput"));
+        assert!(channels.contains_key("grpcStreamPaneOutput"));
+        assert!(channels.contains_key("graphqlPaneOutput"));
     }
 }
