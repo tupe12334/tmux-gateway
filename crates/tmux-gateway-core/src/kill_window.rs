@@ -1,4 +1,5 @@
 use crate::executor::TmuxExecutor;
+use crate::log_port::{LogLevel, LogPort, NoopLog};
 use crate::validation::validate_window_target;
 
 use super::TmuxError;
@@ -8,14 +9,47 @@ pub async fn kill_window(
     executor: &(impl TmuxExecutor + ?Sized),
     target: &str,
 ) -> Result<(), TmuxError> {
-    validate_window_target(target)?;
+    kill_window_with_log(executor, target, &NoopLog).await
+}
+
+/// Kill a window with domain-level logging.
+#[tracing::instrument(skip(executor, log))]
+pub async fn kill_window_with_log(
+    executor: &(impl TmuxExecutor + ?Sized),
+    target: &str,
+    log: &dyn LogPort,
+) -> Result<(), TmuxError> {
+    log.log_with_target(
+        LogLevel::Info,
+        "kill-window",
+        target,
+        &format!("killing window '{target}'"),
+    );
+    if let Err(e) = validate_window_target(target) {
+        log.log_with_target(
+            LogLevel::Warn,
+            "kill-window",
+            target,
+            &format!("validation rejected target '{target}' — {e}"),
+        );
+        return Err(e.into());
+    }
     let output = executor.execute(&["kill-window", "-t", target]).await?;
     if !output.success {
-        return Err(TmuxError::from_stderr(
+        let err = TmuxError::from_stderr("kill-window", &output.stderr, target);
+        log.log_with_target(
+            LogLevel::Error,
             "kill-window",
-            &output.stderr,
             target,
-        ));
+            &format!("tmux command failed: {err}"),
+        );
+        return Err(err);
     }
+    log.log_with_target(
+        LogLevel::Info,
+        "kill-window",
+        target,
+        &format!("window '{target}' killed successfully"),
+    );
     Ok(())
 }

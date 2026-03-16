@@ -1,6 +1,7 @@
 use std::fmt;
 
 use crate::executor::TmuxExecutor;
+use crate::log_port::{LogLevel, LogPort, NoopLog};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HealthStatus {
@@ -47,10 +48,28 @@ impl HealthStatus {
 /// unreachable, returns `HealthStatus { available: false, .. }`.
 #[tracing::instrument(skip(executor))]
 pub async fn health_check(executor: &(impl TmuxExecutor + ?Sized)) -> HealthStatus {
+    health_check_with_log(executor, &NoopLog).await
+}
+
+/// Comprehensive health check with domain-level logging.
+#[tracing::instrument(skip(executor, log))]
+pub async fn health_check_with_log(
+    executor: &(impl TmuxExecutor + ?Sized),
+    log: &dyn LogPort,
+) -> HealthStatus {
+    log.log(LogLevel::Debug, "health-check", "starting health check");
+
     // 1. Check version / reachability
     let version_output = match executor.execute(&["-V"]).await {
         Ok(o) if o.success => o,
-        _ => return HealthStatus::unavailable(),
+        _ => {
+            log.log(
+                LogLevel::Warn,
+                "health-check",
+                "tmux is not reachable — reporting unavailable",
+            );
+            return HealthStatus::unavailable();
+        }
     };
     let version = version_output.stdout.trim().to_string();
 
@@ -81,14 +100,24 @@ pub async fn health_check(executor: &(impl TmuxExecutor + ?Sized)) -> HealthStat
         _ => (None, None),
     };
 
-    HealthStatus {
+    let status = HealthStatus {
         available: true,
         version,
         session_count,
         client_count,
         uptime_seconds,
         server_pid,
-    }
+    };
+
+    log.log(
+        LogLevel::Info,
+        "health-check",
+        &format!(
+            "health check complete: {} sessions, {} clients",
+            status.session_count, status.client_count
+        ),
+    );
+    status
 }
 
 fn parse_server_info(stdout: &str) -> (Option<u32>, Option<u64>) {
