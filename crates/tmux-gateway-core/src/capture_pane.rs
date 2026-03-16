@@ -1,3 +1,4 @@
+use crate::command_spec::TmuxCommandSpec;
 use crate::executor::TmuxExecutor;
 use crate::preconditions::require_pane_exists;
 use crate::validation::PaneTarget;
@@ -72,6 +73,32 @@ pub fn normalize_pane_content(raw: &str) -> String {
     }
 }
 
+/// Pure: build the tmux command specification for capturing pane content.
+pub fn build_capture_pane_command(target: &PaneTarget, opts: &CaptureOptions) -> TmuxCommandSpec {
+    let mut args = vec![
+        "capture-pane".to_string(),
+        "-p".to_string(),
+        "-t".to_string(),
+        target.as_str().to_string(),
+    ];
+
+    if let Some(start) = opts.start_line {
+        args.push("-S".to_string());
+        args.push(start.to_string());
+    }
+
+    if let Some(end) = opts.end_line {
+        args.push("-E".to_string());
+        args.push(end.to_string());
+    }
+
+    if opts.escape_sequences {
+        args.push("-e".to_string());
+    }
+
+    TmuxCommandSpec::new(args)
+}
+
 /// Capture the visible contents of a pane.
 ///
 /// [tmux docs](https://man.openbsd.org/tmux#capture-pane)
@@ -83,6 +110,7 @@ pub async fn capture_pane(
     capture_pane_with_options(executor, target, &CaptureOptions::default()).await
 }
 
+/// Imperative shell: orchestrate command building, I/O, and parsing.
 #[tracing::instrument(skip(executor))]
 pub async fn capture_pane_with_options(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -90,33 +118,13 @@ pub async fn capture_pane_with_options(
     opts: &CaptureOptions,
 ) -> Result<String, TmuxError> {
     require_pane_exists(executor, target).await?;
-    let target_str = target.as_str();
-    let mut args: Vec<&str> = vec!["capture-pane", "-p", "-t", target_str];
-
-    let start_str;
-    if let Some(start) = opts.start_line {
-        start_str = start.to_string();
-        args.push("-S");
-        args.push(&start_str);
-    }
-
-    let end_str;
-    if let Some(end) = opts.end_line {
-        end_str = end.to_string();
-        args.push("-E");
-        args.push(&end_str);
-    }
-
-    if opts.escape_sequences {
-        args.push("-e");
-    }
-
-    let output = executor.execute(&args).await?;
+    let spec = build_capture_pane_command(target, opts);
+    let output = executor.execute(&spec.args()).await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
-            "capture-pane",
+            spec.command_name(),
             &output.stderr,
-            target_str,
+            target.as_str(),
         ));
     }
     Ok(normalize_pane_content(&output.stdout))

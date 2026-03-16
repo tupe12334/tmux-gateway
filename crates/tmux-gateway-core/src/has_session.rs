@@ -1,8 +1,18 @@
+use crate::command_spec::TmuxCommandSpec;
 use crate::executor::TmuxExecutor;
 use crate::log_port::{LogLevel, LogPort, NoopLog};
 use crate::validation::SessionName;
 
 use super::TmuxError;
+
+/// Pure: build the tmux command specification for checking session existence.
+pub fn build_has_session_command(target: &SessionName) -> TmuxCommandSpec {
+    TmuxCommandSpec::new(vec![
+        "has-session".into(),
+        "-t".into(),
+        target.as_str().into(),
+    ])
+}
 
 /// Check if a session exists using tmux `has-session` (O(1) exit-code check).
 ///
@@ -15,7 +25,7 @@ pub async fn has_session(
     has_session_with_log(executor, target, &NoopLog).await
 }
 
-/// Check if a session exists with domain-level logging.
+/// Imperative shell: check if a session exists with domain-level logging.
 #[tracing::instrument(skip(executor, log))]
 pub async fn has_session_with_log(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -29,7 +39,8 @@ pub async fn has_session_with_log(
         target_str,
         &format!("checking if session '{target_str}' exists"),
     );
-    let output = executor.execute(&["has-session", "-t", target_str]).await?;
+    let spec = build_has_session_command(target);
+    let output = executor.execute(&spec.args()).await?;
     if output.success {
         log.log_with_target(
             LogLevel::Debug,
@@ -151,5 +162,13 @@ mod tests {
         };
         let name = SessionName::try_from("my-test-session").unwrap();
         assert!(has_session(&executor, &name).await.unwrap());
+    }
+
+    #[test]
+    fn build_has_session_command_produces_correct_args() {
+        let name = SessionName::try_from("my-session").unwrap();
+        let spec = build_has_session_command(&name);
+        assert_eq!(spec.command_name(), "has-session");
+        assert_eq!(spec.args(), vec!["has-session", "-t", "my-session"]);
     }
 }

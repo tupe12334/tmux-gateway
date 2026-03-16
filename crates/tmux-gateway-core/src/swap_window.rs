@@ -1,6 +1,18 @@
 use super::TmuxError;
+use crate::command_spec::TmuxCommandSpec;
 use crate::executor::TmuxExecutor;
 use crate::validation::WindowTarget;
+
+/// Pure: build the tmux command specification for swapping windows.
+pub fn build_swap_window_command(src: &WindowTarget, dst: &WindowTarget) -> TmuxCommandSpec {
+    TmuxCommandSpec::new(vec![
+        "swap-window".into(),
+        "-s".into(),
+        src.as_str().into(),
+        "-t".into(),
+        dst.as_str().into(),
+    ])
+}
 
 /// Swap two windows by their targets (format: `session:window`).
 #[tracing::instrument(skip(executor))]
@@ -9,16 +21,13 @@ pub async fn swap_window(
     src: &WindowTarget,
     dst: &WindowTarget,
 ) -> Result<(), TmuxError> {
-    let src_str = src.as_str();
-    let dst_str = dst.as_str();
-    let output = executor
-        .execute(&["swap-window", "-s", src_str, "-t", dst_str])
-        .await?;
+    let spec = build_swap_window_command(src, dst);
+    let output = executor.execute(&spec.args()).await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
-            "swap-window",
+            spec.command_name(),
             &output.stderr,
-            src_str,
+            src.as_str(),
         ));
     }
     Ok(())
@@ -114,5 +123,17 @@ mod tests {
         let dst = WindowTarget::try_from("sess:1").unwrap();
         let result = swap_window(&executor, &src, &dst).await;
         assert!(matches!(result, Err(TmuxError::TmuxNotRunning)));
+    }
+
+    #[test]
+    fn build_swap_window_command_produces_correct_args() {
+        let src = WindowTarget::try_from("sess:0").unwrap();
+        let dst = WindowTarget::try_from("sess:1").unwrap();
+        let spec = build_swap_window_command(&src, &dst);
+        assert_eq!(spec.command_name(), "swap-window");
+        assert_eq!(
+            spec.args(),
+            vec!["swap-window", "-s", "sess:0", "-t", "sess:1"]
+        );
     }
 }

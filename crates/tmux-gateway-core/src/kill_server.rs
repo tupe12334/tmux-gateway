@@ -117,6 +117,7 @@ mod tests {
         let executor = MockExecutor {
             result: Err(TmuxError::Timeout {
                 command: "kill-server".to_string(),
+                timeout: std::time::Duration::from_secs(5),
             }),
         };
         let result = kill_server(&executor).await;

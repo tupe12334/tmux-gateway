@@ -189,7 +189,7 @@ mod tests {
 
     #[tokio::test]
     async fn execute_with_timeout_propagates_error() {
-        let result = execute_with_timeout(OperationTimeout::from_secs(5), || {
+        let result: Result<(), _> = execute_with_timeout(OperationTimeout::from_secs(5), || {
             Err(TmuxError::TmuxNotRunning)
         })
         .await;

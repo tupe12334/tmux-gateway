@@ -1,9 +1,19 @@
+use crate::command_spec::TmuxCommandSpec;
 use crate::executor::TmuxExecutor;
 use crate::log_port::{LogLevel, LogPort, NoopLog};
 use crate::preconditions::require_session_exists;
 use crate::validation::SessionName;
 
 use super::TmuxError;
+
+/// Pure: build the tmux command specification for killing a session.
+pub fn build_kill_session_command(target: &SessionName) -> TmuxCommandSpec {
+    TmuxCommandSpec::new(vec![
+        "kill-session".into(),
+        "-t".into(),
+        target.as_str().into(),
+    ])
+}
 
 /// Destroy the given session.
 ///
@@ -16,7 +26,7 @@ pub async fn kill_session(
     kill_session_with_log(executor, target, &NoopLog).await
 }
 
-/// Kill a session with domain-level logging.
+/// Imperative shell: kill a session with domain-level logging.
 #[tracing::instrument(skip(executor, log))]
 pub async fn kill_session_with_log(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -31,11 +41,10 @@ pub async fn kill_session_with_log(
         target_str,
         &format!("killing session '{target_str}'"),
     );
-    let output = executor
-        .execute(&["kill-session", "-t", target_str])
-        .await?;
+    let spec = build_kill_session_command(target);
+    let output = executor.execute(&spec.args()).await?;
     if !output.success {
-        let err = TmuxError::from_stderr("kill-session", &output.stderr, target_str);
+        let err = TmuxError::from_stderr(spec.command_name(), &output.stderr, target_str);
         log.log_with_target(
             LogLevel::Error,
             "kill-session",
@@ -121,5 +130,13 @@ mod tests {
         let name = SessionName::try_from("test-session").unwrap();
         let result = kill_session(&executor, &name).await;
         assert!(matches!(result, Err(TmuxError::TmuxNotRunning)));
+    }
+
+    #[test]
+    fn build_kill_session_command_produces_correct_args() {
+        let name = SessionName::try_from("my-session").unwrap();
+        let spec = build_kill_session_command(&name);
+        assert_eq!(spec.command_name(), "kill-session");
+        assert_eq!(spec.args(), vec!["kill-session", "-t", "my-session"]);
     }
 }

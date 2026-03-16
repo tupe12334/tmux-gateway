@@ -1,5 +1,6 @@
 use std::fmt;
 
+use crate::command_spec::TmuxCommandSpec;
 use crate::executor::TmuxExecutor;
 use crate::validation::{PaneTarget, validate_buffer_name};
 
@@ -21,7 +22,57 @@ impl fmt::Display for TmuxBuffer {
     }
 }
 
-pub(crate) fn parse_buffer_line(line: &str) -> Result<TmuxBuffer, TmuxError> {
+/// Pure: build the tmux command specification for listing buffers.
+pub fn build_list_buffers_command() -> TmuxCommandSpec {
+    TmuxCommandSpec::new(vec![
+        "list-buffers".into(),
+        "-F".into(),
+        "#{buffer_name}\t#{buffer_size}".into(),
+    ])
+}
+
+/// Pure: build the tmux command specification for showing a buffer.
+pub fn build_get_buffer_command(name: Option<&str>) -> TmuxCommandSpec {
+    let mut args = vec!["show-buffer".to_string()];
+    if let Some(n) = name {
+        args.push("-b".into());
+        args.push(n.into());
+    }
+    TmuxCommandSpec::new(args)
+}
+
+/// Pure: build the tmux command specification for setting a buffer.
+pub fn build_set_buffer_command(name: Option<&str>, content: &str) -> TmuxCommandSpec {
+    let mut args = vec!["set-buffer".to_string()];
+    if let Some(n) = name {
+        args.push("-b".into());
+        args.push(n.into());
+    }
+    args.push(content.into());
+    TmuxCommandSpec::new(args)
+}
+
+/// Pure: build the tmux command specification for pasting a buffer.
+pub fn build_paste_buffer_command(target: &PaneTarget, name: Option<&str>) -> TmuxCommandSpec {
+    let mut args = vec![
+        "paste-buffer".to_string(),
+        "-t".to_string(),
+        target.as_str().to_string(),
+    ];
+    if let Some(n) = name {
+        args.push("-b".into());
+        args.push(n.into());
+    }
+    TmuxCommandSpec::new(args)
+}
+
+/// Pure: build the tmux command specification for deleting a buffer.
+pub fn build_delete_buffer_command(name: &str) -> TmuxCommandSpec {
+    TmuxCommandSpec::new(vec!["delete-buffer".into(), "-b".into(), name.into()])
+}
+
+/// Pure: parse a single line of list-buffers output into a TmuxBuffer.
+pub fn parse_buffer_line(line: &str) -> Result<TmuxBuffer, TmuxError> {
     let parts: Vec<&str> = line.splitn(2, '\t').collect();
     if parts.len() < 2 {
         return Err(TmuxError::ParseError {
@@ -39,6 +90,15 @@ pub(crate) fn parse_buffer_line(line: &str) -> Result<TmuxBuffer, TmuxError> {
     })
 }
 
+/// Pure: parse raw list-buffers stdout into domain types.
+pub fn parse_list_buffers_output(stdout: &str) -> Result<Vec<TmuxBuffer>, TmuxError> {
+    stdout
+        .lines()
+        .filter(|line| !line.is_empty())
+        .map(parse_buffer_line)
+        .collect()
+}
+
 /// List all paste buffers.
 ///
 /// [tmux docs](https://man.openbsd.org/tmux#list-buffers)
@@ -46,24 +106,18 @@ pub(crate) fn parse_buffer_line(line: &str) -> Result<TmuxBuffer, TmuxError> {
 pub async fn list_buffers(
     executor: &(impl TmuxExecutor + ?Sized),
 ) -> Result<Vec<TmuxBuffer>, TmuxError> {
-    let output = executor
-        .execute(&["list-buffers", "-F", "#{buffer_name}\t#{buffer_size}"])
-        .await?;
+    let spec = build_list_buffers_command();
+    let output = executor.execute(&spec.args()).await?;
 
     if !output.success {
         let stderr = &output.stderr;
         if stderr.contains("no buffers") {
             return Ok(vec![]);
         }
-        return Err(TmuxError::from_stderr("list-buffers", stderr, ""));
+        return Err(TmuxError::from_stderr(spec.command_name(), stderr, ""));
     }
 
-    output
-        .stdout
-        .lines()
-        .filter(|line| !line.is_empty())
-        .map(parse_buffer_line)
-        .collect()
+    parse_list_buffers_output(&output.stdout)
 }
 
 /// Get the content of a paste buffer.
@@ -78,15 +132,11 @@ pub async fn get_buffer(
     if let Some(n) = name {
         validate_buffer_name(n)?;
     }
-    let mut args: Vec<&str> = vec!["show-buffer"];
-    if let Some(n) = name {
-        args.push("-b");
-        args.push(n);
-    }
-    let output = executor.execute(&args).await?;
+    let spec = build_get_buffer_command(name);
+    let output = executor.execute(&spec.args()).await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
-            "show-buffer",
+            spec.command_name(),
             &output.stderr,
             name.unwrap_or(""),
         ));
@@ -107,16 +157,11 @@ pub async fn set_buffer(
     if let Some(n) = name {
         validate_buffer_name(n)?;
     }
-    let mut args: Vec<&str> = vec!["set-buffer"];
-    if let Some(n) = name {
-        args.push("-b");
-        args.push(n);
-    }
-    args.push(content);
-    let output = executor.execute(&args).await?;
+    let spec = build_set_buffer_command(name, content);
+    let output = executor.execute(&spec.args()).await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
-            "set-buffer",
+            spec.command_name(),
             &output.stderr,
             name.unwrap_or(""),
         ));
@@ -137,18 +182,13 @@ pub async fn paste_buffer(
     if let Some(n) = name {
         validate_buffer_name(n)?;
     }
-    let target_str = target.as_str();
-    let mut args: Vec<&str> = vec!["paste-buffer", "-t", target_str];
-    if let Some(n) = name {
-        args.push("-b");
-        args.push(n);
-    }
-    let output = executor.execute(&args).await?;
+    let spec = build_paste_buffer_command(target, name);
+    let output = executor.execute(&spec.args()).await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
-            "paste-buffer",
+            spec.command_name(),
             &output.stderr,
-            target_str,
+            target.as_str(),
         ));
     }
     Ok(())
@@ -163,10 +203,11 @@ pub async fn delete_buffer(
     name: &str,
 ) -> Result<(), TmuxError> {
     validate_buffer_name(name)?;
-    let output = executor.execute(&["delete-buffer", "-b", name]).await?;
+    let spec = build_delete_buffer_command(name);
+    let output = executor.execute(&spec.args()).await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
-            "delete-buffer",
+            spec.command_name(),
             &output.stderr,
             name,
         ));

@@ -1,7 +1,17 @@
+use crate::command_spec::TmuxCommandSpec;
 use crate::executor::TmuxExecutor;
 use crate::validation::WindowTarget;
 
 use super::TmuxError;
+
+/// Pure: build the tmux command specification for selecting a window.
+pub fn build_select_window_command(target: &WindowTarget) -> TmuxCommandSpec {
+    TmuxCommandSpec::new(vec![
+        "select-window".into(),
+        "-t".into(),
+        target.as_str().into(),
+    ])
+}
 
 /// Select (activate) a window.
 ///
@@ -11,15 +21,13 @@ pub async fn select_window(
     executor: &(impl TmuxExecutor + ?Sized),
     target: &WindowTarget,
 ) -> Result<(), TmuxError> {
-    let target_str = target.as_str();
-    let output = executor
-        .execute(&["select-window", "-t", target_str])
-        .await?;
+    let spec = build_select_window_command(target);
+    let output = executor.execute(&spec.args()).await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
-            "select-window",
+            spec.command_name(),
             &output.stderr,
-            target_str,
+            target.as_str(),
         ));
     }
     Ok(())
