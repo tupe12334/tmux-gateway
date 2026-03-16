@@ -30,6 +30,7 @@
     "nosession",
     "oapi",
     "oneshot",
+    "onlyname",
     "prost",
     "protoc",
     "protox",
