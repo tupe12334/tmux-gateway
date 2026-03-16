@@ -55,6 +55,10 @@ serde_json = "1"
 async-graphql = "7"
 tonic = "0.14"
 
+[[example]]
+name = "options"
+path = "examples/options.rs"
+
 [package.metadata.cargo-machete]
 ignored = ["prost", "serde_json", "tonic-prost", "utoipa-axum", "hyper-util"]
 
