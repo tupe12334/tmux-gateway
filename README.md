@@ -1,6 +1,6 @@
 # tmux-gateway
 
-A Rust server that exposes a unified interface for interacting with your local [tmux](https://github.com/tmux/tmux) sessions through **gRPC**, **GraphQL**, and **REST** — all from a single process.
+A Rust server that exposes a unified interface for interacting with your local [tmux](https://github.com/tmux/tmux) sessions through multiple API protocols — all from a single process.
 
 ## Why?
 
