@@ -446,6 +446,8 @@ impl MutationRoot {
         Ok(true)
     }
 
+    /// Resize a pane.
+    /// See: https://man.openbsd.org/tmux#resize-pane
     async fn resize_pane(
         &self,
         target: String,
@@ -470,6 +472,8 @@ impl MutationRoot {
         Ok(true)
     }
 
+    /// Set a tmux option.
+    /// See: https://man.openbsd.org/tmux#set-option
     async fn set_option(
         &self,
         name: String,
