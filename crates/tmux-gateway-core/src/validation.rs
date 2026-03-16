@@ -6,6 +6,8 @@ const MAX_SESSION_NAME_LEN: usize = 128;
 const MAX_TARGET_LEN: usize = 256;
 const MAX_OPTION_NAME_LEN: usize = 128;
 const MAX_COMMAND_LEN: usize = 1024;
+const MAX_ENV_VAR_NAME_LEN: usize = 256;
+const MAX_ENV_VAR_VALUE_LEN: usize = 4096;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValidationError {
@@ -15,6 +17,8 @@ pub enum ValidationError {
     InvalidTarget { reason: String },
     InvalidOptionName { reason: String },
     InvalidCommand { reason: String },
+    InvalidEnvVarName { reason: String },
+    InvalidEnvVarValue { reason: String },
 }
 
 impl fmt::Display for ValidationError {
@@ -34,6 +38,12 @@ impl fmt::Display for ValidationError {
             }
             Self::InvalidCommand { reason } => {
                 write!(f, "invalid command: {reason}")
+            }
+            Self::InvalidEnvVarName { reason } => {
+                write!(f, "invalid environment variable name: {reason}")
+            }
+            Self::InvalidEnvVarValue { reason } => {
+                write!(f, "invalid environment variable value: {reason}")
             }
         }
     }
@@ -249,6 +259,53 @@ pub fn validate_command(command: &str) -> Result<(), ValidationError> {
         return Err(ValidationError::InvalidCommand {
             reason: "must not contain shell metacharacters (;|&`$(){}\\<>!\"'#*?\n etc.)"
                 .to_string(),
+        });
+    }
+    Ok(())
+}
+
+/// Validate an environment variable name.
+/// Must start with a letter or underscore, then alphanumeric or underscores. 1-256 chars.
+pub fn validate_env_var_name(name: &str) -> Result<(), ValidationError> {
+    if name.is_empty() {
+        return Err(ValidationError::EmptyInput { field: "name" });
+    }
+    if name.len() > MAX_ENV_VAR_NAME_LEN {
+        return Err(ValidationError::InvalidEnvVarName {
+            reason: format!(
+                "must be at most {MAX_ENV_VAR_NAME_LEN} characters, got {}",
+                name.len()
+            ),
+        });
+    }
+    let first = name.chars().next().unwrap();
+    if !first.is_ascii_alphabetic() && first != '_' {
+        return Err(ValidationError::InvalidEnvVarName {
+            reason: "must start with a letter or underscore".to_string(),
+        });
+    }
+    if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+        return Err(ValidationError::InvalidEnvVarName {
+            reason: "must contain only alphanumeric characters or underscores".to_string(),
+        });
+    }
+    Ok(())
+}
+
+/// Validate an environment variable value.
+/// Must not contain null bytes. Max 4096 chars.
+pub fn validate_env_var_value(value: &str) -> Result<(), ValidationError> {
+    if value.len() > MAX_ENV_VAR_VALUE_LEN {
+        return Err(ValidationError::InvalidEnvVarValue {
+            reason: format!(
+                "must be at most {MAX_ENV_VAR_VALUE_LEN} characters, got {}",
+                value.len()
+            ),
+        });
+    }
+    if value.contains('\0') {
+        return Err(ValidationError::InvalidEnvVarValue {
+            reason: "must not contain null bytes".to_string(),
         });
     }
     Ok(())
@@ -605,5 +662,77 @@ mod tests {
         assert!(validate_command("`whoami`").is_err());
         assert!(validate_command("cmd > file").is_err());
         assert!(validate_command("cmd < file").is_err());
+    }
+
+    // ── Environment variable name validation ──
+
+    #[test]
+    fn valid_env_var_names() {
+        assert!(validate_env_var_name("PATH").is_ok());
+        assert!(validate_env_var_name("HOME").is_ok());
+        assert!(validate_env_var_name("_PRIVATE").is_ok());
+        assert!(validate_env_var_name("MY_VAR_123").is_ok());
+        assert!(validate_env_var_name("a").is_ok());
+    }
+
+    #[test]
+    fn empty_env_var_name() {
+        assert_eq!(
+            validate_env_var_name(""),
+            Err(ValidationError::EmptyInput { field: "name" })
+        );
+    }
+
+    #[test]
+    fn env_var_name_too_long() {
+        let long = "A".repeat(MAX_ENV_VAR_NAME_LEN + 1);
+        assert!(matches!(
+            validate_env_var_name(&long),
+            Err(ValidationError::InvalidEnvVarName { .. })
+        ));
+    }
+
+    #[test]
+    fn env_var_name_starts_with_digit() {
+        assert!(matches!(
+            validate_env_var_name("1VAR"),
+            Err(ValidationError::InvalidEnvVarName { .. })
+        ));
+    }
+
+    #[test]
+    fn env_var_name_with_special_chars() {
+        assert!(validate_env_var_name("MY-VAR").is_err());
+        assert!(validate_env_var_name("MY.VAR").is_err());
+        assert!(validate_env_var_name("MY VAR").is_err());
+        assert!(validate_env_var_name("$(cmd)").is_err());
+        assert!(validate_env_var_name("foo;bar").is_err());
+    }
+
+    // ── Environment variable value validation ──
+
+    #[test]
+    fn valid_env_var_values() {
+        assert!(validate_env_var_value("").is_ok());
+        assert!(validate_env_var_value("/usr/bin:/usr/local/bin").is_ok());
+        assert!(validate_env_var_value("hello world").is_ok());
+        assert!(validate_env_var_value("value with spaces and symbols!@#$%").is_ok());
+    }
+
+    #[test]
+    fn env_var_value_too_long() {
+        let long = "a".repeat(MAX_ENV_VAR_VALUE_LEN + 1);
+        assert!(matches!(
+            validate_env_var_value(&long),
+            Err(ValidationError::InvalidEnvVarValue { .. })
+        ));
+    }
+
+    #[test]
+    fn env_var_value_with_null_byte() {
+        assert!(matches!(
+            validate_env_var_value("val\0ue"),
+            Err(ValidationError::InvalidEnvVarValue { .. })
+        ));
     }
 }

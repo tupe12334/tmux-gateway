@@ -24,6 +24,7 @@ mod select_layout;
 mod select_pane;
 mod select_window;
 mod send_keys;
+mod server_environment;
 mod server_info;
 mod session_detail;
 mod sessions;
@@ -61,6 +62,9 @@ pub use select_layout::{PaneLayout, select_layout};
 pub use select_pane::select_pane;
 pub use select_window::select_window;
 pub use send_keys::send_keys;
+pub use server_environment::{
+    EnvVar, get_server_env, list_server_environment, set_server_env, unset_server_env,
+};
 pub use server_info::{TmuxServerInfo, is_available, server_info};
 pub use session_detail::{SessionDetail, WindowDetail, get_session_detail};
 pub use sessions::{
