@@ -52,6 +52,7 @@
     "tnotanumber",
     "TOCTOU",
     "txyz",
-    "utoipa"
+    "utoipa",
+    "websocat"
   ]
 }
