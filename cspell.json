@@ -50,6 +50,8 @@
     "sreq",
     "sres",
     "TOCTOU",
-    "tnotanumber"
+    "tnotanumber",
+    "rposition",
+    "FFFD"
   ]
 }
