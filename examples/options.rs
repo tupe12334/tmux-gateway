@@ -29,14 +29,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Read the current global value of "status", set it at session scope,
     // verify, then restore by setting it back.
-    let global_status =
-        get_option(&executor, "status", OptionScope::Global, None).await?;
+    let global_status = get_option(&executor, "status", OptionScope::Global, None).await?;
     println!("status (global default): {}", global_status.value);
 
-    let new_value = if global_status.value == "on" { "off" } else { "on" };
+    let new_value = if global_status.value == "on" {
+        "off"
+    } else {
+        "on"
+    };
     set_option(&executor, "status", new_value, OptionScope::Session, None).await?;
     let changed = get_option(&executor, "status", OptionScope::Session, None).await?;
-    println!("status (session, after set to {new_value}): {}", changed.value);
+    println!(
+        "status (session, after set to {new_value}): {}",
+        changed.value
+    );
 
     // Restore to original value
     set_option(
@@ -55,8 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // ── 3. Window option ────────────────────────────────────────────
     println!("=== Window options ===");
 
-    let win_opt =
-        get_option(&executor, "mode-keys", OptionScope::Window, None).await?;
+    let win_opt = get_option(&executor, "mode-keys", OptionScope::Window, None).await?;
     println!("mode-keys (window): {}", win_opt.value);
 
     let window_opts = list_options(&executor, OptionScope::Window, None).await?;
