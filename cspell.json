@@ -64,6 +64,8 @@
     "commitlint",
     "newtype",
     "newtypes",
+    "nosess",
+    "nowin",
     "schemars"
   ]
 }
