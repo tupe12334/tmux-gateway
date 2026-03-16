@@ -27,7 +27,8 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:docs.rs)",
       "WebFetch(domain:lib.rs)",
-      "Bash(which centy:*)"
+      "Bash(which centy:*)",
+      "Bash(centy create:*)"
     ],
     "deny": ["Bash(gh issue create:*)"]
   },
