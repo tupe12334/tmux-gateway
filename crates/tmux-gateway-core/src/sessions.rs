@@ -458,7 +458,9 @@ mod tests {
 
         // Start a new server on the custom socket
         let session_name = SessionName::try_from("__socket_test__").unwrap();
-        let session = new_session(&executor, &session_name, None).await.unwrap();
+        let session = new_session(&executor, &session_name, None, None)
+            .await
+            .unwrap();
         assert_eq!(session.name, "__socket_test__");
 
         // The session should be visible on the custom socket

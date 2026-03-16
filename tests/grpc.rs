@@ -23,6 +23,8 @@ async fn new_session_returns_name() {
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
             command: String::new(),
+            working_directory: String::new(),
+            command_args: vec![],
         }))
         .await
         .unwrap();
@@ -37,6 +39,8 @@ async fn kill_session_after_create() {
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
             command: String::new(),
+            working_directory: String::new(),
+            command_args: vec![],
         }))
         .await
         .unwrap();
@@ -56,6 +60,8 @@ async fn kill_window_after_create() {
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
             command: String::new(),
+            working_directory: String::new(),
+            command_args: vec![],
         }))
         .await
         .unwrap();
@@ -75,6 +81,8 @@ async fn kill_pane_after_create() {
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
             command: String::new(),
+            working_directory: String::new(),
+            command_args: vec![],
         }))
         .await
         .unwrap();
@@ -94,6 +102,8 @@ async fn list_windows_after_create() {
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
             command: String::new(),
+            working_directory: String::new(),
+            command_args: vec![],
         }))
         .await
         .unwrap();
@@ -114,6 +124,8 @@ async fn list_panes_after_create() {
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
             command: String::new(),
+            working_directory: String::new(),
+            command_args: vec![],
         }))
         .await
         .unwrap();
@@ -134,6 +146,8 @@ async fn send_keys_after_create() {
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
             command: String::new(),
+            working_directory: String::new(),
+            command_args: vec![],
         }))
         .await
         .unwrap();
@@ -155,6 +169,8 @@ async fn rename_session_after_create() {
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
             command: String::new(),
+            working_directory: String::new(),
+            command_args: vec![],
         }))
         .await
         .unwrap();
@@ -175,6 +191,8 @@ async fn rename_window_after_create() {
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
             command: String::new(),
+            working_directory: String::new(),
+            command_args: vec![],
         }))
         .await
         .unwrap();
@@ -195,6 +213,8 @@ async fn new_window_after_create() {
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
             command: String::new(),
+            working_directory: String::new(),
+            command_args: vec![],
         }))
         .await
         .unwrap();
@@ -217,6 +237,8 @@ async fn split_window_after_create() {
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
             command: String::new(),
+            working_directory: String::new(),
+            command_args: vec![],
         }))
         .await
         .unwrap();
@@ -238,6 +260,8 @@ async fn capture_pane_after_create() {
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
             command: String::new(),
+            working_directory: String::new(),
+            command_args: vec![],
         }))
         .await
         .unwrap();
@@ -293,6 +317,8 @@ async fn ls_includes_created_session() {
         .new_session(Request::new(NewSessionRequest {
             name: session.name.clone(),
             command: String::new(),
+            working_directory: String::new(),
+            command_args: vec![],
         }))
         .await
         .unwrap();

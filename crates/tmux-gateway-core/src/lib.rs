@@ -35,10 +35,10 @@ mod select_pane;
 mod select_window;
 mod send_keys;
 mod server_environment;
-pub mod session_lock;
 mod server_info;
 mod session_detail;
 mod session_environment;
+pub mod session_lock;
 mod session_spec;
 mod sessions;
 mod show_messages;
@@ -83,7 +83,9 @@ pub use list_windows::{
 pub use log_port::{LogLevel, LogPort, NoopLog};
 pub use move_window::{build_move_window_command, move_window};
 pub use new_session::{
-    build_new_session_command, new_session, new_session_with_events, new_session_with_log,
+    build_new_session_command, build_new_session_command_with_args, new_session,
+    new_session_with_args, new_session_with_args_and_events, new_session_with_events,
+    new_session_with_log,
 };
 pub use new_window::{build_new_window_command, new_window};
 pub use options::{OptionScope, TmuxOption, get_option, list_options, set_option};
@@ -97,13 +99,13 @@ pub use select_layout::{PaneLayout, build_select_layout_command, select_layout};
 pub use select_pane::{build_select_pane_command, select_pane};
 pub use select_window::{build_select_window_command, select_window};
 pub use send_keys::{build_send_keys_command, send_keys, send_keys_with_log};
-pub use session_lock::{SessionGuard, SessionLock};
 pub use server_environment::{
     EnvVar, get_server_env, list_server_environment, set_server_env, unset_server_env,
 };
 pub use server_info::{TmuxServerInfo, is_available, server_info};
 pub use session_detail::{SessionDetail, WindowDetail, get_session_detail};
 pub use session_environment::{TmuxEnvVar, set_environment, show_environment, unset_environment};
+pub use session_lock::{SessionGuard, SessionLock};
 pub use session_spec::{PaneSpec, SessionSpec, SplitDirection, WindowSpec};
 pub use sessions::{
     TmuxSession, build_list_sessions_command, get_session, list_sessions, list_sessions_paginated,
@@ -113,4 +115,7 @@ pub use show_messages::{TmuxMessage, show_messages};
 pub use split_window::{build_split_window_command, split_window};
 pub use swap_panes::{build_swap_panes_command, swap_panes};
 pub use swap_window::{build_swap_window_command, swap_window};
-pub use validation::{PaneTarget, SessionName, ValidationError, WindowTarget};
+pub use validation::{
+    PaneTarget, SessionName, ValidationError, WindowTarget, validate_command_arg,
+    validate_working_directory,
+};

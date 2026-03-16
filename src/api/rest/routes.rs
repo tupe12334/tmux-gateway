@@ -130,6 +130,10 @@ struct NewSessionRequest {
     name: String,
     #[serde(default)]
     command: Option<String>,
+    #[serde(default)]
+    working_directory: Option<String>,
+    #[serde(default)]
+    command_args: Option<Vec<String>>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -154,10 +158,26 @@ struct NewSessionResponse {
 async fn new(
     Json(body): Json<NewSessionRequest>,
 ) -> Result<(StatusCode, Json<NewSessionResponse>), (StatusCode, String)> {
-    let session = RestHandler
-        .create_session(&body.name, body.command.as_deref())
-        .await
-        .map_err(tmux_err_to_http)?;
+    let working_directory = body.working_directory.as_deref();
+    let session = if let Some(args) = &body.command_args {
+        if !args.is_empty() {
+            let args_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+            RestHandler
+                .create_session_with_args(&body.name, &args_refs, working_directory)
+                .await
+                .map_err(tmux_err_to_http)?
+        } else {
+            RestHandler
+                .create_session(&body.name, body.command.as_deref(), working_directory)
+                .await
+                .map_err(tmux_err_to_http)?
+        }
+    } else {
+        RestHandler
+            .create_session(&body.name, body.command.as_deref(), working_directory)
+            .await
+            .map_err(tmux_err_to_http)?
+    };
 
     Ok((
         StatusCode::CREATED,

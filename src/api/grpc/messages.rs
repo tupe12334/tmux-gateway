@@ -140,6 +140,8 @@ proto_messages! {
     message NewSessionRequest {
         string name = "1";
         string command = "2";
+        string working_directory = "3";
+        repeated_string command_args = "4";
     }
 
     message NewSessionResponse {

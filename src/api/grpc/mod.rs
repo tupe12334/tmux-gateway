@@ -164,6 +164,8 @@ mod tests {
         let new_req = NewSessionRequest {
             name: "s1".to_string(),
             command: String::new(),
+            working_directory: String::new(),
+            command_args: vec![],
         };
         assert_eq!(new_req.name, "s1");
 
