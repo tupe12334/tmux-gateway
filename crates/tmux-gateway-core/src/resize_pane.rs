@@ -5,6 +5,8 @@ use crate::validation::PaneTarget;
 use super::TmuxError;
 
 /// Direction (and amount) by which to resize a pane.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#resize-pane)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ResizeDirection {
     Up(u32),
@@ -33,7 +35,9 @@ pub fn build_resize_pane_command(
     ])
 }
 
-/// Imperative shell: orchestrate command building and I/O.
+/// Resize a pane in the given direction.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#resize-pane)
 #[tracing::instrument(skip(executor))]
 pub async fn resize_pane(
     executor: &(impl TmuxExecutor + ?Sized),

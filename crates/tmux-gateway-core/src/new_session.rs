@@ -3,6 +3,7 @@ use crate::command_spec::TmuxCommandSpec;
 use crate::events::{EventSender, TmuxEvent};
 use crate::executor::TmuxExecutor;
 use crate::log_port::{LogLevel, LogPort, NoopLog};
+use crate::preconditions::require_session_not_exists;
 use crate::sessions::parse_session_line;
 use crate::validation::{SessionName, validate_command};
 
@@ -24,6 +25,9 @@ pub fn build_new_session_command(name: &SessionName, command: Option<&str>) -> T
     TmuxCommandSpec::new(args)
 }
 
+/// Create a new tmux session.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#new-session)
 #[tracing::instrument(skip(executor))]
 pub async fn new_session(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -62,6 +66,7 @@ async fn new_session_inner(
     event_tx: Option<&EventSender>,
     log: &dyn LogPort,
 ) -> Result<TmuxSession, TmuxError> {
+    require_session_not_exists(executor, name).await?;
     let name_str = name.as_str();
     log.log(
         LogLevel::Info,

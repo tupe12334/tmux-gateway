@@ -29,7 +29,9 @@ pub fn build_new_window_command(
     TmuxCommandSpec::new(args)
 }
 
-/// Imperative shell: orchestrate validation, command building, I/O, and parsing.
+/// Create a new window in a session.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#new-window)
 #[tracing::instrument(skip(executor))]
 pub async fn new_window(
     executor: &(impl TmuxExecutor + ?Sized),

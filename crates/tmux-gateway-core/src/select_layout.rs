@@ -5,6 +5,8 @@ use crate::validation::WindowTarget;
 use super::TmuxError;
 
 /// Layout presets supported by tmux `select-layout`.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#select-layout)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PaneLayout {
     EvenHorizontal,
@@ -39,7 +41,9 @@ pub fn build_select_layout_command(target: &WindowTarget, layout: &PaneLayout) -
     ])
 }
 
-/// Imperative shell: orchestrate command building and I/O.
+/// Apply a layout to a window.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#select-layout)
 #[tracing::instrument(skip(executor))]
 pub async fn select_layout(
     executor: &(impl TmuxExecutor + ?Sized),

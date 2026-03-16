@@ -28,7 +28,9 @@ pub fn build_split_window_command(
     TmuxCommandSpec::new(args)
 }
 
-/// Imperative shell: orchestrate validation, command building, I/O, and parsing.
+/// Split a pane to create a new pane.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#split-window)
 #[tracing::instrument(skip(executor))]
 pub async fn split_window(
     executor: &(impl TmuxExecutor + ?Sized),

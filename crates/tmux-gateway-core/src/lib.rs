@@ -12,6 +12,7 @@ pub mod executor;
 mod has_session;
 mod health;
 mod kill_pane;
+mod kill_server;
 mod kill_session;
 mod kill_window;
 mod list_panes;
@@ -22,6 +23,7 @@ mod new_session;
 mod new_window;
 pub mod options;
 pub mod pagination;
+mod preconditions;
 mod rename_session;
 mod rename_window;
 mod resize_pane;
@@ -37,6 +39,7 @@ mod session_detail;
 mod session_environment;
 mod session_spec;
 mod sessions;
+mod show_messages;
 mod split_window;
 mod swap_panes;
 mod swap_window;
@@ -59,10 +62,13 @@ pub use ensure_session::ensure_session;
 pub use ensure_window::ensure_window;
 pub use error::{ErrorRecoverability, TmuxError};
 pub use events::{EventReceiver, EventSender, TmuxEvent};
-pub use executor::{RealTmuxExecutor, TmuxExecutor, TmuxOutput};
+pub use executor::{
+    OperationTimeout, RealTmuxExecutor, TmuxExecutor, TmuxOutput, execute_with_timeout,
+};
 pub use has_session::{build_has_session_command, has_session, has_session_with_log};
 pub use health::{HealthStatus, health_check, health_check_with_log};
 pub use kill_pane::{build_kill_pane_command, kill_pane};
+pub use kill_server::{kill_server, kill_server_with_log};
 pub use kill_session::{build_kill_session_command, kill_session, kill_session_with_log};
 pub use kill_window::{build_kill_window_command, kill_window, kill_window_with_log};
 pub use list_panes::{
@@ -101,6 +107,7 @@ pub use sessions::{
     TmuxSession, build_list_sessions_command, get_session, list_sessions, list_sessions_paginated,
     list_sessions_with_log, parse_list_sessions_output, parse_session_line, session_exists,
 };
+pub use show_messages::{TmuxMessage, show_messages};
 pub use split_window::{build_split_window_command, split_window};
 pub use swap_panes::{build_swap_panes_command, swap_panes};
 pub use swap_window::{build_swap_window_command, swap_window};

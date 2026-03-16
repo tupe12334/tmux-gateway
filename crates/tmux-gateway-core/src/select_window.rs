@@ -13,7 +13,9 @@ pub fn build_select_window_command(target: &WindowTarget) -> TmuxCommandSpec {
     ])
 }
 
-/// Imperative shell: orchestrate command building and I/O.
+/// Select (activate) a window.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#select-window)
 #[tracing::instrument(skip(executor))]
 pub async fn select_window(
     executor: &(impl TmuxExecutor + ?Sized),

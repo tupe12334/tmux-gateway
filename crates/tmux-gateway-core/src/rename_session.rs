@@ -1,5 +1,6 @@
 use crate::command_spec::TmuxCommandSpec;
 use crate::executor::TmuxExecutor;
+use crate::preconditions::require_session_exists;
 use crate::validation::SessionName;
 
 use super::TmuxError;
@@ -17,13 +18,16 @@ pub fn build_rename_session_command(
     ])
 }
 
-/// Imperative shell: orchestrate command building and I/O.
+/// Rename a session.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#rename-session)
 #[tracing::instrument(skip(executor))]
 pub async fn rename_session(
     executor: &(impl TmuxExecutor + ?Sized),
     target: &SessionName,
     new_name: &SessionName,
 ) -> Result<(), TmuxError> {
+    require_session_exists(executor, target).await?;
     let spec = build_rename_session_command(target, new_name);
     let output = executor.execute(&spec.args()).await?;
     if !output.success {

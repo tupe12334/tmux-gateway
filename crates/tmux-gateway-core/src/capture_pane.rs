@@ -1,10 +1,13 @@
 use crate::command_spec::TmuxCommandSpec;
 use crate::executor::TmuxExecutor;
+use crate::preconditions::require_pane_exists;
 use crate::validation::PaneTarget;
 
 use super::TmuxError;
 
 /// Options for controlling what content is captured from a pane.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#capture-pane)
 #[derive(Debug, Clone, Default)]
 pub struct CaptureOptions {
     /// Starting line number (-S flag). Negative values reach into scroll history.
@@ -96,6 +99,9 @@ pub fn build_capture_pane_command(target: &PaneTarget, opts: &CaptureOptions) ->
     TmuxCommandSpec::new(args)
 }
 
+/// Capture the visible contents of a pane.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#capture-pane)
 #[tracing::instrument(skip(executor))]
 pub async fn capture_pane(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -111,6 +117,7 @@ pub async fn capture_pane_with_options(
     target: &PaneTarget,
     opts: &CaptureOptions,
 ) -> Result<String, TmuxError> {
+    require_pane_exists(executor, target).await?;
     let spec = build_capture_pane_command(target, opts);
     let output = executor.execute(&spec.args()).await?;
     if !output.success {

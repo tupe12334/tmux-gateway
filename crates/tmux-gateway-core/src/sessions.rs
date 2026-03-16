@@ -6,6 +6,9 @@ use crate::executor::TmuxExecutor;
 use crate::log_port::{LogLevel, LogPort, NoopLog};
 use crate::pagination::{PaginatedResult, Pagination, paginate};
 
+/// A tmux session.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#CLIENTS_AND_SESSIONS)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TmuxSession {
     pub id: String,
@@ -94,6 +97,9 @@ pub fn parse_list_sessions_output(stdout: &str) -> Result<Vec<TmuxSession>, Tmux
         .collect()
 }
 
+/// List all tmux sessions.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#list-sessions)
 #[tracing::instrument(skip(executor))]
 pub async fn list_sessions(
     executor: &(impl TmuxExecutor + ?Sized),

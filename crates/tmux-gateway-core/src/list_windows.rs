@@ -6,6 +6,9 @@ use crate::command_spec::TmuxCommandSpec;
 use crate::executor::TmuxExecutor;
 use crate::pagination::{PaginatedResult, Pagination, paginate};
 
+/// A tmux window.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#WINDOWS_AND_PANES)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TmuxWindow {
     pub id: String,
@@ -75,7 +78,9 @@ pub fn parse_list_windows_output(stdout: &str) -> Result<Vec<TmuxWindow>, TmuxEr
         .collect()
 }
 
-/// Imperative shell: orchestrate validation, command building, I/O, and parsing.
+/// List all windows in a session.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#list-windows)
 #[tracing::instrument(skip(executor))]
 pub async fn list_windows(
     executor: &(impl TmuxExecutor + ?Sized),

@@ -13,7 +13,9 @@ pub fn build_select_pane_command(target: &PaneTarget) -> TmuxCommandSpec {
     ])
 }
 
-/// Imperative shell: orchestrate command building and I/O.
+/// Select (activate) a pane.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#select-pane)
 #[tracing::instrument(skip(executor))]
 pub async fn select_pane(
     executor: &(impl TmuxExecutor + ?Sized),

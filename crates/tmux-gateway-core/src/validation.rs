@@ -394,6 +394,7 @@ impl AsRef<str> for SessionName {
     }
 }
 
+#[allow(unknown_lints, no_wrapper_functions)]
 impl fmt::Display for SessionName {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.0)
@@ -407,6 +408,7 @@ impl fmt::Display for SessionName {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct WindowTarget(String);
 
+#[allow(unknown_lints, no_wrapper_functions)]
 impl WindowTarget {
     pub fn as_str(&self) -> &str {
         &self.0
@@ -447,6 +449,7 @@ impl AsRef<str> for WindowTarget {
     }
 }
 
+#[allow(unknown_lints, no_wrapper_functions)]
 impl fmt::Display for WindowTarget {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.0)
@@ -460,6 +463,7 @@ impl fmt::Display for WindowTarget {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PaneTarget(String);
 
+#[allow(unknown_lints, no_wrapper_functions)]
 impl PaneTarget {
     pub fn as_str(&self) -> &str {
         &self.0
@@ -513,6 +517,7 @@ impl AsRef<str> for PaneTarget {
     }
 }
 
+#[allow(unknown_lints, no_wrapper_functions)]
 impl fmt::Display for PaneTarget {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.0)

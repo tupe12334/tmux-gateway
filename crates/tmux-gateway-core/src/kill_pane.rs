@@ -13,7 +13,9 @@ pub fn build_kill_pane_command(target: &PaneTarget) -> TmuxCommandSpec {
     ])
 }
 
-/// Imperative shell: orchestrate command building and I/O.
+/// Destroy the given pane.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#kill-pane)
 #[tracing::instrument(skip(executor))]
 pub async fn kill_pane(
     executor: &(impl TmuxExecutor + ?Sized),
