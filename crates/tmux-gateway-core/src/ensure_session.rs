@@ -34,14 +34,18 @@ mod tests {
 
     impl TmuxExecutor for MockCreateSuccess {
         async fn execute(&self, args: &[&str]) -> Result<TmuxOutput, TmuxError> {
-            if args.first() == Some(&"new-session") {
-                Ok(TmuxOutput {
+            match args.first() {
+                Some(&"has-session") => Ok(TmuxOutput {
+                    stdout: String::new(),
+                    stderr: "can't find session: test-sess".to_string(),
+                    success: false,
+                }),
+                Some(&"new-session") => Ok(TmuxOutput {
                     stdout: "$0\ttest-sess\t1\t1700000000\t0\n".to_string(),
                     stderr: String::new(),
                     success: true,
-                })
-            } else {
-                panic!("unexpected command: {args:?}");
+                }),
+                _ => panic!("unexpected command: {args:?}"),
             }
         }
     }
@@ -53,16 +57,17 @@ mod tests {
         assert_eq!(session.name, "test-sess");
     }
 
-    /// Mock that fails with duplicate on create, then returns session on list.
+    /// Mock where session already exists — precondition rejects creation,
+    /// then ensure_session falls back to get_session via list-sessions.
     struct MockAlreadyExists;
 
     impl TmuxExecutor for MockAlreadyExists {
         async fn execute(&self, args: &[&str]) -> Result<TmuxOutput, TmuxError> {
             match args.first() {
-                Some(&"new-session") => Ok(TmuxOutput {
+                Some(&"has-session") => Ok(TmuxOutput {
                     stdout: String::new(),
-                    stderr: "duplicate session: existing".to_string(),
-                    success: false,
+                    stderr: String::new(),
+                    success: true,
                 }),
                 Some(&"list-sessions") => Ok(TmuxOutput {
                     stdout: "$1\texisting\t3\t1700000000\t1\n".to_string(),

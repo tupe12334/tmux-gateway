@@ -1,4 +1,5 @@
 use crate::executor::TmuxExecutor;
+use crate::preconditions::require_session_exists;
 use crate::validation::SessionName;
 
 use super::TmuxError;
@@ -9,6 +10,7 @@ pub async fn rename_session(
     target: &SessionName,
     new_name: &SessionName,
 ) -> Result<(), TmuxError> {
+    require_session_exists(executor, target).await?;
     let target_str = target.as_str();
     let new_name_str = new_name.as_str();
     let output = executor

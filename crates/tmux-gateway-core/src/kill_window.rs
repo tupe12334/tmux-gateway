@@ -1,5 +1,6 @@
 use crate::executor::TmuxExecutor;
 use crate::log_port::{LogLevel, LogPort, NoopLog};
+use crate::preconditions::require_window_exists;
 use crate::validation::WindowTarget;
 
 use super::TmuxError;
@@ -19,6 +20,7 @@ pub async fn kill_window_with_log(
     target: &WindowTarget,
     log: &dyn LogPort,
 ) -> Result<(), TmuxError> {
+    require_window_exists(executor, target).await?;
     let target_str = target.as_str();
     log.log_with_target(
         LogLevel::Info,

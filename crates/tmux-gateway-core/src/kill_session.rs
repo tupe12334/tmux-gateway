@@ -1,5 +1,6 @@
 use crate::executor::TmuxExecutor;
 use crate::log_port::{LogLevel, LogPort, NoopLog};
+use crate::preconditions::require_session_exists;
 use crate::validation::SessionName;
 
 use super::TmuxError;
@@ -19,6 +20,7 @@ pub async fn kill_session_with_log(
     target: &SessionName,
     log: &dyn LogPort,
 ) -> Result<(), TmuxError> {
+    require_session_exists(executor, target).await?;
     let target_str = target.as_str();
     log.log_with_target(
         LogLevel::Info,

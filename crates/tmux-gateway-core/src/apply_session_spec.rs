@@ -175,6 +175,28 @@ mod tests {
 
             let command = args[0];
             match command {
+                "has-session" => {
+                    // Return true (session exists) only after new-session was called
+                    let session_created = self
+                        .calls
+                        .lock()
+                        .unwrap()
+                        .iter()
+                        .any(|c| c[0] == "new-session");
+                    if session_created {
+                        Ok(TmuxOutput {
+                            stdout: String::new(),
+                            stderr: String::new(),
+                            success: true,
+                        })
+                    } else {
+                        Ok(TmuxOutput {
+                            stdout: String::new(),
+                            stderr: "can't find session".to_string(),
+                            success: false,
+                        })
+                    }
+                }
                 "new-session" => {
                     if self.create_success {
                         Ok(TmuxOutput {

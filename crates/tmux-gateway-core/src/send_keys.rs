@@ -1,5 +1,6 @@
 use crate::executor::TmuxExecutor;
 use crate::log_port::{LogLevel, LogPort, NoopLog};
+use crate::preconditions::require_pane_exists;
 use crate::validation::{PaneTarget, ValidationError};
 
 use super::TmuxError;
@@ -38,6 +39,7 @@ pub async fn send_keys_with_log(
         );
         return Err(e.into());
     }
+    require_pane_exists(executor, target).await?;
     let mut args: Vec<&str> = vec!["send-keys", "-t", target_str];
     for k in keys {
         args.push(k.as_str());
