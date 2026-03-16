@@ -6,6 +6,8 @@ pub struct ServerConfig {
     pub http_port: u16,
     pub grpc_port: u16,
     pub tmux_version: String,
+    pub http_socket: Option<String>,
+    pub grpc_socket: Option<String>,
 }
 
 enum Status {
@@ -79,6 +81,10 @@ pub async fn run() -> ServerConfig {
         check_port_available("gRPC port available", port, &mut checks);
     }
 
+    // ── Unix sockets (optional) ─────────────────────────────────
+    let http_socket = check_socket_env("HTTP_SOCKET", &mut checks);
+    let grpc_socket = check_socket_env("GRPC_SOCKET", &mut checks);
+
     // ── schemas directory ────────────────────────────────────────
     check_schemas_dir(&mut checks);
 
@@ -102,6 +108,8 @@ pub async fn run() -> ServerConfig {
         http_port: http_port.unwrap(),
         grpc_port: grpc_port.unwrap(),
         tmux_version,
+        http_socket,
+        grpc_socket,
     }
 }
 
@@ -168,6 +176,35 @@ fn check_port_available(name: &str, port: u16, checks: &mut Vec<Check>) {
                 message: format!(":{port} — {e}"),
             });
         }
+    }
+}
+
+fn check_socket_env(var: &str, checks: &mut Vec<Check>) -> Option<String> {
+    match env::var(var) {
+        Ok(val) if val.is_empty() => None,
+        Ok(val) => {
+            let path = Path::new(&val);
+            if let Some(parent) = path.parent() {
+                if !parent.as_os_str().is_empty() && !parent.exists() {
+                    checks.push(Check {
+                        name: var.into(),
+                        status: Status::Fail,
+                        message: format!(
+                            "parent directory {} does not exist",
+                            parent.display()
+                        ),
+                    });
+                    return None;
+                }
+            }
+            checks.push(Check {
+                name: var.into(),
+                status: Status::Pass,
+                message: val.clone(),
+            });
+            Some(val)
+        }
+        Err(_) => None,
     }
 }
 
