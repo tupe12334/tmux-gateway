@@ -1,3 +1,4 @@
+mod buffers;
 mod capture_pane;
 mod commands;
 mod create_session_with_windows;
@@ -34,6 +35,7 @@ mod swap_panes;
 mod swap_window;
 pub mod validation;
 
+pub use buffers::{TmuxBuffer, delete_buffer, get_buffer, list_buffers, paste_buffer, set_buffer};
 pub use capture_pane::{
     CaptureOptions, CapturedContent, capture_pane, capture_pane_with_options,
     normalize_pane_content,
