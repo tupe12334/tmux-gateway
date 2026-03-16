@@ -1,5 +1,5 @@
 use crate::executor::TmuxExecutor;
-use crate::validation::validate_window_target;
+use crate::validation::WindowTarget;
 
 use super::TmuxError;
 
@@ -31,18 +31,18 @@ impl PaneLayout {
 #[tracing::instrument(skip(executor))]
 pub async fn select_layout(
     executor: &(impl TmuxExecutor + ?Sized),
-    target: &str,
+    target: &WindowTarget,
     layout: PaneLayout,
 ) -> Result<(), TmuxError> {
-    validate_window_target(target)?;
+    let target_str = target.as_str();
     let output = executor
-        .execute(&["select-layout", "-t", target, layout.as_tmux_arg()])
+        .execute(&["select-layout", "-t", target_str, layout.as_tmux_arg()])
         .await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
             "select-layout",
             &output.stderr,
-            target,
+            target_str,
         ));
     }
     Ok(())

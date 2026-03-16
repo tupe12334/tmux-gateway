@@ -1,7 +1,7 @@
 use std::fmt;
 
 use crate::executor::TmuxExecutor;
-use crate::validation::{validate_buffer_name, validate_pane_target};
+use crate::validation::{PaneTarget, validate_buffer_name};
 
 use super::TmuxError;
 
@@ -120,14 +120,14 @@ pub async fn set_buffer(
 #[tracing::instrument(skip(executor))]
 pub async fn paste_buffer(
     executor: &(impl TmuxExecutor + ?Sized),
-    target: &str,
+    target: &PaneTarget,
     name: Option<&str>,
 ) -> Result<(), TmuxError> {
-    validate_pane_target(target)?;
     if let Some(n) = name {
         validate_buffer_name(n)?;
     }
-    let mut args: Vec<&str> = vec!["paste-buffer", "-t", target];
+    let target_str = target.as_str();
+    let mut args: Vec<&str> = vec!["paste-buffer", "-t", target_str];
     if let Some(n) = name {
         args.push("-b");
         args.push(n);
@@ -137,7 +137,7 @@ pub async fn paste_buffer(
         return Err(TmuxError::from_stderr(
             "paste-buffer",
             &output.stderr,
-            target,
+            target_str,
         ));
     }
     Ok(())
@@ -371,21 +371,15 @@ mod tests {
                 success: true,
             },
         };
-        let result = paste_buffer(&executor, "sess:0.0", Some("buffer0")).await;
+        let target = PaneTarget::try_from("sess:0.0").unwrap();
+        let result = paste_buffer(&executor, &target, Some("buffer0")).await;
         assert!(result.is_ok());
     }
 
     #[tokio::test]
     async fn paste_buffer_invalid_target() {
-        let executor = MockExecutor {
-            output: TmuxOutput {
-                stdout: String::new(),
-                stderr: String::new(),
-                success: true,
-            },
-        };
-        let result = paste_buffer(&executor, "bad-target", None).await;
-        assert!(matches!(result, Err(TmuxError::Validation(_))));
+        // With newtypes, invalid targets are caught at construction time
+        assert!(PaneTarget::try_from("bad-target").is_err());
     }
 
     #[tokio::test]
@@ -397,7 +391,8 @@ mod tests {
                 success: true,
             },
         };
-        let result = paste_buffer(&executor, "sess:0.0", Some("buf;evil")).await;
+        let target = PaneTarget::try_from("sess:0.0").unwrap();
+        let result = paste_buffer(&executor, &target, Some("buf;evil")).await;
         assert!(matches!(result, Err(TmuxError::Validation(_))));
     }
 

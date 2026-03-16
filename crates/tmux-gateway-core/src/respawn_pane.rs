@@ -1,6 +1,6 @@
 use super::TmuxError;
 use crate::executor::TmuxExecutor;
-use crate::validation::{validate_command, validate_pane_target};
+use crate::validation::{PaneTarget, validate_command};
 
 /// Respawn a dead pane, optionally with a new command.
 ///
@@ -10,20 +10,20 @@ use crate::validation::{validate_command, validate_pane_target};
 #[tracing::instrument(skip(executor))]
 pub async fn respawn_pane(
     executor: &(impl TmuxExecutor + ?Sized),
-    target: &str,
+    target: &PaneTarget,
     command: Option<&str>,
     kill_existing: bool,
 ) -> Result<(), TmuxError> {
-    validate_pane_target(target)?;
     if let Some(cmd) = command {
         validate_command(cmd)?;
     }
 
+    let target_str = target.as_str();
     let mut args: Vec<&str> = vec!["respawn-pane"];
     if kill_existing {
         args.push("-k");
     }
-    args.extend_from_slice(&["-t", target]);
+    args.extend_from_slice(&["-t", target_str]);
     if let Some(cmd) = command {
         args.push(cmd);
     }
@@ -33,7 +33,7 @@ pub async fn respawn_pane(
         return Err(TmuxError::from_stderr(
             "respawn-pane",
             &output.stderr,
-            target,
+            target_str,
         ));
     }
     Ok(())
@@ -69,7 +69,8 @@ mod tests {
                 success: true,
             }),
         };
-        let result = respawn_pane(&executor, "sess:0.0", None, false).await;
+        let target = PaneTarget::try_from("sess:0.0").unwrap();
+        let result = respawn_pane(&executor, &target, None, false).await;
         assert!(result.is_ok());
     }
 
@@ -82,7 +83,8 @@ mod tests {
                 success: true,
             }),
         };
-        let result = respawn_pane(&executor, "sess:0.0", Some("bash"), false).await;
+        let target = PaneTarget::try_from("sess:0.0").unwrap();
+        let result = respawn_pane(&executor, &target, Some("bash"), false).await;
         assert!(result.is_ok());
     }
 
@@ -95,21 +97,15 @@ mod tests {
                 success: true,
             }),
         };
-        let result = respawn_pane(&executor, "sess:0.0", Some("bash"), true).await;
+        let target = PaneTarget::try_from("sess:0.0").unwrap();
+        let result = respawn_pane(&executor, &target, Some("bash"), true).await;
         assert!(result.is_ok());
     }
 
     #[tokio::test]
     async fn respawn_pane_invalid_target() {
-        let executor = MockExecutor {
-            result: Ok(TmuxOutput {
-                stdout: String::new(),
-                stderr: String::new(),
-                success: true,
-            }),
-        };
-        let result = respawn_pane(&executor, "", None, false).await;
-        assert!(matches!(result, Err(TmuxError::Validation(_))));
+        // With newtypes, invalid targets are caught at construction time
+        assert!(PaneTarget::try_from("").is_err());
     }
 
     #[tokio::test]
@@ -121,7 +117,8 @@ mod tests {
                 success: true,
             }),
         };
-        let result = respawn_pane(&executor, "sess:0.0", Some("rm; evil"), false).await;
+        let target = PaneTarget::try_from("sess:0.0").unwrap();
+        let result = respawn_pane(&executor, &target, Some("rm; evil"), false).await;
         assert!(matches!(result, Err(TmuxError::Validation(_))));
     }
 
@@ -134,7 +131,8 @@ mod tests {
                 success: false,
             }),
         };
-        let result = respawn_pane(&executor, "sess:0.99", None, false).await;
+        let target = PaneTarget::try_from("sess:0.99").unwrap();
+        let result = respawn_pane(&executor, &target, None, false).await;
         assert!(matches!(result, Err(TmuxError::PaneNotFound(_))));
     }
 
@@ -147,7 +145,8 @@ mod tests {
                 success: false,
             }),
         };
-        let result = respawn_pane(&executor, "sess:0.0", None, false).await;
+        let target = PaneTarget::try_from("sess:0.0").unwrap();
+        let result = respawn_pane(&executor, &target, None, false).await;
         assert!(matches!(result, Err(TmuxError::TmuxNotRunning)));
     }
 }

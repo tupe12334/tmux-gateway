@@ -484,7 +484,9 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
         let target = inner.target;
         let interval_ms = inner.interval_ms.max(100);
 
-        // Validate target by doing an initial capture
+        // Validate target by parsing into PaneTarget
+        let target = tmux::PaneTarget::try_from(target.as_str())
+            .map_err(|e| Status::invalid_argument(e.to_string()))?;
         tmux::capture_pane(&RealTmuxExecutor::new(), &target)
             .await
             .map_err(tmux_err_to_status)?;

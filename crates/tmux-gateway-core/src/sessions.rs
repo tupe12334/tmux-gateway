@@ -427,6 +427,7 @@ mod tests {
 
     #[tokio::test]
     async fn custom_socket_creates_isolated_server() {
+        use crate::validation::SessionName;
         use crate::{kill_session, new_session};
 
         let dir = tempfile::tempdir().unwrap();
@@ -437,23 +438,23 @@ mod tests {
         assert_eq!(executor.socket_path(), Some(socket.as_path()));
 
         // Start a new server on the custom socket
-        let session_name = "__socket_test__";
-        let session = new_session(&executor, session_name, None).await.unwrap();
-        assert_eq!(session.name, session_name);
+        let session_name = SessionName::try_from("__socket_test__").unwrap();
+        let session = new_session(&executor, &session_name, None).await.unwrap();
+        assert_eq!(session.name, "__socket_test__");
 
         // The session should be visible on the custom socket
-        let exists = session_exists(&executor, session_name).await.unwrap();
+        let exists = session_exists(&executor, "__socket_test__").await.unwrap();
         assert!(exists, "session must exist on the custom socket");
 
         // The session should NOT be visible on the default socket
         let default_executor = RealTmuxExecutor::new();
-        let on_default = session_exists(&default_executor, session_name)
+        let on_default = session_exists(&default_executor, "__socket_test__")
             .await
             .unwrap();
         assert!(!on_default, "session must not appear on the default socket");
 
         // Cleanup: kill the session and the isolated server
-        kill_session(&executor, session_name).await.unwrap();
+        kill_session(&executor, &session_name).await.unwrap();
 
         // Kill the isolated tmux server
         let _ = executor.execute(&["kill-server"]).await;

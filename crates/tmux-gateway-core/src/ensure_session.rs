@@ -2,7 +2,7 @@ use crate::TmuxSession;
 use crate::executor::TmuxExecutor;
 use crate::new_session::new_session;
 use crate::sessions::get_session;
-use crate::validation::validate_session_name;
+use crate::validation::SessionName;
 
 use super::TmuxError;
 
@@ -13,15 +13,13 @@ use super::TmuxError;
 #[tracing::instrument(skip(executor))]
 pub async fn ensure_session(
     executor: &(impl TmuxExecutor + ?Sized),
-    name: &str,
+    name: &SessionName,
 ) -> Result<TmuxSession, TmuxError> {
-    validate_session_name(name)?;
-
     match new_session(executor, name, None).await {
         Ok(session) => Ok(session),
-        Err(TmuxError::SessionAlreadyExists(_)) => get_session(executor, name)
+        Err(TmuxError::SessionAlreadyExists(_)) => get_session(executor, name.as_str())
             .await?
-            .ok_or_else(|| TmuxError::SessionNotFound(name.to_string())),
+            .ok_or_else(|| TmuxError::SessionNotFound(name.as_str().to_string())),
         Err(e) => Err(e),
     }
 }
@@ -50,9 +48,8 @@ mod tests {
 
     #[tokio::test]
     async fn ensure_session_creates_new() {
-        let session = ensure_session(&MockCreateSuccess, "test-sess")
-            .await
-            .unwrap();
+        let name = SessionName::try_from("test-sess").unwrap();
+        let session = ensure_session(&MockCreateSuccess, &name).await.unwrap();
         assert_eq!(session.name, "test-sess");
     }
 
@@ -79,16 +76,15 @@ mod tests {
 
     #[tokio::test]
     async fn ensure_session_returns_existing() {
-        let session = ensure_session(&MockAlreadyExists, "existing")
-            .await
-            .unwrap();
+        let name = SessionName::try_from("existing").unwrap();
+        let session = ensure_session(&MockAlreadyExists, &name).await.unwrap();
         assert_eq!(session.name, "existing");
         assert_eq!(session.windows, 3);
     }
 
     #[tokio::test]
     async fn ensure_session_validates_name() {
-        let result = ensure_session(&MockCreateSuccess, "").await;
-        assert!(matches!(result, Err(TmuxError::Validation(_))));
+        // With newtypes, validation happens at construction time
+        assert!(SessionName::try_from("").is_err());
     }
 }

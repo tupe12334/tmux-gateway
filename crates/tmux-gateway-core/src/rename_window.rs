@@ -1,24 +1,24 @@
 use crate::executor::TmuxExecutor;
-use crate::validation::{validate_window_name, validate_window_target};
+use crate::validation::{WindowTarget, validate_window_name};
 
 use super::TmuxError;
 
 #[tracing::instrument(skip(executor))]
 pub async fn rename_window(
     executor: &(impl TmuxExecutor + ?Sized),
-    target: &str,
+    target: &WindowTarget,
     new_name: &str,
 ) -> Result<(), TmuxError> {
-    validate_window_target(target)?;
     validate_window_name(new_name)?;
+    let target_str = target.as_str();
     let output = executor
-        .execute(&["rename-window", "-t", target, new_name])
+        .execute(&["rename-window", "-t", target_str, new_name])
         .await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
             "rename-window",
             &output.stderr,
-            target,
+            target_str,
         ));
     }
     Ok(())

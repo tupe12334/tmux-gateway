@@ -6,14 +6,14 @@
 //! Run with: `cargo run --example events`
 
 use tmux_gateway_core::{
-    EventSender, RealTmuxExecutor, TmuxEvent, kill_session, new_session_with_events, new_window,
-    send_keys,
+    EventSender, PaneTarget, RealTmuxExecutor, SessionName, TmuxEvent, kill_session,
+    new_session_with_events, new_window, send_keys,
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let executor = RealTmuxExecutor::new();
-    let session_name = "events-demo";
+    let session_name = SessionName::try_from("events-demo")?;
 
     // Create a broadcast channel for tmux events.
     let (tx, mut rx): (EventSender, _) = tokio::sync::broadcast::channel(16);
@@ -51,7 +51,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // --- Create a session with event broadcasting ---
     println!("Creating session '{session_name}'...");
-    let session = new_session_with_events(&executor, session_name, None, Some(&tx)).await?;
+    let session = new_session_with_events(&executor, &session_name, None, Some(&tx)).await?;
     println!(
         "Session ready: id={}, windows={}",
         session.id, session.windows
@@ -59,18 +59,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // --- Create a window and broadcast the event manually ---
     println!("\nCreating a second window...");
-    let window = new_window(&executor, session_name, "worker", None).await?;
+    let window = new_window(&executor, &session_name, "worker", None).await?;
     let _ = tx.send(TmuxEvent::WindowCreated {
         session: session_name.to_string(),
         name: window.name.clone(),
     });
 
     // --- Send keys and broadcast the event ---
-    let target = format!("{session_name}:{}.0", window.index);
+    let target =
+        PaneTarget::try_from(format!("{session_name}:{}.0", window.index).as_str())?;
     let keys = ["echo hello from events demo".to_string()];
     send_keys(&executor, &target, &keys).await?;
     let _ = tx.send(TmuxEvent::KeysSent {
-        target: target.clone(),
+        target: target.to_string(),
     });
 
     // Allow listeners to process all events.
@@ -78,7 +79,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // --- Cleanup ---
     println!("\nCleaning up...");
-    kill_session(&executor, session_name).await?;
+    kill_session(&executor, &session_name).await?;
     let _ = tx.send(TmuxEvent::SessionKilled {
         name: session_name.to_string(),
     });

@@ -10,11 +10,13 @@ use super::{
     set_environment, set_option, set_server_env, show_environment, split_window, swap_panes,
     swap_window, unset_environment, unset_server_env,
 };
+use crate::validation::{PaneTarget, SessionName, WindowTarget};
 
 /// All API layers (REST, gRPC, GraphQL) must implement this trait.
 /// Default implementations delegate to the core free functions via `RealTmuxExecutor`.
 /// Any layer can override individual methods if needed (e.g., for caching or metrics).
 ///
+/// String parameters are validated and converted to domain newtypes at this boundary.
 /// Override [`executor`](TmuxCommands::executor) to target a specific tmux server socket.
 pub trait TmuxCommands {
     /// Returns the executor used by all default method implementations.
@@ -39,42 +41,60 @@ pub trait TmuxCommands {
         command: Option<&str>,
     ) -> impl std::future::Future<Output = Result<TmuxSession, TmuxError>> + Send {
         let executor = self.executor();
-        async move { new_session(&executor, name, command).await }
+        async move {
+            let name = SessionName::try_from(name)?;
+            new_session(&executor, &name, command).await
+        }
     }
     fn kill_session(
         &self,
         target: &str,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         let executor = self.executor();
-        async move { kill_session(&executor, target).await }
+        async move {
+            let target = SessionName::try_from(target)?;
+            kill_session(&executor, &target).await
+        }
     }
     fn kill_window(
         &self,
         target: &str,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         let executor = self.executor();
-        async move { kill_window(&executor, target).await }
+        async move {
+            let target = WindowTarget::try_from(target)?;
+            kill_window(&executor, &target).await
+        }
     }
     fn kill_pane(
         &self,
         target: &str,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         let executor = self.executor();
-        async move { kill_pane(&executor, target).await }
+        async move {
+            let target = PaneTarget::try_from(target)?;
+            kill_pane(&executor, &target).await
+        }
     }
     fn list_windows(
         &self,
         session: &str,
     ) -> impl std::future::Future<Output = Result<Vec<TmuxWindow>, TmuxError>> + Send {
         let executor = self.executor();
-        async move { list_windows(&executor, session).await }
+        async move {
+            let session = SessionName::try_from(session)?;
+            list_windows(&executor, &session).await
+        }
     }
     fn list_panes(
         &self,
         target: &str,
     ) -> impl std::future::Future<Output = Result<Vec<TmuxPane>, TmuxError>> + Send {
         let executor = self.executor();
-        async move { list_panes(&executor, target).await }
+        async move {
+            let target = WindowTarget::try_from(target)?;
+            list_panes(&executor, &target).await
+        }
     }
     fn send_keys(
         &self,
@@ -82,7 +102,10 @@ pub trait TmuxCommands {
         keys: &[String],
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         let executor = self.executor();
-        async move { send_keys(&executor, target, keys).await }
+        async move {
+            let target = PaneTarget::try_from(target)?;
+            send_keys(&executor, &target, keys).await
+        }
     }
     fn rename_session(
         &self,
@@ -90,7 +113,11 @@ pub trait TmuxCommands {
         new_name: &str,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         let executor = self.executor();
-        async move { rename_session(&executor, target, new_name).await }
+        async move {
+            let target = SessionName::try_from(target)?;
+            let new_name = SessionName::try_from(new_name)?;
+            rename_session(&executor, &target, &new_name).await
+        }
     }
     fn rename_window(
         &self,
@@ -98,7 +125,10 @@ pub trait TmuxCommands {
         new_name: &str,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         let executor = self.executor();
-        async move { rename_window(&executor, target, new_name).await }
+        async move {
+            let target = WindowTarget::try_from(target)?;
+            rename_window(&executor, &target, new_name).await
+        }
     }
     fn new_window(
         &self,
@@ -107,7 +137,10 @@ pub trait TmuxCommands {
         command: Option<&str>,
     ) -> impl std::future::Future<Output = Result<TmuxWindow, TmuxError>> + Send {
         let executor = self.executor();
-        async move { new_window(&executor, session, name, command).await }
+        async move {
+            let session = SessionName::try_from(session)?;
+            new_window(&executor, &session, name, command).await
+        }
     }
     fn split_window(
         &self,
@@ -116,14 +149,20 @@ pub trait TmuxCommands {
         command: Option<&str>,
     ) -> impl std::future::Future<Output = Result<TmuxPane, TmuxError>> + Send {
         let executor = self.executor();
-        async move { split_window(&executor, target, horizontal, command).await }
+        async move {
+            let target = PaneTarget::try_from(target)?;
+            split_window(&executor, &target, horizontal, command).await
+        }
     }
     fn capture_pane(
         &self,
         target: &str,
     ) -> impl std::future::Future<Output = Result<String, TmuxError>> + Send {
         let executor = self.executor();
-        async move { capture_pane(&executor, target).await }
+        async move {
+            let target = PaneTarget::try_from(target)?;
+            capture_pane(&executor, &target).await
+        }
     }
     fn capture_pane_with_options(
         &self,
@@ -131,7 +170,10 @@ pub trait TmuxCommands {
         opts: &CaptureOptions,
     ) -> impl std::future::Future<Output = Result<String, TmuxError>> + Send {
         let executor = self.executor();
-        async move { capture_pane_with_options(&executor, target, opts).await }
+        async move {
+            let target = PaneTarget::try_from(target)?;
+            capture_pane_with_options(&executor, &target, opts).await
+        }
     }
     fn create_session_with_windows(
         &self,
@@ -139,7 +181,10 @@ pub trait TmuxCommands {
         window_names: &[String],
     ) -> impl std::future::Future<Output = Result<TmuxSession, TmuxError>> + Send {
         let executor = self.executor();
-        async move { create_session_with_windows(&executor, name, window_names).await }
+        async move {
+            let name = SessionName::try_from(name)?;
+            create_session_with_windows(&executor, &name, window_names).await
+        }
     }
     fn swap_panes(
         &self,
@@ -147,7 +192,11 @@ pub trait TmuxCommands {
         dst: &str,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         let executor = self.executor();
-        async move { swap_panes(&executor, src, dst).await }
+        async move {
+            let src = PaneTarget::try_from(src)?;
+            let dst = PaneTarget::try_from(dst)?;
+            swap_panes(&executor, &src, &dst).await
+        }
     }
     fn swap_window(
         &self,
@@ -155,7 +204,11 @@ pub trait TmuxCommands {
         dst: &str,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         let executor = self.executor();
-        async move { swap_window(&executor, src, dst).await }
+        async move {
+            let src = WindowTarget::try_from(src)?;
+            let dst = WindowTarget::try_from(dst)?;
+            swap_window(&executor, &src, &dst).await
+        }
     }
     fn move_window(
         &self,
@@ -163,21 +216,31 @@ pub trait TmuxCommands {
         destination_session: &str,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         let executor = self.executor();
-        async move { move_window(&executor, source, destination_session).await }
+        async move {
+            let source = WindowTarget::try_from(source)?;
+            let destination_session = SessionName::try_from(destination_session)?;
+            move_window(&executor, &source, &destination_session).await
+        }
     }
     fn select_window(
         &self,
         target: &str,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         let executor = self.executor();
-        async move { select_window(&executor, target).await }
+        async move {
+            let target = WindowTarget::try_from(target)?;
+            select_window(&executor, &target).await
+        }
     }
     fn select_pane(
         &self,
         target: &str,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         let executor = self.executor();
-        async move { select_pane(&executor, target).await }
+        async move {
+            let target = PaneTarget::try_from(target)?;
+            select_pane(&executor, &target).await
+        }
     }
     fn resize_pane(
         &self,
@@ -185,7 +248,10 @@ pub trait TmuxCommands {
         direction: ResizeDirection,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         let executor = self.executor();
-        async move { resize_pane(&executor, target, direction).await }
+        async move {
+            let target = PaneTarget::try_from(target)?;
+            resize_pane(&executor, &target, direction).await
+        }
     }
     fn select_layout(
         &self,
@@ -193,7 +259,10 @@ pub trait TmuxCommands {
         layout: PaneLayout,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         let executor = self.executor();
-        async move { select_layout(&executor, target, layout).await }
+        async move {
+            let target = WindowTarget::try_from(target)?;
+            select_layout(&executor, &target, layout).await
+        }
     }
     fn get_option(
         &self,
@@ -231,7 +300,10 @@ pub trait TmuxCommands {
         name: &str,
     ) -> impl std::future::Future<Output = Result<TmuxSession, TmuxError>> + Send {
         let executor = self.executor();
-        async move { ensure_session(&executor, name).await }
+        async move {
+            let name = SessionName::try_from(name)?;
+            ensure_session(&executor, &name).await
+        }
     }
     fn ensure_window(
         &self,
@@ -239,14 +311,20 @@ pub trait TmuxCommands {
         name: &str,
     ) -> impl std::future::Future<Output = Result<TmuxWindow, TmuxError>> + Send {
         let executor = self.executor();
-        async move { ensure_window(&executor, session, name).await }
+        async move {
+            let session = SessionName::try_from(session)?;
+            ensure_window(&executor, &session, name).await
+        }
     }
     fn get_session_detail(
         &self,
         name: &str,
     ) -> impl std::future::Future<Output = Result<SessionDetail, TmuxError>> + Send {
         let executor = self.executor();
-        async move { get_session_detail(&executor, name).await }
+        async move {
+            let name = SessionName::try_from(name)?;
+            get_session_detail(&executor, &name).await
+        }
     }
     fn list_server_environment(
         &self,
@@ -303,7 +381,10 @@ pub trait TmuxCommands {
         name: Option<&str>,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         let executor = self.executor();
-        async move { paste_buffer(&executor, target, name).await }
+        async move {
+            let target = PaneTarget::try_from(target)?;
+            paste_buffer(&executor, &target, name).await
+        }
     }
     fn delete_buffer(
         &self,
@@ -317,7 +398,10 @@ pub trait TmuxCommands {
         session: &str,
     ) -> impl std::future::Future<Output = Result<Vec<TmuxEnvVar>, TmuxError>> + Send {
         let executor = self.executor();
-        async move { show_environment(&executor, session).await }
+        async move {
+            let session = SessionName::try_from(session)?;
+            show_environment(&executor, &session).await
+        }
     }
     fn set_environment(
         &self,
@@ -326,7 +410,10 @@ pub trait TmuxCommands {
         value: &str,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         let executor = self.executor();
-        async move { set_environment(&executor, session, name, value).await }
+        async move {
+            let session = SessionName::try_from(session)?;
+            set_environment(&executor, &session, name, value).await
+        }
     }
     fn unset_environment(
         &self,
@@ -334,7 +421,10 @@ pub trait TmuxCommands {
         name: &str,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         let executor = self.executor();
-        async move { unset_environment(&executor, session, name).await }
+        async move {
+            let session = SessionName::try_from(session)?;
+            unset_environment(&executor, &session, name).await
+        }
     }
     fn respawn_pane(
         &self,
@@ -343,7 +433,10 @@ pub trait TmuxCommands {
         kill_existing: bool,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         let executor = self.executor();
-        async move { respawn_pane(&executor, target, command, kill_existing).await }
+        async move {
+            let target = PaneTarget::try_from(target)?;
+            respawn_pane(&executor, &target, command, kill_existing).await
+        }
     }
     fn respawn_window(
         &self,
@@ -352,6 +445,9 @@ pub trait TmuxCommands {
         kill_existing: bool,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         let executor = self.executor();
-        async move { respawn_window(&executor, target, command, kill_existing).await }
+        async move {
+            let target = WindowTarget::try_from(target)?;
+            respawn_window(&executor, &target, command, kill_existing).await
+        }
     }
 }

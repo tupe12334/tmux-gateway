@@ -1,5 +1,5 @@
 use crate::executor::TmuxExecutor;
-use crate::validation::validate_pane_target;
+use crate::validation::PaneTarget;
 
 use super::TmuxError;
 
@@ -15,10 +15,10 @@ pub enum ResizeDirection {
 #[tracing::instrument(skip(executor))]
 pub async fn resize_pane(
     executor: &(impl TmuxExecutor + ?Sized),
-    target: &str,
+    target: &PaneTarget,
     direction: ResizeDirection,
 ) -> Result<(), TmuxError> {
-    validate_pane_target(target)?;
+    let target_str = target.as_str();
     let (flag, amount) = match direction {
         ResizeDirection::Up(n) => ("-U", n),
         ResizeDirection::Down(n) => ("-D", n),
@@ -27,13 +27,13 @@ pub async fn resize_pane(
     };
     let amount_str = amount.to_string();
     let output = executor
-        .execute(&["resize-pane", flag, "-t", target, &amount_str])
+        .execute(&["resize-pane", flag, "-t", target_str, &amount_str])
         .await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
             "resize-pane",
             &output.stderr,
-            target,
+            target_str,
         ));
     }
     Ok(())

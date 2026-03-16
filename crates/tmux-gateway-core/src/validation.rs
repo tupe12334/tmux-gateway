@@ -355,6 +355,181 @@ fn validate_target_chars(target: &str) -> Result<(), ValidationError> {
     Ok(())
 }
 
+// ── Validated newtypes ──────────────────────────────────────────────────────
+
+/// A validated tmux session name.
+///
+/// Can only be constructed through [`TryFrom<&str>`] which enforces:
+/// 1–128 characters, `[a-zA-Z0-9._-]` only.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct SessionName(String);
+
+impl SessionName {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl TryFrom<&str> for SessionName {
+    type Error = ValidationError;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        validate_session_name(s)?;
+        Ok(Self(s.to_string()))
+    }
+}
+
+impl TryFrom<String> for SessionName {
+    type Error = ValidationError;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        validate_session_name(&s)?;
+        Ok(Self(s))
+    }
+}
+
+impl AsRef<str> for SessionName {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Display for SessionName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+/// A validated tmux window target in `session:window` format.
+///
+/// Can only be constructed through [`TryFrom<&str>`] which enforces
+/// the `session:window` format with safe characters.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct WindowTarget(String);
+
+impl WindowTarget {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Returns the session part of the target.
+    pub fn session(&self) -> &str {
+        self.0.split(':').next().expect("validated at construction")
+    }
+
+    /// Returns the window part of the target.
+    pub fn window(&self) -> &str {
+        self.0
+            .split(':')
+            .nth(1)
+            .expect("validated at construction")
+    }
+}
+
+impl TryFrom<&str> for WindowTarget {
+    type Error = ValidationError;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        validate_window_target(s)?;
+        Ok(Self(s.to_string()))
+    }
+}
+
+impl TryFrom<String> for WindowTarget {
+    type Error = ValidationError;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        validate_window_target(&s)?;
+        Ok(Self(s))
+    }
+}
+
+impl AsRef<str> for WindowTarget {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Display for WindowTarget {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+/// A validated tmux pane target in `session:window.pane` format.
+///
+/// Can only be constructed through [`TryFrom<&str>`] which enforces
+/// the `session:window.pane` format with safe characters.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct PaneTarget(String);
+
+impl PaneTarget {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Returns the session part of the target.
+    pub fn session(&self) -> &str {
+        self.0.split(':').next().expect("validated at construction")
+    }
+
+    /// Returns the window part of the target (between `:` and `.`).
+    pub fn window(&self) -> &str {
+        let after_colon = self
+            .0
+            .split(':')
+            .nth(1)
+            .expect("validated at construction");
+        after_colon
+            .split('.')
+            .next()
+            .expect("validated at construction")
+    }
+
+    /// Returns the pane part of the target (after `.`).
+    pub fn pane(&self) -> &str {
+        let after_colon = self
+            .0
+            .split(':')
+            .nth(1)
+            .expect("validated at construction");
+        after_colon
+            .split('.')
+            .nth(1)
+            .expect("validated at construction")
+    }
+}
+
+impl TryFrom<&str> for PaneTarget {
+    type Error = ValidationError;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        validate_pane_target(s)?;
+        Ok(Self(s.to_string()))
+    }
+}
+
+impl TryFrom<String> for PaneTarget {
+    type Error = ValidationError;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        validate_pane_target(&s)?;
+        Ok(Self(s))
+    }
+}
+
+impl AsRef<str> for PaneTarget {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Display for PaneTarget {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -800,5 +975,99 @@ mod tests {
         assert!(validate_buffer_name("buf-name").is_err());
         assert!(validate_buffer_name("buf.name").is_err());
         assert!(validate_buffer_name("buf name").is_err());
+    }
+
+    // ── SessionName newtype ──
+
+    #[test]
+    fn session_name_try_from_valid() {
+        let name = SessionName::try_from("my-session").unwrap();
+        assert_eq!(name.as_str(), "my-session");
+        assert_eq!(name.as_ref(), "my-session");
+        assert_eq!(name.to_string(), "my-session");
+    }
+
+    #[test]
+    fn session_name_try_from_invalid() {
+        assert!(SessionName::try_from("").is_err());
+        assert!(SessionName::try_from("my session").is_err());
+        assert!(SessionName::try_from("$(evil)").is_err());
+    }
+
+    #[test]
+    fn session_name_allows_dots() {
+        let name = SessionName::try_from("My.Session").unwrap();
+        assert_eq!(name.as_str(), "My.Session");
+    }
+
+    #[test]
+    fn session_name_try_from_string() {
+        let name = SessionName::try_from("test".to_string()).unwrap();
+        assert_eq!(name.as_str(), "test");
+    }
+
+    // ── WindowTarget newtype ──
+
+    #[test]
+    fn window_target_try_from_valid() {
+        let target = WindowTarget::try_from("sess:0").unwrap();
+        assert_eq!(target.as_str(), "sess:0");
+        assert_eq!(target.session(), "sess");
+        assert_eq!(target.window(), "0");
+        assert_eq!(target.to_string(), "sess:0");
+    }
+
+    #[test]
+    fn window_target_try_from_invalid() {
+        assert!(WindowTarget::try_from("").is_err());
+        assert!(WindowTarget::try_from("session").is_err());
+        assert!(WindowTarget::try_from("$(evil):0").is_err());
+    }
+
+    #[test]
+    fn window_target_accessors() {
+        let target = WindowTarget::try_from("my-session:my-window").unwrap();
+        assert_eq!(target.session(), "my-session");
+        assert_eq!(target.window(), "my-window");
+    }
+
+    #[test]
+    fn window_target_try_from_string() {
+        let target = WindowTarget::try_from("sess:0".to_string()).unwrap();
+        assert_eq!(target.as_str(), "sess:0");
+    }
+
+    // ── PaneTarget newtype ──
+
+    #[test]
+    fn pane_target_try_from_valid() {
+        let target = PaneTarget::try_from("sess:0.1").unwrap();
+        assert_eq!(target.as_str(), "sess:0.1");
+        assert_eq!(target.session(), "sess");
+        assert_eq!(target.window(), "0");
+        assert_eq!(target.pane(), "1");
+        assert_eq!(target.to_string(), "sess:0.1");
+    }
+
+    #[test]
+    fn pane_target_try_from_invalid() {
+        assert!(PaneTarget::try_from("").is_err());
+        assert!(PaneTarget::try_from("session").is_err());
+        assert!(PaneTarget::try_from("sess:0").is_err());
+        assert!(PaneTarget::try_from("$(evil):0.1").is_err());
+    }
+
+    #[test]
+    fn pane_target_accessors() {
+        let target = PaneTarget::try_from("my-session:my-window.5").unwrap();
+        assert_eq!(target.session(), "my-session");
+        assert_eq!(target.window(), "my-window");
+        assert_eq!(target.pane(), "5");
+    }
+
+    #[test]
+    fn pane_target_try_from_string() {
+        let target = PaneTarget::try_from("sess:0.1".to_string()).unwrap();
+        assert_eq!(target.as_str(), "sess:0.1");
     }
 }

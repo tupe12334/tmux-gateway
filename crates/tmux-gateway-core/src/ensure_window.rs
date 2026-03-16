@@ -2,7 +2,7 @@ use crate::TmuxWindow;
 use crate::executor::TmuxExecutor;
 use crate::list_windows::get_window;
 use crate::new_window::new_window;
-use crate::validation::{validate_session_target, validate_window_name};
+use crate::validation::{SessionName, validate_window_name};
 
 use super::TmuxError;
 
@@ -18,10 +18,9 @@ use super::TmuxError;
 #[tracing::instrument(skip(executor))]
 pub async fn ensure_window(
     executor: &(impl TmuxExecutor + ?Sized),
-    session: &str,
+    session: &SessionName,
     name: &str,
 ) -> Result<TmuxWindow, TmuxError> {
-    validate_session_target(session)?;
     validate_window_name(name)?;
 
     // tmux allows duplicate window names, so we check first to avoid duplicates.
@@ -64,7 +63,8 @@ mod tests {
 
     #[tokio::test]
     async fn ensure_window_creates_new() {
-        let window = ensure_window(&MockNoExistingWindow, "sess", "my-win")
+        let session = SessionName::try_from("sess").unwrap();
+        let window = ensure_window(&MockNoExistingWindow, &session, "my-win")
             .await
             .unwrap();
         assert_eq!(window.name, "my-win");
@@ -90,7 +90,8 @@ mod tests {
 
     #[tokio::test]
     async fn ensure_window_returns_existing() {
-        let window = ensure_window(&MockExistingWindow, "sess", "my-win")
+        let session = SessionName::try_from("sess").unwrap();
+        let window = ensure_window(&MockExistingWindow, &session, "my-win")
             .await
             .unwrap();
         assert_eq!(window.name, "my-win");
@@ -100,13 +101,14 @@ mod tests {
 
     #[tokio::test]
     async fn ensure_window_validates_session() {
-        let result = ensure_window(&MockNoExistingWindow, "", "win").await;
-        assert!(matches!(result, Err(TmuxError::Validation(_))));
+        // With newtypes, session validation happens at construction time
+        assert!(SessionName::try_from("").is_err());
     }
 
     #[tokio::test]
     async fn ensure_window_validates_name() {
-        let result = ensure_window(&MockNoExistingWindow, "sess", "").await;
+        let session = SessionName::try_from("sess").unwrap();
+        let result = ensure_window(&MockNoExistingWindow, &session, "").await;
         assert!(matches!(result, Err(TmuxError::Validation(_))));
     }
 }

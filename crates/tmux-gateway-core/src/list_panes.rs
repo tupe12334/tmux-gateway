@@ -1,7 +1,7 @@
 use std::fmt;
 
 use super::TmuxError;
-use super::validation::validate_window_target;
+use super::validation::WindowTarget;
 use crate::executor::TmuxExecutor;
 use crate::pagination::{PaginatedResult, Pagination, paginate};
 
@@ -65,20 +65,24 @@ pub(crate) fn parse_pane_line(line: &str) -> Result<TmuxPane, TmuxError> {
 #[tracing::instrument(skip(executor))]
 pub async fn list_panes(
     executor: &(impl TmuxExecutor + ?Sized),
-    target: &str,
+    target: &WindowTarget,
 ) -> Result<Vec<TmuxPane>, TmuxError> {
-    validate_window_target(target)?;
+    let target_str = target.as_str();
     let output = executor
         .execute(&[
             "list-panes",
             "-t",
-            target,
+            target_str,
             "-F",
             "#{pane_id}\t#{pane_width}\t#{pane_height}\t#{pane_active}\t#{pane_current_path}\t#{pane_current_command}\t#{pane_pid}",
         ])
         .await?;
     if !output.success {
-        return Err(TmuxError::from_stderr("list-panes", &output.stderr, target));
+        return Err(TmuxError::from_stderr(
+            "list-panes",
+            &output.stderr,
+            target_str,
+        ));
     }
     output
         .stdout
@@ -91,7 +95,7 @@ pub async fn list_panes(
 #[tracing::instrument(skip(executor))]
 pub async fn list_panes_paginated(
     executor: &(impl TmuxExecutor + ?Sized),
-    target: &str,
+    target: &WindowTarget,
     pagination: &Pagination,
 ) -> Result<PaginatedResult<TmuxPane>, TmuxError> {
     let all = list_panes(executor, target).await?;
@@ -246,7 +250,8 @@ mod tests {
     #[tokio::test]
     async fn list_panes_paginated_default_returns_all() {
         let executor = mock_panes_executor(4);
-        let result = list_panes_paginated(&executor, "sess:win", &Pagination::default())
+        let target = WindowTarget::try_from("sess:win").unwrap();
+        let result = list_panes_paginated(&executor, &target, &Pagination::default())
             .await
             .unwrap();
         assert_eq!(result.items.len(), 4);
@@ -257,9 +262,10 @@ mod tests {
     #[tokio::test]
     async fn list_panes_paginated_with_limit() {
         let executor = mock_panes_executor(4);
+        let target = WindowTarget::try_from("sess:win").unwrap();
         let result = list_panes_paginated(
             &executor,
-            "sess:win",
+            &target,
             &Pagination {
                 offset: 0,
                 limit: Some(2),
@@ -277,9 +283,10 @@ mod tests {
     #[tokio::test]
     async fn list_panes_paginated_offset_beyond_total() {
         let executor = mock_panes_executor(3);
+        let target = WindowTarget::try_from("sess:win").unwrap();
         let result = list_panes_paginated(
             &executor,
-            "sess:win",
+            &target,
             &Pagination {
                 offset: 50,
                 limit: Some(10),

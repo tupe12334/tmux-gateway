@@ -1,7 +1,7 @@
 use super::TmuxError;
 use super::sessions::TmuxSession;
 use crate::executor::TmuxExecutor;
-use crate::validation::{validate_session_name, validate_window_name};
+use crate::validation::{SessionName, WindowTarget, validate_window_name};
 
 /// Create a session with pre-configured windows in a single domain operation.
 ///
@@ -12,10 +12,9 @@ use crate::validation::{validate_session_name, validate_window_name};
 #[tracing::instrument(skip(executor))]
 pub async fn create_session_with_windows(
     executor: &(impl TmuxExecutor + ?Sized),
-    name: &str,
+    name: &SessionName,
     window_names: &[String],
 ) -> Result<TmuxSession, TmuxError> {
-    validate_session_name(name)?;
     for wn in window_names {
         validate_window_name(wn)?;
     }
@@ -26,7 +25,7 @@ pub async fn create_session_with_windows(
     // Step 2: If window names provided, rename the default window and create additional ones
     if let Some((first, rest)) = window_names.split_first() {
         // Rename the default window (index 0) to the first requested name
-        let default_window_target = format!("{name}:0");
+        let default_window_target = WindowTarget::try_from(format!("{}:0", name).as_str())?;
         if let Err(e) = super::rename_window(executor, &default_window_target, first).await {
             // Rollback: kill the session
             let _ = super::kill_session(executor, name).await;
@@ -44,7 +43,7 @@ pub async fn create_session_with_windows(
     }
 
     // Step 3: Return the created session info
-    super::get_session(executor, name)
+    super::get_session(executor, name.as_str())
         .await?
-        .ok_or_else(|| TmuxError::SessionNotFound(name.to_string()))
+        .ok_or_else(|| TmuxError::SessionNotFound(name.as_str().to_string()))
 }

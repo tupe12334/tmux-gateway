@@ -1,7 +1,7 @@
 use std::fmt;
 
 use super::TmuxError;
-use super::validation::validate_session_target;
+use super::validation::SessionName;
 use crate::executor::TmuxExecutor;
 use crate::pagination::{PaginatedResult, Pagination, paginate};
 
@@ -56,14 +56,14 @@ pub(crate) fn parse_window_line(line: &str) -> Result<TmuxWindow, TmuxError> {
 #[tracing::instrument(skip(executor))]
 pub async fn list_windows(
     executor: &(impl TmuxExecutor + ?Sized),
-    session: &str,
+    session: &SessionName,
 ) -> Result<Vec<TmuxWindow>, TmuxError> {
-    validate_session_target(session)?;
+    let session_str = session.as_str();
     let output = executor
         .execute(&[
             "list-windows",
             "-t",
-            session,
+            session_str,
             "-F",
             "#{window_id}\t#{window_index}\t#{window_name}\t#{window_panes}\t#{window_active}",
         ])
@@ -72,7 +72,7 @@ pub async fn list_windows(
         return Err(TmuxError::from_stderr(
             "list-windows",
             &output.stderr,
-            session,
+            session_str,
         ));
     }
     output
@@ -86,7 +86,7 @@ pub async fn list_windows(
 #[tracing::instrument(skip(executor))]
 pub async fn list_windows_paginated(
     executor: &(impl TmuxExecutor + ?Sized),
-    session: &str,
+    session: &SessionName,
     pagination: &Pagination,
 ) -> Result<PaginatedResult<TmuxWindow>, TmuxError> {
     let all = list_windows(executor, session).await?;
@@ -96,7 +96,7 @@ pub async fn list_windows_paginated(
 #[tracing::instrument(skip(executor))]
 pub async fn get_window(
     executor: &(impl TmuxExecutor + ?Sized),
-    session: &str,
+    session: &SessionName,
     name: &str,
 ) -> Result<Option<TmuxWindow>, TmuxError> {
     let windows = list_windows(executor, session).await?;
@@ -238,7 +238,8 @@ mod tests {
     #[tokio::test]
     async fn list_windows_paginated_default_returns_all() {
         let executor = mock_windows_executor(4);
-        let result = list_windows_paginated(&executor, "test", &Pagination::default())
+        let session = SessionName::try_from("test").unwrap();
+        let result = list_windows_paginated(&executor, &session, &Pagination::default())
             .await
             .unwrap();
         assert_eq!(result.items.len(), 4);
@@ -249,9 +250,10 @@ mod tests {
     #[tokio::test]
     async fn list_windows_paginated_with_limit() {
         let executor = mock_windows_executor(4);
+        let session = SessionName::try_from("test").unwrap();
         let result = list_windows_paginated(
             &executor,
-            "test",
+            &session,
             &Pagination {
                 offset: 0,
                 limit: Some(2),
@@ -269,9 +271,10 @@ mod tests {
     #[tokio::test]
     async fn list_windows_paginated_offset_beyond_total() {
         let executor = mock_windows_executor(3);
+        let session = SessionName::try_from("test").unwrap();
         let result = list_windows_paginated(
             &executor,
-            "test",
+            &session,
             &Pagination {
                 offset: 50,
                 limit: Some(10),
