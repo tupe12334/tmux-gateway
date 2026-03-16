@@ -1,9 +1,8 @@
 use std::env;
 use std::time::Duration;
 use tmux_gateway::api::middleware;
-use tmux_gateway::{export_schemas, port_table, preflight, transports};
+use tmux_gateway::{cors, export_schemas, port_table, preflight, transports};
 use tokio::sync::watch;
-use tower_http::cors::{AllowOrigin, CorsLayer};
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
@@ -52,51 +51,15 @@ async fn main() -> anyhow::Result<()> {
     // Shutdown signal: sender notifies both servers to begin graceful shutdown.
     let (shutdown_tx, _) = watch::channel(false);
 
-    let cors = {
-        let origins_raw = env::var("CORS_ORIGINS")
-            .unwrap_or_else(|_| format!("http://localhost:{},http://localhost:3000", http_port));
-        let raw_entries: Vec<&str> = origins_raw.split(',').map(|s| s.trim()).collect();
-        let total = raw_entries.len();
-        let mut origins: Vec<http::HeaderValue> = Vec::with_capacity(total);
+    let cors = cors::build_cors_layer(http_port)?;
 
-        for entry in &raw_entries {
-            match entry.parse::<http::HeaderValue>() {
-                Ok(val) => origins.push(val),
-                Err(e) => {
-                    tracing::warn!(origin = %entry, error = %e, "Invalid CORS origin, skipping");
-                }
-            }
-        }
-
-        if origins.is_empty() {
-            anyhow::bail!(
-                "No valid CORS origins after parsing CORS_ORIGINS={:?}. \
-                 All {} entries failed to parse. \
-                 Fix the CORS_ORIGINS environment variable or remove it to use defaults.",
-                origins_raw,
-                total,
-            );
-        }
-
-        let valid = origins.len();
-        let invalid = total - valid;
-
-        info!(
-            http_addr = %format!("0.0.0.0:{http_port}"),
-            grpc_addr = %format!("0.0.0.0:{grpc_port}"),
-            cors_origins = ?origins.iter().map(|o| o.to_str().unwrap_or("<non-utf8>")).collect::<Vec<_>>(),
-            cors_valid = valid,
-            cors_invalid = invalid,
-            shutdown_timeout_secs = shutdown_timeout,
-            tmux_version = %config.tmux_version,
-            "Effective configuration"
-        );
-
-        CorsLayer::new()
-            .allow_origin(AllowOrigin::list(origins))
-            .allow_methods(tower_http::cors::Any)
-            .allow_headers(tower_http::cors::Any)
-    };
+    info!(
+        http_addr = %format!("0.0.0.0:{http_port}"),
+        grpc_addr = %format!("0.0.0.0:{grpc_port}"),
+        shutdown_timeout_secs = shutdown_timeout,
+        tmux_version = %config.tmux_version,
+        "Effective configuration"
+    );
 
     let max_body_bytes = env::var("MAX_REQUEST_BODY_BYTES")
         .ok()
