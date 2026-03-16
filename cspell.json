@@ -35,6 +35,8 @@
     "protoc",
     "protox",
     "RAII",
+    "respawn",
+    "respawning",
     "rposition",
     "rustdoc",
     "RUSTSEC",
