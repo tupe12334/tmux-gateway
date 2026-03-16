@@ -8,6 +8,7 @@ const MAX_OPTION_NAME_LEN: usize = 128;
 const MAX_COMMAND_LEN: usize = 1024;
 const MAX_ENV_VAR_NAME_LEN: usize = 256;
 const MAX_ENV_VAR_VALUE_LEN: usize = 4096;
+const MAX_BUFFER_NAME_LEN: usize = 128;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValidationError {
@@ -19,6 +20,7 @@ pub enum ValidationError {
     InvalidCommand { reason: String },
     InvalidEnvVarName { reason: String },
     InvalidEnvVarValue { reason: String },
+    InvalidBufferName { reason: String },
 }
 
 impl fmt::Display for ValidationError {
@@ -44,6 +46,9 @@ impl fmt::Display for ValidationError {
             }
             Self::InvalidEnvVarValue { reason } => {
                 write!(f, "invalid environment variable value: {reason}")
+            }
+            Self::InvalidBufferName { reason } => {
+                write!(f, "invalid buffer name: {reason}")
             }
         }
     }
@@ -306,6 +311,31 @@ pub fn validate_env_var_value(value: &str) -> Result<(), ValidationError> {
     if value.contains('\0') {
         return Err(ValidationError::InvalidEnvVarValue {
             reason: "must not contain null bytes".to_string(),
+        });
+    }
+    Ok(())
+}
+
+/// Validate a paste buffer name.
+/// Allowed: alphanumeric, underscores. 1-128 chars.
+pub fn validate_buffer_name(name: &str) -> Result<(), ValidationError> {
+    if name.is_empty() {
+        return Err(ValidationError::EmptyInput { field: "name" });
+    }
+    if name.len() > MAX_BUFFER_NAME_LEN {
+        return Err(ValidationError::InvalidBufferName {
+            reason: format!(
+                "must be at most {MAX_BUFFER_NAME_LEN} characters, got {}",
+                name.len()
+            ),
+        });
+    }
+    if !name
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '_')
+    {
+        return Err(ValidationError::InvalidBufferName {
+            reason: "must contain only alphanumeric characters or underscores".to_string(),
         });
     }
     Ok(())
@@ -734,5 +764,42 @@ mod tests {
             validate_env_var_value("val\0ue"),
             Err(ValidationError::InvalidEnvVarValue { .. })
         ));
+    }
+
+    // ── Buffer name validation ──
+
+    #[test]
+    fn valid_buffer_names() {
+        assert!(validate_buffer_name("buffer0").is_ok());
+        assert!(validate_buffer_name("my_buffer").is_ok());
+        assert!(validate_buffer_name("a").is_ok());
+        assert!(validate_buffer_name("Buffer123").is_ok());
+    }
+
+    #[test]
+    fn empty_buffer_name() {
+        assert_eq!(
+            validate_buffer_name(""),
+            Err(ValidationError::EmptyInput { field: "name" })
+        );
+    }
+
+    #[test]
+    fn buffer_name_too_long() {
+        let long = "a".repeat(129);
+        assert!(matches!(
+            validate_buffer_name(&long),
+            Err(ValidationError::InvalidBufferName { .. })
+        ));
+    }
+
+    #[test]
+    fn buffer_name_with_special_chars() {
+        assert!(validate_buffer_name("buf;evil").is_err());
+        assert!(validate_buffer_name("buf&evil").is_err());
+        assert!(validate_buffer_name("$(cmd)").is_err());
+        assert!(validate_buffer_name("buf-name").is_err());
+        assert!(validate_buffer_name("buf.name").is_err());
+        assert!(validate_buffer_name("buf name").is_err());
     }
 }

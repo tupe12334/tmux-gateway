@@ -21,6 +21,7 @@
     "grpcui",
     "grpcurl",
     "healthcheck",
+    "Hoppscotch",
     "metacharacters",
     "mysess",
     "mysession",
@@ -52,6 +53,7 @@
     "tnotanumber",
     "TOCTOU",
     "txyz",
-    "utoipa"
+    "utoipa",
+    "websocat"
   ]
 }
