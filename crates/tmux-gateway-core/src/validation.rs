@@ -283,7 +283,9 @@ pub fn validate_env_var_name(name: &str) -> Result<(), ValidationError> {
             ),
         });
     }
-    let first = name.chars().next().unwrap();
+    let Some(first) = name.chars().next() else {
+        return Err(ValidationError::EmptyInput { field: "name" });
+    };
     if !first.is_ascii_alphabetic() && first != '_' {
         return Err(ValidationError::InvalidEnvVarName {
             reason: "must start with a letter or underscore".to_string(),
