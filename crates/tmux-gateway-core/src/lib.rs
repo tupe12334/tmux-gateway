@@ -11,6 +11,7 @@ pub mod executor;
 mod has_session;
 mod health;
 mod kill_pane;
+mod kill_server;
 mod kill_session;
 mod kill_window;
 mod list_panes;
@@ -55,10 +56,13 @@ pub use ensure_session::ensure_session;
 pub use ensure_window::ensure_window;
 pub use error::{ErrorRecoverability, TmuxError};
 pub use events::{EventReceiver, EventSender, TmuxEvent};
-pub use executor::{RealTmuxExecutor, TmuxExecutor, TmuxOutput};
+pub use executor::{
+    OperationTimeout, RealTmuxExecutor, TmuxExecutor, TmuxOutput, execute_with_timeout,
+};
 pub use has_session::{has_session, has_session_with_log};
 pub use health::{HealthStatus, health_check, health_check_with_log};
 pub use kill_pane::kill_pane;
+pub use kill_server::{kill_server, kill_server_with_log};
 pub use kill_session::{kill_session, kill_session_with_log};
 pub use kill_window::{kill_window, kill_window_with_log};
 pub use list_panes::{TmuxPane, list_panes, list_panes_paginated};

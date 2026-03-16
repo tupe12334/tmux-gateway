@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 /// Classifies whether an error is likely to resolve on retry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ErrorRecoverability {
@@ -38,8 +40,8 @@ pub enum TmuxError {
     #[error("failed to parse tmux output for {command}: {details}")]
     ParseError { command: String, details: String },
 
-    #[error("tmux command timed out: {command}")]
-    Timeout { command: String },
+    #[error("tmux command timed out: {command} (deadline: {timeout:?})")]
+    Timeout { command: String, timeout: Duration },
 }
 
 impl TmuxError {
@@ -394,16 +396,21 @@ mod tests {
     fn timeout_is_transient() {
         let err = TmuxError::Timeout {
             command: "list-sessions".into(),
+            timeout: Duration::from_secs(10),
         };
         assert_eq!(err.recoverability(), ErrorRecoverability::Transient);
         assert!(err.is_retryable());
     }
 
     #[test]
-    fn timeout_display_includes_command() {
+    fn timeout_display_includes_command_and_deadline() {
         let err = TmuxError::Timeout {
             command: "kill-session".into(),
+            timeout: Duration::from_secs(5),
         };
-        assert_eq!(err.to_string(), "tmux command timed out: kill-session");
+        assert_eq!(
+            err.to_string(),
+            "tmux command timed out: kill-session (deadline: 5s)"
+        );
     }
 }
