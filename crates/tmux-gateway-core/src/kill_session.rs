@@ -1,13 +1,13 @@
 use crate::executor::TmuxExecutor;
 use crate::log_port::{LogLevel, LogPort, NoopLog};
-use crate::validation::validate_session_target;
+use crate::validation::SessionName;
 
 use super::TmuxError;
 
 #[tracing::instrument(skip(executor))]
 pub async fn kill_session(
     executor: &(impl TmuxExecutor + ?Sized),
-    target: &str,
+    target: &SessionName,
 ) -> Result<(), TmuxError> {
     kill_session_with_log(executor, target, &NoopLog).await
 }
@@ -16,31 +16,25 @@ pub async fn kill_session(
 #[tracing::instrument(skip(executor, log))]
 pub async fn kill_session_with_log(
     executor: &(impl TmuxExecutor + ?Sized),
-    target: &str,
+    target: &SessionName,
     log: &dyn LogPort,
 ) -> Result<(), TmuxError> {
+    let target_str = target.as_str();
     log.log_with_target(
         LogLevel::Info,
         "kill-session",
-        target,
-        &format!("killing session '{target}'"),
+        target_str,
+        &format!("killing session '{target_str}'"),
     );
-    if let Err(e) = validate_session_target(target) {
-        log.log_with_target(
-            LogLevel::Warn,
-            "kill-session",
-            target,
-            &format!("validation rejected target '{target}' — {e}"),
-        );
-        return Err(e.into());
-    }
-    let output = executor.execute(&["kill-session", "-t", target]).await?;
+    let output = executor
+        .execute(&["kill-session", "-t", target_str])
+        .await?;
     if !output.success {
-        let err = TmuxError::from_stderr("kill-session", &output.stderr, target);
+        let err = TmuxError::from_stderr("kill-session", &output.stderr, target_str);
         log.log_with_target(
             LogLevel::Error,
             "kill-session",
-            target,
+            target_str,
             &format!("tmux command failed: {err}"),
         );
         return Err(err);
@@ -48,8 +42,8 @@ pub async fn kill_session_with_log(
     log.log_with_target(
         LogLevel::Info,
         "kill-session",
-        target,
-        &format!("session '{target}' killed successfully"),
+        target_str,
+        &format!("session '{target_str}' killed successfully"),
     );
     Ok(())
 }
@@ -84,7 +78,8 @@ mod tests {
                 success: true,
             }),
         };
-        let result = kill_session(&executor, "test-session").await;
+        let name = SessionName::try_from("test-session").unwrap();
+        let result = kill_session(&executor, &name).await;
         assert!(result.is_ok());
     }
 
@@ -97,21 +92,16 @@ mod tests {
                 success: false,
             }),
         };
-        let result = kill_session(&executor, "nosession").await;
+        let name = SessionName::try_from("nosession").unwrap();
+        let result = kill_session(&executor, &name).await;
         assert!(matches!(result, Err(TmuxError::SessionNotFound(_))));
     }
 
     #[tokio::test]
     async fn kill_session_invalid_target() {
-        let executor = MockExecutor {
-            result: Ok(TmuxOutput {
-                stdout: String::new(),
-                stderr: String::new(),
-                success: true,
-            }),
-        };
-        let result = kill_session(&executor, "").await;
-        assert!(matches!(result, Err(TmuxError::Validation(_))));
+        // With newtypes, invalid names are caught at construction time
+        let result = SessionName::try_from("");
+        assert!(result.is_err());
     }
 
     #[tokio::test]
@@ -123,7 +113,8 @@ mod tests {
                 success: false,
             }),
         };
-        let result = kill_session(&executor, "test-session").await;
+        let name = SessionName::try_from("test-session").unwrap();
+        let result = kill_session(&executor, &name).await;
         assert!(matches!(result, Err(TmuxError::TmuxNotRunning)));
     }
 }

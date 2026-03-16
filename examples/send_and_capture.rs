@@ -6,8 +6,8 @@
 //! Run with: `cargo run --example send_and_capture`
 
 use tmux_gateway_core::{
-    CaptureOptions, RealTmuxExecutor, capture_pane, capture_pane_with_options, kill_session,
-    new_session, send_keys,
+    CaptureOptions, PaneTarget, RealTmuxExecutor, SessionName, capture_pane,
+    capture_pane_with_options, kill_session, new_session, send_keys,
 };
 
 const SESSION_NAME: &str = "send-capture-example";
@@ -15,16 +15,17 @@ const SESSION_NAME: &str = "send-capture-example";
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let executor = RealTmuxExecutor::new();
+    let session = SessionName::try_from(SESSION_NAME)?;
 
     // 1. Create a session
     println!("Creating session '{SESSION_NAME}'...");
-    let session = new_session(&executor, SESSION_NAME, None).await?;
+    let created = new_session(&executor, &session, None).await?;
     println!(
         "Session created: {} (id={}, {} windows)",
-        session.name, session.id, session.windows
+        created.name, created.id, created.windows
     );
 
-    let target = format!("{SESSION_NAME}:0.0");
+    let target = PaneTarget::try_from(format!("{SESSION_NAME}:0.0").as_str())?;
 
     // 2. Send keys (shell commands) to the pane
     println!("\nSending 'echo hello from tmux-gateway' to {target}...");
@@ -64,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 5. Cleanup
     println!("\nCleaning up session '{SESSION_NAME}'...");
-    kill_session(&executor, SESSION_NAME).await?;
+    kill_session(&executor, &session).await?;
     println!("Done.");
 
     Ok(())

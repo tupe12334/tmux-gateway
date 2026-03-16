@@ -2,8 +2,8 @@ use crate::executor::TmuxExecutor;
 use crate::session_detail::SessionDetail;
 use crate::session_spec::{SessionSpec, SplitDirection};
 use crate::validation::{
-    validate_command, validate_env_var_name, validate_env_var_value, validate_session_name,
-    validate_window_name,
+    PaneTarget, SessionName, WindowTarget, validate_command, validate_env_var_name,
+    validate_env_var_value, validate_window_name,
 };
 
 use super::TmuxError;
@@ -19,7 +19,7 @@ pub async fn apply_session_spec(
     spec: &SessionSpec,
 ) -> Result<SessionDetail, TmuxError> {
     // Validate all inputs upfront before creating anything
-    validate_session_name(&spec.name)?;
+    let session_name = SessionName::try_from(spec.name.as_str())?;
     for window_spec in &spec.windows {
         validate_window_name(&window_spec.name)?;
         if let Some(cmd) = &window_spec.command {
@@ -40,27 +40,29 @@ pub async fn apply_session_spec(
     let initial_command = spec.windows.first().and_then(|w| w.command.as_deref());
 
     // Step 1: Create the session
-    super::new_session(executor, &spec.name, initial_command).await?;
+    super::new_session(executor, &session_name, initial_command).await?;
 
     // Step 2: Set up windows — rename default window to first, create rest
     if let Some((first_window, rest_windows)) = spec.windows.split_first() {
         // Rename the default window to the first window spec's name
-        let default_target = format!("{}:0", spec.name);
-        if let Err(e) = super::rename_window(executor, &default_target, &first_window.name).await {
-            let _ = super::kill_session(executor, &spec.name).await;
+        let default_target = WindowTarget::try_from(format!("{}:0", session_name).as_str())?;
+        if let Err(e) =
+            super::rename_window(executor, &default_target, &first_window.name).await
+        {
+            let _ = super::kill_session(executor, &session_name).await;
             return Err(e);
         }
 
         // Create panes for the first window
         if let Err(e) = create_panes_for_window(
             executor,
-            &spec.name,
+            &session_name,
             &first_window.name,
             &first_window.panes,
         )
         .await
         {
-            let _ = super::kill_session(executor, &spec.name).await;
+            let _ = super::kill_session(executor, &session_name).await;
             return Err(e);
         }
 
@@ -68,21 +70,25 @@ pub async fn apply_session_spec(
         for window_spec in rest_windows {
             if let Err(e) = super::new_window(
                 executor,
-                &spec.name,
+                &session_name,
                 &window_spec.name,
                 window_spec.command.as_deref(),
             )
             .await
             {
-                let _ = super::kill_session(executor, &spec.name).await;
+                let _ = super::kill_session(executor, &session_name).await;
                 return Err(e);
             }
 
-            if let Err(e) =
-                create_panes_for_window(executor, &spec.name, &window_spec.name, &window_spec.panes)
-                    .await
+            if let Err(e) = create_panes_for_window(
+                executor,
+                &session_name,
+                &window_spec.name,
+                &window_spec.panes,
+            )
+            .await
             {
-                let _ = super::kill_session(executor, &spec.name).await;
+                let _ = super::kill_session(executor, &session_name).await;
                 return Err(e);
             }
         }
@@ -90,27 +96,28 @@ pub async fn apply_session_spec(
 
     // Step 3: Set environment variables
     for (name, value) in &spec.environment {
-        if let Err(e) = super::set_environment(executor, &spec.name, name, value).await {
-            let _ = super::kill_session(executor, &spec.name).await;
+        if let Err(e) = super::set_environment(executor, &session_name, name, value).await {
+            let _ = super::kill_session(executor, &session_name).await;
             return Err(e);
         }
     }
 
     // Step 4: Return the resulting session detail
-    super::get_session_detail(executor, &spec.name).await
+    super::get_session_detail(executor, &session_name).await
 }
 
 /// Create additional panes for a window by splitting the last pane.
 async fn create_panes_for_window(
     executor: &(impl TmuxExecutor + ?Sized),
-    session: &str,
+    session: &SessionName,
     window: &str,
     panes: &[crate::session_spec::PaneSpec],
 ) -> Result<(), TmuxError> {
     // Each new pane splits from the last pane in the window.
     // The first pane (index 0) is created with the window itself.
     for (next_pane_index, pane_spec) in (0_u32..).zip(panes.iter()) {
-        let target = format!("{session}:{window}.{next_pane_index}");
+        let target =
+            PaneTarget::try_from(format!("{session}:{window}.{next_pane_index}").as_str())?;
         let horizontal = pane_spec.split == SplitDirection::Horizontal;
         super::split_window(executor, &target, horizontal, pane_spec.command.as_deref()).await?;
     }

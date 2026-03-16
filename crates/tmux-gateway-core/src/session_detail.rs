@@ -3,7 +3,7 @@ use super::list_windows::TmuxWindow;
 use super::sessions::TmuxSession;
 use super::{TmuxError, list_panes, list_sessions, list_windows};
 use crate::executor::TmuxExecutor;
-use crate::validation::validate_session_target;
+use crate::validation::{SessionName, WindowTarget};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WindowDetail {
@@ -20,21 +20,20 @@ pub struct SessionDetail {
 #[tracing::instrument(skip(executor))]
 pub async fn get_session_detail(
     executor: &(impl TmuxExecutor + ?Sized),
-    name: &str,
+    name: &SessionName,
 ) -> Result<SessionDetail, TmuxError> {
-    validate_session_target(name)?;
-
+    let name_str = name.as_str();
     let sessions = list_sessions(executor).await?;
     let session = sessions
         .into_iter()
-        .find(|s| s.name == name)
-        .ok_or_else(|| TmuxError::SessionNotFound(name.to_string()))?;
+        .find(|s| s.name == name_str)
+        .ok_or_else(|| TmuxError::SessionNotFound(name_str.to_string()))?;
 
     let windows = list_windows(executor, name).await?;
 
     let mut window_details = Vec::with_capacity(windows.len());
     for window in windows {
-        let target = format!("{}:{}", name, window.index);
+        let target = WindowTarget::try_from(format!("{}:{}", name_str, window.index).as_str())?;
         let panes = list_panes(executor, &target).await?;
         window_details.push(WindowDetail { window, panes });
     }
@@ -118,7 +117,8 @@ mod tests {
             ],
         };
 
-        let detail = get_session_detail(&executor, "dev").await.unwrap();
+        let name = SessionName::try_from("dev").unwrap();
+        let detail = get_session_detail(&executor, &name).await.unwrap();
 
         assert_eq!(detail.session.name, "dev");
         assert_eq!(detail.windows.len(), 2);
@@ -150,7 +150,8 @@ mod tests {
             panes_outputs: vec![],
         };
 
-        let result = get_session_detail(&executor, "nonexistent").await;
+        let name = SessionName::try_from("nonexistent").unwrap();
+        let result = get_session_detail(&executor, &name).await;
         assert!(result.is_err());
         match result.unwrap_err() {
             TmuxError::SessionNotFound(name) => assert_eq!(name, "nonexistent"),
@@ -175,29 +176,15 @@ mod tests {
             panes_outputs: vec![],
         };
 
-        let detail = get_session_detail(&executor, "empty").await.unwrap();
+        let name = SessionName::try_from("empty").unwrap();
+        let detail = get_session_detail(&executor, &name).await.unwrap();
         assert_eq!(detail.session.name, "empty");
         assert!(detail.windows.is_empty());
     }
 
     #[tokio::test]
     async fn get_session_detail_validates_input() {
-        let executor = MockDetailExecutor {
-            calls: std::sync::Mutex::new(Vec::new()),
-            sessions_output: TmuxOutput {
-                stdout: String::new(),
-                stderr: String::new(),
-                success: true,
-            },
-            windows_output: TmuxOutput {
-                stdout: String::new(),
-                stderr: String::new(),
-                success: true,
-            },
-            panes_outputs: vec![],
-        };
-
-        let result = get_session_detail(&executor, "").await;
-        assert!(result.is_err());
+        // With newtypes, validation happens at construction time
+        assert!(SessionName::try_from("").is_err());
     }
 }

@@ -1,5 +1,5 @@
 use crate::executor::TmuxExecutor;
-use crate::validation::{validate_env_var_name, validate_env_var_value, validate_session_target};
+use crate::validation::{SessionName, validate_env_var_name, validate_env_var_value};
 
 use super::TmuxError;
 
@@ -45,17 +45,17 @@ pub(crate) fn parse_session_env_line(line: &str) -> Option<TmuxEnvVar> {
 #[tracing::instrument(skip(executor))]
 pub async fn show_environment(
     executor: &(impl TmuxExecutor + ?Sized),
-    session: &str,
+    session: &SessionName,
 ) -> Result<Vec<TmuxEnvVar>, TmuxError> {
-    validate_session_target(session)?;
+    let session_str = session.as_str();
     let output = executor
-        .execute(&["show-environment", "-t", session])
+        .execute(&["show-environment", "-t", session_str])
         .await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
             "show-environment",
             &output.stderr,
-            session,
+            session_str,
         ));
     }
 
@@ -73,21 +73,21 @@ pub async fn show_environment(
 #[tracing::instrument(skip(executor))]
 pub async fn set_environment(
     executor: &(impl TmuxExecutor + ?Sized),
-    session: &str,
+    session: &SessionName,
     name: &str,
     value: &str,
 ) -> Result<(), TmuxError> {
-    validate_session_target(session)?;
     validate_env_var_name(name)?;
     validate_env_var_value(value)?;
+    let session_str = session.as_str();
     let output = executor
-        .execute(&["set-environment", "-t", session, name, value])
+        .execute(&["set-environment", "-t", session_str, name, value])
         .await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
             "set-environment",
             &output.stderr,
-            session,
+            session_str,
         ));
     }
     Ok(())
@@ -97,19 +97,19 @@ pub async fn set_environment(
 #[tracing::instrument(skip(executor))]
 pub async fn unset_environment(
     executor: &(impl TmuxExecutor + ?Sized),
-    session: &str,
+    session: &SessionName,
     name: &str,
 ) -> Result<(), TmuxError> {
-    validate_session_target(session)?;
     validate_env_var_name(name)?;
+    let session_str = session.as_str();
     let output = executor
-        .execute(&["set-environment", "-t", session, "-u", name])
+        .execute(&["set-environment", "-t", session_str, "-u", name])
         .await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
             "set-environment",
             &output.stderr,
-            session,
+            session_str,
         ));
     }
     Ok(())
@@ -212,7 +212,8 @@ mod tests {
                 success: true,
             }),
         };
-        let vars = show_environment(&executor, "my-session").await.unwrap();
+        let session = SessionName::try_from("my-session").unwrap();
+        let vars = show_environment(&executor, &session).await.unwrap();
         assert_eq!(vars.len(), 4);
         assert_eq!(vars[0].name, "PATH");
         assert_eq!(vars[0].value, Some("/usr/bin".to_string()));
@@ -233,7 +234,8 @@ mod tests {
                 success: true,
             }),
         };
-        let vars = show_environment(&executor, "my-session").await.unwrap();
+        let session = SessionName::try_from("my-session").unwrap();
+        let vars = show_environment(&executor, &session).await.unwrap();
         assert!(vars.is_empty());
     }
 
@@ -246,7 +248,8 @@ mod tests {
                 success: false,
             }),
         };
-        let result = show_environment(&executor, "nonexistent").await;
+        let session = SessionName::try_from("nonexistent").unwrap();
+        let result = show_environment(&executor, &session).await;
         assert!(matches!(result, Err(TmuxError::SessionNotFound(_))));
     }
 
@@ -259,21 +262,15 @@ mod tests {
                 success: false,
             }),
         };
-        let result = show_environment(&executor, "my-session").await;
+        let session = SessionName::try_from("my-session").unwrap();
+        let result = show_environment(&executor, &session).await;
         assert!(matches!(result, Err(TmuxError::TmuxNotRunning)));
     }
 
     #[tokio::test]
     async fn show_environment_invalid_session() {
-        let executor = MockExecutor {
-            result: Ok(TmuxOutput {
-                stdout: String::new(),
-                stderr: String::new(),
-                success: true,
-            }),
-        };
-        let result = show_environment(&executor, "").await;
-        assert!(matches!(result, Err(TmuxError::Validation(_))));
+        // With newtypes, validation happens at construction time
+        assert!(SessionName::try_from("").is_err());
     }
 
     // ── set_environment ──
@@ -287,21 +284,14 @@ mod tests {
                 success: true,
             }),
         };
-        let result = set_environment(&executor, "my-session", "EDITOR", "vim").await;
+        let session = SessionName::try_from("my-session").unwrap();
+        let result = set_environment(&executor, &session, "EDITOR", "vim").await;
         assert!(result.is_ok());
     }
 
     #[tokio::test]
     async fn set_environment_invalid_session() {
-        let executor = MockExecutor {
-            result: Ok(TmuxOutput {
-                stdout: String::new(),
-                stderr: String::new(),
-                success: true,
-            }),
-        };
-        let result = set_environment(&executor, "", "EDITOR", "vim").await;
-        assert!(matches!(result, Err(TmuxError::Validation(_))));
+        assert!(SessionName::try_from("").is_err());
     }
 
     #[tokio::test]
@@ -313,7 +303,8 @@ mod tests {
                 success: true,
             }),
         };
-        let result = set_environment(&executor, "my-session", "bad name", "value").await;
+        let session = SessionName::try_from("my-session").unwrap();
+        let result = set_environment(&executor, &session, "bad name", "value").await;
         assert!(matches!(result, Err(TmuxError::Validation(_))));
     }
 
@@ -326,7 +317,8 @@ mod tests {
                 success: true,
             }),
         };
-        let result = set_environment(&executor, "my-session", "MY_VAR", "val\0ue").await;
+        let session = SessionName::try_from("my-session").unwrap();
+        let result = set_environment(&executor, &session, "MY_VAR", "val\0ue").await;
         assert!(matches!(result, Err(TmuxError::Validation(_))));
     }
 
@@ -339,7 +331,8 @@ mod tests {
                 success: false,
             }),
         };
-        let result = set_environment(&executor, "nonexistent", "EDITOR", "vim").await;
+        let session = SessionName::try_from("nonexistent").unwrap();
+        let result = set_environment(&executor, &session, "EDITOR", "vim").await;
         assert!(matches!(result, Err(TmuxError::SessionNotFound(_))));
     }
 
@@ -352,7 +345,8 @@ mod tests {
                 success: false,
             }),
         };
-        let result = set_environment(&executor, "my-session", "EDITOR", "vim").await;
+        let session = SessionName::try_from("my-session").unwrap();
+        let result = set_environment(&executor, &session, "EDITOR", "vim").await;
         assert!(matches!(result, Err(TmuxError::TmuxNotRunning)));
     }
 
@@ -367,21 +361,14 @@ mod tests {
                 success: true,
             }),
         };
-        let result = unset_environment(&executor, "my-session", "EDITOR").await;
+        let session = SessionName::try_from("my-session").unwrap();
+        let result = unset_environment(&executor, &session, "EDITOR").await;
         assert!(result.is_ok());
     }
 
     #[tokio::test]
     async fn unset_environment_invalid_session() {
-        let executor = MockExecutor {
-            result: Ok(TmuxOutput {
-                stdout: String::new(),
-                stderr: String::new(),
-                success: true,
-            }),
-        };
-        let result = unset_environment(&executor, "", "EDITOR").await;
-        assert!(matches!(result, Err(TmuxError::Validation(_))));
+        assert!(SessionName::try_from("").is_err());
     }
 
     #[tokio::test]
@@ -393,7 +380,8 @@ mod tests {
                 success: true,
             }),
         };
-        let result = unset_environment(&executor, "my-session", "").await;
+        let session = SessionName::try_from("my-session").unwrap();
+        let result = unset_environment(&executor, &session, "").await;
         assert!(matches!(result, Err(TmuxError::Validation(_))));
     }
 
@@ -406,7 +394,8 @@ mod tests {
                 success: false,
             }),
         };
-        let result = unset_environment(&executor, "nonexistent", "EDITOR").await;
+        let session = SessionName::try_from("nonexistent").unwrap();
+        let result = unset_environment(&executor, &session, "EDITOR").await;
         assert!(matches!(result, Err(TmuxError::SessionNotFound(_))));
     }
 
@@ -419,7 +408,8 @@ mod tests {
                 success: false,
             }),
         };
-        let result = unset_environment(&executor, "my-session", "EDITOR").await;
+        let session = SessionName::try_from("my-session").unwrap();
+        let result = unset_environment(&executor, &session, "EDITOR").await;
         assert!(matches!(result, Err(TmuxError::TmuxNotRunning)));
     }
 }

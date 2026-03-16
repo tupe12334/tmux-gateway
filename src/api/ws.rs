@@ -28,6 +28,18 @@ async fn ws_pane_handler(
 }
 
 async fn handle_pane_stream(mut socket: WebSocket, target: String, interval: Duration) {
+    let target = match tmux::PaneTarget::try_from(target.as_str()) {
+        Ok(t) => t,
+        Err(e) => {
+            let _ = socket
+                .send(Message::Close(Some(CloseFrame {
+                    code: 1011,
+                    reason: e.to_string().into(),
+                })))
+                .await;
+            return;
+        }
+    };
     let mut last_content = String::new();
     let mut ticker = tokio::time::interval(interval);
 

@@ -1,6 +1,6 @@
 use crate::executor::TmuxExecutor;
 use crate::log_port::{LogLevel, LogPort, NoopLog};
-use crate::validation::validate_session_target;
+use crate::validation::SessionName;
 
 use super::TmuxError;
 
@@ -8,7 +8,7 @@ use super::TmuxError;
 #[tracing::instrument(skip(executor))]
 pub async fn has_session(
     executor: &(impl TmuxExecutor + ?Sized),
-    target: &str,
+    target: &SessionName,
 ) -> Result<bool, TmuxError> {
     has_session_with_log(executor, target, &NoopLog).await
 }
@@ -17,31 +17,25 @@ pub async fn has_session(
 #[tracing::instrument(skip(executor, log))]
 pub async fn has_session_with_log(
     executor: &(impl TmuxExecutor + ?Sized),
-    target: &str,
+    target: &SessionName,
     log: &dyn LogPort,
 ) -> Result<bool, TmuxError> {
+    let target_str = target.as_str();
     log.log_with_target(
         LogLevel::Debug,
         "has-session",
-        target,
-        &format!("checking if session '{target}' exists"),
+        target_str,
+        &format!("checking if session '{target_str}' exists"),
     );
-    if let Err(e) = validate_session_target(target) {
-        log.log_with_target(
-            LogLevel::Warn,
-            "has-session",
-            target,
-            &format!("validation rejected target '{target}' — {e}"),
-        );
-        return Err(e.into());
-    }
-    let output = executor.execute(&["has-session", "-t", target]).await?;
+    let output = executor
+        .execute(&["has-session", "-t", target_str])
+        .await?;
     if output.success {
         log.log_with_target(
             LogLevel::Debug,
             "has-session",
-            target,
-            &format!("session '{target}' exists"),
+            target_str,
+            &format!("session '{target_str}' exists"),
         );
         return Ok(true);
     }
@@ -51,7 +45,7 @@ pub async fn has_session_with_log(
         log.log_with_target(
             LogLevel::Error,
             "has-session",
-            target,
+            target_str,
             &format!("tmux server not running: {err}"),
         );
         return Err(err);
@@ -60,8 +54,8 @@ pub async fn has_session_with_log(
     log.log_with_target(
         LogLevel::Debug,
         "has-session",
-        target,
-        &format!("session '{target}' does not exist"),
+        target_str,
+        &format!("session '{target_str}' does not exist"),
     );
     Ok(false)
 }
@@ -96,7 +90,8 @@ mod tests {
                 success: true,
             }),
         };
-        assert!(has_session(&executor, "my-session").await.unwrap());
+        let name = SessionName::try_from("my-session").unwrap();
+        assert!(has_session(&executor, &name).await.unwrap());
     }
 
     #[tokio::test]
@@ -108,7 +103,8 @@ mod tests {
                 success: false,
             }),
         };
-        assert!(!has_session(&executor, "nosession").await.unwrap());
+        let name = SessionName::try_from("nosession").unwrap();
+        assert!(!has_session(&executor, &name).await.unwrap());
     }
 
     #[tokio::test]
@@ -120,47 +116,15 @@ mod tests {
                 success: false,
             }),
         };
-        let result = has_session(&executor, "test-session").await;
+        let name = SessionName::try_from("test-session").unwrap();
+        let result = has_session(&executor, &name).await;
         assert!(matches!(result, Err(TmuxError::TmuxNotRunning)));
     }
 
     #[tokio::test]
     async fn has_session_rejects_empty_target() {
-        let executor = MockExecutor {
-            result: Ok(TmuxOutput {
-                stdout: String::new(),
-                stderr: String::new(),
-                success: true,
-            }),
-        };
-        let result = has_session(&executor, "").await;
-        assert!(matches!(result, Err(TmuxError::Validation(_))));
-    }
-
-    #[tokio::test]
-    async fn has_session_rejects_target_with_colon() {
-        let executor = MockExecutor {
-            result: Ok(TmuxOutput {
-                stdout: String::new(),
-                stderr: String::new(),
-                success: true,
-            }),
-        };
-        let result = has_session(&executor, "session:window").await;
-        assert!(matches!(result, Err(TmuxError::Validation(_))));
-    }
-
-    #[tokio::test]
-    async fn has_session_rejects_target_with_dot() {
-        let executor = MockExecutor {
-            result: Ok(TmuxOutput {
-                stdout: String::new(),
-                stderr: String::new(),
-                success: true,
-            }),
-        };
-        let result = has_session(&executor, "session.pane").await;
-        assert!(matches!(result, Err(TmuxError::Validation(_))));
+        // With newtypes, validation happens at construction time
+        assert!(SessionName::try_from("").is_err());
     }
 
     #[tokio::test]
@@ -172,7 +136,8 @@ mod tests {
                 success: false,
             }),
         };
-        assert!(!has_session(&executor, "gone").await.unwrap());
+        let name = SessionName::try_from("gone").unwrap();
+        assert!(!has_session(&executor, &name).await.unwrap());
     }
 
     #[tokio::test]
@@ -184,6 +149,7 @@ mod tests {
                 success: true,
             }),
         };
-        assert!(has_session(&executor, "my-test-session").await.unwrap());
+        let name = SessionName::try_from("my-test-session").unwrap();
+        assert!(has_session(&executor, &name).await.unwrap());
     }
 }

@@ -449,6 +449,9 @@ impl SubscriptionRoot {
         let interval = Duration::from_millis((interval_ms as u64).clamp(100, 10000));
 
         async_stream::stream! {
+            let Ok(target) = tmux::PaneTarget::try_from(target.as_str()) else {
+                return;
+            };
             let mut last_content = String::new();
             let mut ticker = tokio::time::interval(interval);
 

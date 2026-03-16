@@ -3,14 +3,14 @@ use crate::events::{EventSender, TmuxEvent};
 use crate::executor::TmuxExecutor;
 use crate::log_port::{LogLevel, LogPort, NoopLog};
 use crate::sessions::parse_session_line;
-use crate::validation::{validate_command, validate_session_name};
+use crate::validation::{SessionName, validate_command};
 
 use super::TmuxError;
 
 #[tracing::instrument(skip(executor))]
 pub async fn new_session(
     executor: &(impl TmuxExecutor + ?Sized),
-    name: &str,
+    name: &SessionName,
     command: Option<&str>,
 ) -> Result<TmuxSession, TmuxError> {
     new_session_with_log(executor, name, command, &NoopLog).await
@@ -20,7 +20,7 @@ pub async fn new_session(
 #[tracing::instrument(skip(executor, log))]
 pub async fn new_session_with_log(
     executor: &(impl TmuxExecutor + ?Sized),
-    name: &str,
+    name: &SessionName,
     command: Option<&str>,
     log: &dyn LogPort,
 ) -> Result<TmuxSession, TmuxError> {
@@ -30,7 +30,7 @@ pub async fn new_session_with_log(
 #[tracing::instrument(skip(executor, event_tx))]
 pub async fn new_session_with_events(
     executor: &(impl TmuxExecutor + ?Sized),
-    name: &str,
+    name: &SessionName,
     command: Option<&str>,
     event_tx: Option<&EventSender>,
 ) -> Result<TmuxSession, TmuxError> {
@@ -39,24 +39,17 @@ pub async fn new_session_with_events(
 
 async fn new_session_inner(
     executor: &(impl TmuxExecutor + ?Sized),
-    name: &str,
+    name: &SessionName,
     command: Option<&str>,
     event_tx: Option<&EventSender>,
     log: &dyn LogPort,
 ) -> Result<TmuxSession, TmuxError> {
+    let name_str = name.as_str();
     log.log(
         LogLevel::Info,
         "new-session",
-        &format!("creating session '{name}'"),
+        &format!("creating session '{name_str}'"),
     );
-    if let Err(e) = validate_session_name(name) {
-        log.log(
-            LogLevel::Warn,
-            "new-session",
-            &format!("validation rejected session name '{name}' — {e}"),
-        );
-        return Err(e.into());
-    }
     if let Some(cmd) = command
         && let Err(e) = validate_command(cmd)
     {
@@ -68,14 +61,14 @@ async fn new_session_inner(
         return Err(e.into());
     }
     let format_str = "#{session_id}\t#{session_name}\t#{session_windows}\t#{session_created}\t#{session_attached}";
-    let mut args = vec!["new-session", "-d", "-s", name];
+    let mut args = vec!["new-session", "-d", "-s", name_str];
     if let Some(cmd) = command {
         args.push(cmd);
     }
     args.extend_from_slice(&["-P", "-F", format_str]);
     let output = executor.execute(&args).await?;
     if !output.success {
-        let err = TmuxError::from_stderr("new-session", &output.stderr, name);
+        let err = TmuxError::from_stderr("new-session", &output.stderr, name_str);
         log.log(
             LogLevel::Error,
             "new-session",

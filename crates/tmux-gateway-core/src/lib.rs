@@ -90,4 +90,4 @@ pub use sessions::{
 pub use split_window::split_window;
 pub use swap_panes::swap_panes;
 pub use swap_window::swap_window;
-pub use validation::ValidationError;
+pub use validation::{PaneTarget, SessionName, ValidationError, WindowTarget};

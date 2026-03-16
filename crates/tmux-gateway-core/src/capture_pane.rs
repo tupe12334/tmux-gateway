@@ -1,5 +1,5 @@
 use crate::executor::TmuxExecutor;
-use crate::validation::validate_pane_target;
+use crate::validation::PaneTarget;
 
 use super::TmuxError;
 
@@ -72,7 +72,7 @@ pub fn normalize_pane_content(raw: &str) -> String {
 #[tracing::instrument(skip(executor))]
 pub async fn capture_pane(
     executor: &(impl TmuxExecutor + ?Sized),
-    target: &str,
+    target: &PaneTarget,
 ) -> Result<String, TmuxError> {
     capture_pane_with_options(executor, target, &CaptureOptions::default()).await
 }
@@ -80,11 +80,11 @@ pub async fn capture_pane(
 #[tracing::instrument(skip(executor))]
 pub async fn capture_pane_with_options(
     executor: &(impl TmuxExecutor + ?Sized),
-    target: &str,
+    target: &PaneTarget,
     opts: &CaptureOptions,
 ) -> Result<String, TmuxError> {
-    validate_pane_target(target)?;
-    let mut args: Vec<&str> = vec!["capture-pane", "-p", "-t", target];
+    let target_str = target.as_str();
+    let mut args: Vec<&str> = vec!["capture-pane", "-p", "-t", target_str];
 
     let start_str;
     if let Some(start) = opts.start_line {
@@ -109,7 +109,7 @@ pub async fn capture_pane_with_options(
         return Err(TmuxError::from_stderr(
             "capture-pane",
             &output.stderr,
-            target,
+            target_str,
         ));
     }
     Ok(normalize_pane_content(&output.stdout))

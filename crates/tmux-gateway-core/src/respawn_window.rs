@@ -1,6 +1,6 @@
 use super::TmuxError;
 use crate::executor::TmuxExecutor;
-use crate::validation::{validate_command, validate_window_target};
+use crate::validation::{WindowTarget, validate_command};
 
 /// Respawn a dead window, optionally with a new command.
 ///
@@ -10,20 +10,20 @@ use crate::validation::{validate_command, validate_window_target};
 #[tracing::instrument(skip(executor))]
 pub async fn respawn_window(
     executor: &(impl TmuxExecutor + ?Sized),
-    target: &str,
+    target: &WindowTarget,
     command: Option<&str>,
     kill_existing: bool,
 ) -> Result<(), TmuxError> {
-    validate_window_target(target)?;
     if let Some(cmd) = command {
         validate_command(cmd)?;
     }
 
+    let target_str = target.as_str();
     let mut args: Vec<&str> = vec!["respawn-window"];
     if kill_existing {
         args.push("-k");
     }
-    args.extend_from_slice(&["-t", target]);
+    args.extend_from_slice(&["-t", target_str]);
     if let Some(cmd) = command {
         args.push(cmd);
     }
@@ -33,7 +33,7 @@ pub async fn respawn_window(
         return Err(TmuxError::from_stderr(
             "respawn-window",
             &output.stderr,
-            target,
+            target_str,
         ));
     }
     Ok(())
@@ -69,7 +69,8 @@ mod tests {
                 success: true,
             }),
         };
-        let result = respawn_window(&executor, "sess:0", None, false).await;
+        let target = WindowTarget::try_from("sess:0").unwrap();
+        let result = respawn_window(&executor, &target, None, false).await;
         assert!(result.is_ok());
     }
 
@@ -82,7 +83,8 @@ mod tests {
                 success: true,
             }),
         };
-        let result = respawn_window(&executor, "sess:0", Some("bash"), false).await;
+        let target = WindowTarget::try_from("sess:0").unwrap();
+        let result = respawn_window(&executor, &target, Some("bash"), false).await;
         assert!(result.is_ok());
     }
 
@@ -95,21 +97,14 @@ mod tests {
                 success: true,
             }),
         };
-        let result = respawn_window(&executor, "sess:0", Some("bash"), true).await;
+        let target = WindowTarget::try_from("sess:0").unwrap();
+        let result = respawn_window(&executor, &target, Some("bash"), true).await;
         assert!(result.is_ok());
     }
 
     #[tokio::test]
     async fn respawn_window_invalid_target() {
-        let executor = MockExecutor {
-            result: Ok(TmuxOutput {
-                stdout: String::new(),
-                stderr: String::new(),
-                success: true,
-            }),
-        };
-        let result = respawn_window(&executor, "", None, false).await;
-        assert!(matches!(result, Err(TmuxError::Validation(_))));
+        assert!(WindowTarget::try_from("").is_err());
     }
 
     #[tokio::test]
@@ -121,7 +116,8 @@ mod tests {
                 success: true,
             }),
         };
-        let result = respawn_window(&executor, "sess:0", Some("rm; evil"), false).await;
+        let target = WindowTarget::try_from("sess:0").unwrap();
+        let result = respawn_window(&executor, &target, Some("rm; evil"), false).await;
         assert!(matches!(result, Err(TmuxError::Validation(_))));
     }
 
@@ -134,7 +130,8 @@ mod tests {
                 success: false,
             }),
         };
-        let result = respawn_window(&executor, "sess:99", None, false).await;
+        let target = WindowTarget::try_from("sess:99").unwrap();
+        let result = respawn_window(&executor, &target, None, false).await;
         assert!(matches!(result, Err(TmuxError::WindowNotFound(_))));
     }
 
@@ -147,7 +144,8 @@ mod tests {
                 success: false,
             }),
         };
-        let result = respawn_window(&executor, "sess:0", None, false).await;
+        let target = WindowTarget::try_from("sess:0").unwrap();
+        let result = respawn_window(&executor, &target, None, false).await;
         assert!(matches!(result, Err(TmuxError::TmuxNotRunning)));
     }
 }

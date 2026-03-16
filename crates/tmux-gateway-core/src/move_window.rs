@@ -1,6 +1,6 @@
 use super::TmuxError;
 use crate::executor::TmuxExecutor;
-use crate::validation::{validate_session_target, validate_window_target};
+use crate::validation::{SessionName, WindowTarget};
 
 /// Move a window from one session to another.
 ///
@@ -9,19 +9,19 @@ use crate::validation::{validate_session_target, validate_window_target};
 #[tracing::instrument(skip(executor))]
 pub async fn move_window(
     executor: &(impl TmuxExecutor + ?Sized),
-    source: &str,
-    destination_session: &str,
+    source: &WindowTarget,
+    destination_session: &SessionName,
 ) -> Result<(), TmuxError> {
-    validate_window_target(source)?;
-    validate_session_target(destination_session)?;
+    let source_str = source.as_str();
+    let dest_str = destination_session.as_str();
     let output = executor
-        .execute(&["move-window", "-s", source, "-t", destination_session])
+        .execute(&["move-window", "-s", source_str, "-t", dest_str])
         .await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
             "move-window",
             &output.stderr,
-            source,
+            source_str,
         ));
     }
     Ok(())
