@@ -34,11 +34,16 @@ async fn main() -> anyhow::Result<()> {
     let swagger_url = format!("http://localhost:{}/swagger-ui", http_port);
     let graphql_url = format!("http://localhost:{}/graphql", http_port);
     let grpcui_cmd = format!("grpcui -plaintext localhost:{}", grpc_port);
+    let ws_url = format!(
+        "https://piehost.com/websocket-tester?url=ws://localhost:{}/ws/pane/{{session}}:{{window}}.{{pane}}?interval_ms=500",
+        http_port
+    );
 
     port_table::print_port_table(&[
         ("REST", http_port, swagger_url.as_str()),
         ("GraphQL", http_port, graphql_url.as_str()),
         ("gRPC", grpc_port, grpcui_cmd.as_str()),
+        ("WebSocket", http_port, ws_url.as_str()),
     ]);
 
     if let Some(ref path) = http_socket {

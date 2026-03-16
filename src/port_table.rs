@@ -1,16 +1,36 @@
 use std::net::TcpStream;
 
 pub fn format_port_table(ports: &[(&str, u16, &str)]) -> String {
+    // Determine the width of the Explorer column based on content (min 43).
+    let explorer_width = ports
+        .iter()
+        .map(|(_, _, e)| e.len())
+        .max()
+        .unwrap_or(0)
+        .max(43);
+
+    let separator_top = format!(
+        "┌──────────────┬───────┬────────┬─{}┐\n",
+        "─".repeat(explorer_width + 2)
+    );
+    let header = format!(
+        "│ Service      │ Port  │ Status │ {:<width$} │\n",
+        "Explorer",
+        width = explorer_width
+    );
+    let separator_mid = format!(
+        "├──────────────┼───────┼────────┼─{}┤\n",
+        "─".repeat(explorer_width + 2)
+    );
+    let separator_bot = format!(
+        "└──────────────┴───────┴────────┴─{}┘\n",
+        "─".repeat(explorer_width + 2)
+    );
+
     let mut out = String::new();
-    out.push_str(
-        "┌──────────────┬───────┬────────┬─────────────────────────────────────────────┐\n",
-    );
-    out.push_str(
-        "│ Service      │ Port  │ Status │ Explorer                                    │\n",
-    );
-    out.push_str(
-        "├──────────────┼───────┼────────┼─────────────────────────────────────────────┤\n",
-    );
+    out.push_str(&separator_top);
+    out.push_str(&header);
+    out.push_str(&separator_mid);
     for (name, port, explorer) in ports {
         let status = if TcpStream::connect(("127.0.0.1", *port)).is_err() {
             "free"
@@ -18,13 +38,15 @@ pub fn format_port_table(ports: &[(&str, u16, &str)]) -> String {
             "in use"
         };
         out.push_str(&format!(
-            "│ {:<12} │ {:<5} │ {:<6} │ {:<43} │\n",
-            name, port, status, explorer
+            "│ {:<12} │ {:<5} │ {:<6} │ {:<width$} │\n",
+            name,
+            port,
+            status,
+            explorer,
+            width = explorer_width
         ));
     }
-    out.push_str(
-        "└──────────────┴───────┴────────┴─────────────────────────────────────────────┘\n",
-    );
+    out.push_str(&separator_bot);
     out
 }
 
