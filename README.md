@@ -20,9 +20,12 @@ No hand-written DTOs on the client side — pick your protocol, point your code 
 
 ```mermaid
 graph TD
-    Client_HTTP[":8080"] --> REST
-    Client_HTTP --> GraphQL
-    Client_gRPC[":50051"] --> gRPC
+    Client_HTTP_TCP[":8080"] --> REST
+    Client_HTTP_TCP --> GraphQL
+    Client_HTTP_Sock["unix:///tmp/tmux-gateway-http.sock"] --> REST
+    Client_HTTP_Sock --> GraphQL
+    Client_gRPC_TCP[":50051"] --> gRPC
+    Client_gRPC_Sock["unix:///tmp/tmux-gateway-grpc.sock"] --> gRPC
 
     REST --> Core["tmux-gateway-core (domain)"]
     GraphQL --> Core
@@ -39,11 +42,11 @@ graph TD
     end
 ```
 
-| Protocol | Port  | Use case                                                               |
-| -------- | ----- | ---------------------------------------------------------------------- |
-| REST     | 8080  | Simple integrations, curl, scripts                                     |
-| GraphQL  | 8080  | Flexible queries, web UIs (includes GraphiQL playground at `/graphql`) |
-| gRPC     | 50051 | High-performance, typed clients, service-to-service                    |
+| Protocol | Port  | Unix Socket                          | Use case                                                               |
+| -------- | ----- | ------------------------------------ | ---------------------------------------------------------------------- |
+| REST     | 8080  | `/tmp/tmux-gateway-http.sock`        | Simple integrations, curl, scripts                                     |
+| GraphQL  | 8080  | `/tmp/tmux-gateway-http.sock`        | Flexible queries, web UIs (includes GraphiQL playground at `/graphql`) |
+| gRPC     | 50051 | `/tmp/tmux-gateway-grpc.sock`        | High-performance, typed clients, service-to-service                    |
 
 ## Getting Started
 
@@ -85,17 +88,24 @@ Configure ports and settings via `.env`.
 
 The `make build` command compiles the project and generates all API schema files (`schemas/openapi.json`, `schemas/schema.graphql`, `schemas/tmux_gateway.proto`) — the proto is code-generated from Rust macros, not hand-maintained.
 
-The server starts two listeners:
+The server starts two listeners (each available over TCP and optionally a Unix socket):
 
-- **HTTP** (REST + GraphQL) on `http://localhost:8080`
-- **gRPC** on `localhost:50051`
+- **HTTP** (REST + GraphQL) on `http://localhost:8080` and `unix:///tmp/tmux-gateway-http.sock`
+- **gRPC** on `localhost:50051` and `unix:///tmp/tmux-gateway-grpc.sock`
 
 ### Configuration
 
-Logging is controlled via the `RUST_LOG` environment variable:
+| Variable      | Description                                          | Default |
+| ------------- | ---------------------------------------------------- | ------- |
+| `RUST_LOG`    | Logging filter                                       | —       |
+| `HTTP_SOCKET` | Unix socket path for HTTP server (empty = disabled)  | —       |
+| `GRPC_SOCKET` | Unix socket path for gRPC server (empty = disabled)  | —       |
 
 ```bash
 RUST_LOG=tmux_gateway=debug cargo run
+
+# Enable Unix sockets
+HTTP_SOCKET=/tmp/tmux-gateway-http.sock GRPC_SOCKET=/tmp/tmux-gateway-grpc.sock cargo run
 ```
 
 ## API Quick Reference
@@ -110,6 +120,13 @@ curl http://localhost:8080/health
 curl http://localhost:8080/ls
 ```
 
+Via Unix socket:
+
+```bash
+curl --unix-socket /tmp/tmux-gateway-http.sock http://localhost/health
+curl --unix-socket /tmp/tmux-gateway-http.sock http://localhost/ls
+```
+
 Full Swagger UI available at `http://localhost:8080/swagger-ui`.
 
 ### GraphQL
@@ -118,6 +135,14 @@ Open the interactive GraphiQL playground at `http://localhost:8080/graphql`, or 
 
 ```bash
 curl -X POST http://localhost:8080/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ sessions { name windows created attached } }"}'
+```
+
+Via Unix socket:
+
+```bash
+curl --unix-socket /tmp/tmux-gateway-http.sock -X POST http://localhost/graphql \
   -H "Content-Type: application/json" \
   -d '{"query": "{ sessions { name windows created attached } }"}'
 ```
@@ -132,6 +157,13 @@ grpcurl -plaintext localhost:50051 grpc.health.v1.Health/Check
 
 # List tmux sessions
 grpcurl -plaintext localhost:50051 tmux_gateway.TmuxGateway/Ls
+```
+
+Via Unix socket:
+
+```bash
+grpcurl -plaintext -unix /tmp/tmux-gateway-grpc.sock grpc.health.v1.Health/Check
+grpcurl -plaintext -unix /tmp/tmux-gateway-grpc.sock tmux_gateway.TmuxGateway/Ls
 ```
 
 ## Project Structure
