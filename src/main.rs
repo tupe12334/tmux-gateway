@@ -199,9 +199,8 @@ async fn main() -> anyhow::Result<()> {
     // Optionally bind an HTTP Unix socket listener.
     let http_unix_handle = if let Some(ref socket_path) = http_socket {
         remove_stale_socket(socket_path);
-        let uds = tokio::net::UnixListener::bind(socket_path).with_context(|| {
-            format!("failed to bind HTTP Unix socket at {socket_path}")
-        })?;
+        let uds = tokio::net::UnixListener::bind(socket_path)
+            .with_context(|| format!("failed to bind HTTP Unix socket at {socket_path}"))?;
         tracing::info!("HTTP Unix socket listening on {socket_path}");
         let app = http_app.clone();
         let mut rx = shutdown_tx.subscribe();
@@ -339,9 +338,8 @@ async fn main() -> anyhow::Result<()> {
     // Optionally bind a gRPC Unix socket listener.
     let grpc_unix_handle = if let Some(ref socket_path) = grpc_socket {
         remove_stale_socket(socket_path);
-        let uds = tokio::net::UnixListener::bind(socket_path).with_context(|| {
-            format!("failed to bind gRPC Unix socket at {socket_path}")
-        })?;
+        let uds = tokio::net::UnixListener::bind(socket_path)
+            .with_context(|| format!("failed to bind gRPC Unix socket at {socket_path}"))?;
         tracing::info!("gRPC Unix socket listening on {socket_path}");
         let incoming = tokio_stream::wrappers::UnixListenerStream::new(uds);
 

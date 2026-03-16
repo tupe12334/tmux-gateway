@@ -189,10 +189,7 @@ fn check_socket_env(var: &str, checks: &mut Vec<Check>) -> Option<String> {
                     checks.push(Check {
                         name: var.into(),
                         status: Status::Fail,
-                        message: format!(
-                            "parent directory {} does not exist",
-                            parent.display()
-                        ),
+                        message: format!("parent directory {} does not exist", parent.display()),
                     });
                     return None;
                 }
