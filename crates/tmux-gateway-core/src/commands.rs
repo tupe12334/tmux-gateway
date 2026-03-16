@@ -1,12 +1,13 @@
 use super::{
     CaptureOptions, EnvVar, HealthStatus, OptionScope, PaneLayout, RealTmuxExecutor,
-    ResizeDirection, SessionDetail, TmuxError, TmuxOption, TmuxPane, TmuxSession, TmuxWindow,
-    capture_pane, capture_pane_with_options, create_session_with_windows, ensure_session,
-    ensure_window, get_option, get_server_env, get_session_detail, health_check, kill_pane,
-    kill_session, kill_window, list_options, list_panes, list_server_environment, list_sessions,
-    list_windows, move_window, new_session, new_window, rename_session, rename_window, resize_pane,
-    select_layout, select_pane, select_window, send_keys, set_option, set_server_env, split_window,
-    swap_panes, swap_window, unset_server_env,
+    ResizeDirection, SessionDetail, TmuxEnvVar, TmuxError, TmuxOption, TmuxPane, TmuxSession,
+    TmuxWindow, capture_pane, capture_pane_with_options, create_session_with_windows,
+    ensure_session, ensure_window, get_option, get_server_env, get_session_detail, health_check,
+    kill_pane, kill_session, kill_window, list_options, list_panes, list_server_environment,
+    list_sessions, list_windows, move_window, new_session, new_window, rename_session,
+    rename_window, resize_pane, select_layout, select_pane, select_window, send_keys, set_environment,
+    set_option, set_server_env, show_environment, split_window, swap_panes, swap_window,
+    unset_environment, unset_server_env,
 };
 
 /// All API layers (REST, gRPC, GraphQL) must implement this trait.
@@ -226,5 +227,26 @@ pub trait TmuxCommands {
         name: &str,
     ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
         async move { unset_server_env(&RealTmuxExecutor, name).await }
+    }
+    fn show_environment(
+        &self,
+        session: &str,
+    ) -> impl std::future::Future<Output = Result<Vec<TmuxEnvVar>, TmuxError>> + Send {
+        async move { show_environment(&RealTmuxExecutor, session).await }
+    }
+    fn set_environment(
+        &self,
+        session: &str,
+        name: &str,
+        value: &str,
+    ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
+        async move { set_environment(&RealTmuxExecutor, session, name, value).await }
+    }
+    fn unset_environment(
+        &self,
+        session: &str,
+        name: &str,
+    ) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
+        async move { unset_environment(&RealTmuxExecutor, session, name).await }
     }
 }

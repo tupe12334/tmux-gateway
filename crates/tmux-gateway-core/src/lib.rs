@@ -27,6 +27,7 @@ mod select_window;
 mod send_keys;
 mod server_environment;
 mod server_info;
+mod session_environment;
 mod session_detail;
 mod sessions;
 mod split_window;
@@ -68,6 +69,9 @@ pub use server_environment::{
     EnvVar, get_server_env, list_server_environment, set_server_env, unset_server_env,
 };
 pub use server_info::{TmuxServerInfo, is_available, server_info};
+pub use session_environment::{
+    TmuxEnvVar, set_environment, show_environment, unset_environment,
+};
 pub use session_detail::{SessionDetail, WindowDetail, get_session_detail};
 pub use sessions::{
     TmuxSession, get_session, list_sessions, list_sessions_paginated, list_sessions_with_log,
