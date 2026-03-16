@@ -33,6 +33,7 @@
     "prost",
     "protoc",
     "protox",
+    "RAII",
     "rposition",
     "rustdoc",
     "RUSTSEC",
