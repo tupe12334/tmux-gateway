@@ -1,3 +1,7 @@
+"""
+Scope at which a tmux option is set.
+See: https://man.openbsd.org/tmux#OPTIONS
+"""
 enum GqlOptionScope {
 	GLOBAL
 	SESSION
@@ -5,25 +9,97 @@ enum GqlOptionScope {
 }
 
 type MutationRoot {
+	"""
+	Create a new tmux session.
+	See: https://man.openbsd.org/tmux#new-session
+	"""
 	createSession(name: String!, command: String = null): Session!
+	"""
+	Destroy a session.
+	See: https://man.openbsd.org/tmux#kill-session
+	"""
 	killSession(target: String!): Boolean!
+	"""
+	Destroy a window.
+	See: https://man.openbsd.org/tmux#kill-window
+	"""
 	killWindow(target: String!): Boolean!
+	"""
+	Destroy a pane.
+	See: https://man.openbsd.org/tmux#kill-pane
+	"""
 	killPane(target: String!): Boolean!
+	"""
+	Send key(s) to a pane.
+	See: https://man.openbsd.org/tmux#send-keys
+	"""
 	sendKeys(target: String!, keys: [String!]!): Boolean!
+	"""
+	Rename a session.
+	See: https://man.openbsd.org/tmux#rename-session
+	"""
 	renameSession(target: String!, newName: String!): Boolean!
+	"""
+	Rename a window.
+	See: https://man.openbsd.org/tmux#rename-window
+	"""
 	renameWindow(target: String!, newName: String!): Boolean!
+	"""
+	Create a new window in a session.
+	See: https://man.openbsd.org/tmux#new-window
+	"""
 	newWindow(session: String!, name: String!, command: String = null): Window!
+	"""
+	Split a pane to create a new pane.
+	See: https://man.openbsd.org/tmux#split-window
+	"""
 	splitWindow(target: String!, horizontal: Boolean!, command: String = null): Pane!
+	"""
+	Create a session with multiple named windows.
+	See: https://man.openbsd.org/tmux#new-session
+	"""
 	createSessionWithWindows(name: String!, windowNames: [String!]!): Session!
+	"""
+	Swap two panes.
+	See: https://man.openbsd.org/tmux#swap-pane
+	"""
 	swapPanes(src: String!, dst: String!): Boolean!
+	"""
+	Move a window to another session.
+	See: https://man.openbsd.org/tmux#move-window
+	"""
 	moveWindow(source: String!, destinationSession: String!): Boolean!
+	"""
+	Select (activate) a window.
+	See: https://man.openbsd.org/tmux#select-window
+	"""
 	selectWindow(target: String!): Boolean!
+	"""
+	Select (activate) a pane.
+	See: https://man.openbsd.org/tmux#select-pane
+	"""
 	selectPane(target: String!): Boolean!
+	"""
+	Apply a layout to a window.
+	See: https://man.openbsd.org/tmux#select-layout
+	"""
 	selectLayout(target: String!, layout: String!): Boolean!
+	"""
+	Resize a pane.
+	See: https://man.openbsd.org/tmux#resize-pane
+	"""
 	resizePane(target: String!, direction: String!, amount: Int!): Boolean!
+	"""
+	Set a tmux option.
+	See: https://man.openbsd.org/tmux#set-option
+	"""
 	setOption(name: String!, value: String!, scope: GqlOptionScope!, target: String = null): Boolean!
 }
 
+"""
+A tmux pane.
+See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES
+"""
 type Pane {
 	id: String!
 	width: Int!
@@ -41,15 +117,47 @@ type PaneOutputEvent {
 
 type QueryRoot {
 	health: String!
+	"""
+	List all tmux sessions.
+	See: https://man.openbsd.org/tmux#list-sessions
+	"""
 	ls: [Session!]!
+	"""
+	List windows in a session.
+	See: https://man.openbsd.org/tmux#list-windows
+	"""
 	listWindows(session: String!): [Window!]!
+	"""
+	List panes in a window.
+	See: https://man.openbsd.org/tmux#list-panes
+	"""
 	listPanes(target: String!): [Pane!]!
+	"""
+	Capture the visible contents of a pane.
+	See: https://man.openbsd.org/tmux#capture-pane
+	"""
 	capturePane(target: String!): String!
+	"""
+	Capture pane contents with advanced options.
+	See: https://man.openbsd.org/tmux#capture-pane
+	"""
 	capturePaneWithOptions(target: String!, startLine: Int, endLine: Int, escapeSequences: Boolean! = false): String!
+	"""
+	Get a tmux option value.
+	See: https://man.openbsd.org/tmux#show-options
+	"""
 	getOption(name: String!, scope: GqlOptionScope!, target: String = null): String!
+	"""
+	List tmux options for a scope.
+	See: https://man.openbsd.org/tmux#show-options
+	"""
 	listOptions(scope: GqlOptionScope!, target: String = null): [TmuxOptionGql!]!
 }
 
+"""
+A tmux session.
+See: https://man.openbsd.org/tmux#CLIENTS_AND_SESSIONS
+"""
 type Session {
 	id: String!
 	name: String!
@@ -62,12 +170,20 @@ type SubscriptionRoot {
 	paneOutput(target: String!, intervalMs: Int! = 500): PaneOutputEvent!
 }
 
+"""
+A tmux option (name-value pair with scope).
+See: https://man.openbsd.org/tmux#OPTIONS
+"""
 type TmuxOptionGql {
 	name: String!
 	value: String!
 	scope: GqlOptionScope!
 }
 
+"""
+A tmux window.
+See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES
+"""
 type Window {
 	id: String!
 	index: Int!

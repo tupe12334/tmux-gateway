@@ -5,6 +5,9 @@ use super::validation::SessionName;
 use crate::executor::TmuxExecutor;
 use crate::pagination::{PaginatedResult, Pagination, paginate};
 
+/// A tmux window.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#WINDOWS_AND_PANES)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TmuxWindow {
     pub id: String,
@@ -53,6 +56,9 @@ pub(crate) fn parse_window_line(line: &str) -> Result<TmuxWindow, TmuxError> {
     })
 }
 
+/// List all windows in a session.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#list-windows)
 #[tracing::instrument(skip(executor))]
 pub async fn list_windows(
     executor: &(impl TmuxExecutor + ?Sized),

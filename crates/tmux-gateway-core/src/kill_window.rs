@@ -5,6 +5,9 @@ use crate::validation::WindowTarget;
 
 use super::TmuxError;
 
+/// Destroy the given window.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#kill-window)
 #[tracing::instrument(skip(executor))]
 pub async fn kill_window(
     executor: &(impl TmuxExecutor + ?Sized),

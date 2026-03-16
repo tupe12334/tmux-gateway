@@ -7,6 +7,8 @@ use crate::validation::{PaneTarget, validate_command};
 /// If `kill_existing` is `true`, the `-k` flag is passed to kill an active
 /// pane before respawning it. Without `-k`, tmux will error when the pane
 /// is still running.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#respawn-pane)
 #[tracing::instrument(skip(executor))]
 pub async fn respawn_pane(
     executor: &(impl TmuxExecutor + ?Sized),

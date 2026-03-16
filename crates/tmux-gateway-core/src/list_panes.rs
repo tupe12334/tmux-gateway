@@ -5,6 +5,9 @@ use super::validation::WindowTarget;
 use crate::executor::TmuxExecutor;
 use crate::pagination::{PaginatedResult, Pagination, paginate};
 
+/// A tmux pane.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#WINDOWS_AND_PANES)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TmuxPane {
     pub id: String,
@@ -62,6 +65,9 @@ pub(crate) fn parse_pane_line(line: &str) -> Result<TmuxPane, TmuxError> {
     })
 }
 
+/// List all panes in a window.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#list-panes)
 #[tracing::instrument(skip(executor))]
 pub async fn list_panes(
     executor: &(impl TmuxExecutor + ?Sized),

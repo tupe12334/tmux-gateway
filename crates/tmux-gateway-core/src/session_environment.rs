@@ -3,6 +3,9 @@ use crate::validation::{SessionName, validate_env_var_name, validate_env_var_val
 
 use super::TmuxError;
 
+/// A tmux session environment variable.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#ENVIRONMENT)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TmuxEnvVar {
     pub name: String,
@@ -42,6 +45,8 @@ pub(crate) fn parse_session_env_line(line: &str) -> Option<TmuxEnvVar> {
 }
 
 /// List all environment variables for a session.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#show-environment)
 #[tracing::instrument(skip(executor))]
 pub async fn show_environment(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -70,6 +75,8 @@ pub async fn show_environment(
 }
 
 /// Set an environment variable for a session.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#set-environment)
 #[tracing::instrument(skip(executor))]
 pub async fn set_environment(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -94,6 +101,8 @@ pub async fn set_environment(
 }
 
 /// Remove an environment variable from a session.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#set-environment)
 #[tracing::instrument(skip(executor))]
 pub async fn unset_environment(
     executor: &(impl TmuxExecutor + ?Sized),

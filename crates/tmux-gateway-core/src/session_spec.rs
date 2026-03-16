@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
 /// Direction for splitting a pane.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#split-window)
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SplitDirection {

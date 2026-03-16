@@ -3,6 +3,9 @@ use crate::validation::{validate_env_var_name, validate_env_var_value};
 
 use super::TmuxError;
 
+/// A tmux server-level environment variable.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#ENVIRONMENT)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EnvVar {
     pub name: String,
@@ -30,6 +33,8 @@ pub(crate) fn parse_env_line(line: &str) -> Option<EnvVar> {
 }
 
 /// List all server-level (global) environment variables.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#show-environment)
 #[tracing::instrument(skip(executor))]
 pub async fn list_server_environment(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -54,6 +59,8 @@ pub async fn list_server_environment(
 }
 
 /// Get a specific server-level environment variable by name.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#show-environment)
 #[tracing::instrument(skip(executor))]
 pub async fn get_server_env(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -82,6 +89,8 @@ pub async fn get_server_env(
 }
 
 /// Set a server-level environment variable.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#set-environment)
 #[tracing::instrument(skip(executor))]
 pub async fn set_server_env(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -104,6 +113,8 @@ pub async fn set_server_env(
 }
 
 /// Remove a server-level environment variable.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#set-environment)
 #[tracing::instrument(skip(executor))]
 pub async fn unset_server_env(
     executor: &(impl TmuxExecutor + ?Sized),

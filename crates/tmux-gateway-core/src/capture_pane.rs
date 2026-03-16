@@ -5,6 +5,8 @@ use crate::validation::PaneTarget;
 use super::TmuxError;
 
 /// Options for controlling what content is captured from a pane.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#capture-pane)
 #[derive(Debug, Clone, Default)]
 pub struct CaptureOptions {
     /// Starting line number (-S flag). Negative values reach into scroll history.
@@ -70,6 +72,9 @@ pub fn normalize_pane_content(raw: &str) -> String {
     }
 }
 
+/// Capture the visible contents of a pane.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#capture-pane)
 #[tracing::instrument(skip(executor))]
 pub async fn capture_pane(
     executor: &(impl TmuxExecutor + ?Sized),

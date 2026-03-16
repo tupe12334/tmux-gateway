@@ -5,6 +5,9 @@ use crate::validation::{SessionName, validate_command, validate_window_name};
 
 use super::TmuxError;
 
+/// Create a new window in a session.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#new-window)
 #[tracing::instrument(skip(executor))]
 pub async fn new_window(
     executor: &(impl TmuxExecutor + ?Sized),

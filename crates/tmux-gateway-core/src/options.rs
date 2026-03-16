@@ -3,6 +3,9 @@ use crate::validation::{validate_option_name, validate_option_scope_target};
 
 use super::TmuxError;
 
+/// A tmux option (name-value pair with scope).
+///
+/// [tmux docs](https://man.openbsd.org/tmux#OPTIONS)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TmuxOption {
     pub name: String,
@@ -10,6 +13,9 @@ pub struct TmuxOption {
     pub scope: OptionScope,
 }
 
+/// Scope at which a tmux option is set.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#OPTIONS)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OptionScope {
     Global,
@@ -38,6 +44,9 @@ impl std::fmt::Display for OptionScope {
     }
 }
 
+/// Get a single tmux option by name.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#show-options)
 #[tracing::instrument(skip(executor))]
 pub async fn get_option(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -79,6 +88,9 @@ pub async fn get_option(
     })
 }
 
+/// Set a tmux option.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#set-option)
 #[tracing::instrument(skip(executor))]
 pub async fn set_option(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -110,6 +122,9 @@ pub async fn set_option(
     Ok(())
 }
 
+/// List all tmux options for the given scope.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#show-options)
 #[tracing::instrument(skip(executor))]
 pub async fn list_options(
     executor: &(impl TmuxExecutor + ?Sized),

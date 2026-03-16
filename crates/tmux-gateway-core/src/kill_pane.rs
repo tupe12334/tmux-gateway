@@ -3,6 +3,9 @@ use crate::validation::PaneTarget;
 
 use super::TmuxError;
 
+/// Destroy the given pane.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#kill-pane)
 #[tracing::instrument(skip(executor))]
 pub async fn kill_pane(
     executor: &(impl TmuxExecutor + ?Sized),

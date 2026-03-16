@@ -2,31 +2,58 @@ syntax = "proto3";
 
 package tmux_gateway;
 
+// TmuxGateway provides a gRPC interface to tmux operations.
+// See: https://man.openbsd.org/tmux
 service TmuxGateway {
+  // List all sessions. See: https://man.openbsd.org/tmux#list-sessions
   rpc Ls(LsRequest) returns (LsResponse);
+  // Create a new session. See: https://man.openbsd.org/tmux#new-session
   rpc NewSession(NewSessionRequest) returns (NewSessionResponse);
+  // Destroy a session. See: https://man.openbsd.org/tmux#kill-session
   rpc KillSession(KillSessionRequest) returns (KillSessionResponse);
+  // Destroy a window. See: https://man.openbsd.org/tmux#kill-window
   rpc KillWindow(KillWindowRequest) returns (KillWindowResponse);
+  // Destroy a pane. See: https://man.openbsd.org/tmux#kill-pane
   rpc KillPane(KillPaneRequest) returns (KillPaneResponse);
+  // List windows in a session. See: https://man.openbsd.org/tmux#list-windows
   rpc ListWindows(ListWindowsRequest) returns (ListWindowsResponse);
+  // List panes in a window. See: https://man.openbsd.org/tmux#list-panes
   rpc ListPanes(ListPanesRequest) returns (ListPanesResponse);
+  // Send key(s) to a pane. See: https://man.openbsd.org/tmux#send-keys
   rpc SendKeys(SendKeysRequest) returns (SendKeysResponse);
+  // Rename a session. See: https://man.openbsd.org/tmux#rename-session
   rpc RenameSession(RenameSessionRequest) returns (RenameSessionResponse);
+  // Rename a window. See: https://man.openbsd.org/tmux#rename-window
   rpc RenameWindow(RenameWindowRequest) returns (RenameWindowResponse);
+  // Create a new window. See: https://man.openbsd.org/tmux#new-window
   rpc NewWindow(NewWindowRequest) returns (NewWindowResponse);
+  // Split a pane to create a new pane. See: https://man.openbsd.org/tmux#split-window
   rpc SplitWindow(SplitWindowRequest) returns (SplitWindowResponse);
+  // Capture pane contents. See: https://man.openbsd.org/tmux#capture-pane
   rpc CapturePane(CapturePaneRequest) returns (CapturePaneResponse);
+  // Capture pane contents with options. See: https://man.openbsd.org/tmux#capture-pane
   rpc CapturePaneWithOptions(CapturePaneWithOptionsRequest) returns (CapturePaneWithOptionsResponse);
+  // Create a session with multiple windows. See: https://man.openbsd.org/tmux#new-session
   rpc CreateSessionWithWindows(CreateSessionWithWindowsRequest) returns (CreateSessionWithWindowsResponse);
+  // Swap two panes. See: https://man.openbsd.org/tmux#swap-pane
   rpc SwapPanes(SwapPanesRequest) returns (SwapPanesResponse);
+  // Move a window to another session. See: https://man.openbsd.org/tmux#move-window
   rpc MoveWindow(MoveWindowRequest) returns (MoveWindowResponse);
+  // Select (activate) a window. See: https://man.openbsd.org/tmux#select-window
   rpc SelectWindow(SelectWindowRequest) returns (SelectWindowResponse);
+  // Select (activate) a pane. See: https://man.openbsd.org/tmux#select-pane
   rpc SelectPane(SelectPaneRequest) returns (SelectPaneResponse);
+  // Resize a pane. See: https://man.openbsd.org/tmux#resize-pane
   rpc ResizePane(ResizePaneRequest) returns (ResizePaneResponse);
+  // Apply a layout to a window. See: https://man.openbsd.org/tmux#select-layout
   rpc SelectLayout(SelectLayoutRequest) returns (SelectLayoutResponse);
+  // Get a tmux option. See: https://man.openbsd.org/tmux#show-options
   rpc GetOption(GetOptionRequest) returns (GetOptionResponse);
+  // Set a tmux option. See: https://man.openbsd.org/tmux#set-option
   rpc SetOption(SetOptionRequest) returns (SetOptionResponse);
+  // List tmux options. See: https://man.openbsd.org/tmux#show-options
   rpc ListOptions(ListOptionsRequest) returns (ListOptionsResponse);
+  // Stream pane output. See: https://man.openbsd.org/tmux#capture-pane
   rpc StreamPaneOutput(StreamPaneOutputRequest) returns (stream StreamPaneOutputResponse);
 }
 
@@ -36,6 +63,7 @@ message LsResponse {
   repeated TmuxSession sessions = 1;
 }
 
+// A tmux session. See: https://man.openbsd.org/tmux#CLIENTS_AND_SESSIONS
 message TmuxSession {
   string id = 1;
   string name = 2;
@@ -83,6 +111,7 @@ message ListWindowsResponse {
   repeated TmuxWindow windows = 1;
 }
 
+// A tmux window. See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES
 message TmuxWindow {
   string id = 1;
   uint32 index = 2;
@@ -99,6 +128,7 @@ message ListPanesResponse {
   repeated TmuxPaneMsg panes = 1;
 }
 
+// A tmux pane. See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES
 message TmuxPaneMsg {
   string id = 1;
   uint32 width = 2;
@@ -235,6 +265,7 @@ message SelectLayoutRequest {
 
 message SelectLayoutResponse {}
 
+// A tmux option. See: https://man.openbsd.org/tmux#OPTIONS
 message GetOptionRequest {
   string name = 1;
   string scope = 2;
@@ -265,6 +296,7 @@ message ListOptionsResponse {
   repeated TmuxOptionMsg options = 1;
 }
 
+// A tmux option (name-value pair with scope). See: https://man.openbsd.org/tmux#OPTIONS
 message TmuxOptionMsg {
   string name = 1;
   string value = 2;
@@ -280,4 +312,3 @@ message StreamPaneOutputResponse {
   string content = 1;
   int64 timestamp = 2;
 }
-

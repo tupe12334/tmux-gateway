@@ -3,6 +3,9 @@ use crate::validation::WindowTarget;
 
 use super::TmuxError;
 
+/// Select (activate) a window.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#select-window)
 #[tracing::instrument(skip(executor))]
 pub async fn select_window(
     executor: &(impl TmuxExecutor + ?Sized),
