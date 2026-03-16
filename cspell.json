@@ -60,6 +60,7 @@
     "txyz",
     "utoipa",
     "websocat",
-    "asyncapi"
+    "asyncapi",
+    "commitlint"
   ]
 }
