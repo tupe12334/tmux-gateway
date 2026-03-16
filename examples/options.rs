@@ -13,7 +13,7 @@ use tmux_gateway_core::{OptionScope, RealTmuxExecutor, get_option, list_options,
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let executor = RealTmuxExecutor;
+    let executor = RealTmuxExecutor::new();
 
     // ── 1. Global option ────────────────────────────────────────────
     println!("=== Global options ===");

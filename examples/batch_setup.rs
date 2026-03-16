@@ -14,7 +14,7 @@ const SESSION_NAME: &str = "batch-setup-example";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let executor = RealTmuxExecutor;
+    let executor = RealTmuxExecutor::new();
 
     let window_names: Vec<String> = vec!["editor".into(), "server".into(), "logs".into()];
 

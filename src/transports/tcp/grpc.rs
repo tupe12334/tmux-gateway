@@ -36,7 +36,7 @@ pub async fn spawn(
                 loop {
                     let healthy = tokio::time::timeout(
                         CHECK_TIMEOUT,
-                        tmux_gateway_core::is_available(&tmux_gateway_core::RealTmuxExecutor),
+                        tmux_gateway_core::is_available(&tmux_gateway_core::RealTmuxExecutor::new()),
                     )
                     .await
                     .unwrap_or(false);

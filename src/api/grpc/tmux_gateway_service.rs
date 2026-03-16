@@ -485,7 +485,7 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
         let interval_ms = inner.interval_ms.max(100);
 
         // Validate target by doing an initial capture
-        tmux::capture_pane(&RealTmuxExecutor, &target)
+        tmux::capture_pane(&RealTmuxExecutor::new(), &target)
             .await
             .map_err(tmux_err_to_status)?;
 
@@ -497,7 +497,7 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
 
             loop {
                 ticker.tick().await;
-                match tmux::capture_pane(&RealTmuxExecutor, &target).await {
+                match tmux::capture_pane(&RealTmuxExecutor::new(), &target).await {
                     Ok(content) => {
                         if content != last_content {
                             last_content = content.clone();

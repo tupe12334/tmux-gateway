@@ -245,14 +245,14 @@ mod tests {
     #[tokio::test]
     async fn session_exists_returns_false_for_nonexistent() {
         let result =
-            session_exists(&RealTmuxExecutor, "__tmux_gw_test_nonexistent_session__").await;
+            session_exists(&RealTmuxExecutor::new(), "__tmux_gw_test_nonexistent_session__").await;
         assert!(result.is_ok());
         assert!(!result.unwrap());
     }
 
     #[tokio::test]
     async fn get_session_returns_none_for_nonexistent() {
-        let result = get_session(&RealTmuxExecutor, "__tmux_gw_test_nonexistent_session__").await;
+        let result = get_session(&RealTmuxExecutor::new(), "__tmux_gw_test_nonexistent_session__").await;
         assert!(result.is_ok());
         assert!(result.unwrap().is_none());
     }
@@ -265,10 +265,10 @@ mod tests {
             .args(["new-session", "-d", "-s", name])
             .output();
 
-        let exists = session_exists(&RealTmuxExecutor, name).await.unwrap();
+        let exists = session_exists(&RealTmuxExecutor::new(), name).await.unwrap();
         assert!(exists);
 
-        let session = get_session(&RealTmuxExecutor, name).await.unwrap();
+        let session = get_session(&RealTmuxExecutor::new(), name).await.unwrap();
         assert!(session.is_some());
         assert_eq!(session.unwrap().name, name);
 
@@ -414,5 +414,40 @@ mod tests {
         };
         assert!(session_exists(&executor, "mysess").await.unwrap());
         assert!(!session_exists(&executor, "other").await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn custom_socket_creates_isolated_server() {
+        use crate::{kill_session, new_session};
+
+        let dir = tempfile::tempdir().unwrap();
+        let socket = dir.path().join("test-tmux.sock");
+        let executor = RealTmuxExecutor::with_socket(&socket);
+
+        // Verify socket_path accessor returns the configured path
+        assert_eq!(executor.socket_path(), Some(socket.as_path()));
+
+        // Start a new server on the custom socket
+        let session_name = "__socket_test__";
+        let session = new_session(&executor, session_name, None).await.unwrap();
+        assert_eq!(session.name, session_name);
+
+        // The session should be visible on the custom socket
+        let exists = session_exists(&executor, session_name).await.unwrap();
+        assert!(exists, "session must exist on the custom socket");
+
+        // The session should NOT be visible on the default socket
+        let default_executor = RealTmuxExecutor::new();
+        let on_default = session_exists(&default_executor, session_name).await.unwrap();
+        assert!(
+            !on_default,
+            "session must not appear on the default socket"
+        );
+
+        // Cleanup: kill the session and the isolated server
+        kill_session(&executor, session_name).await.unwrap();
+
+        // Kill the isolated tmux server
+        let _ = executor.execute(&["kill-server"]).await;
     }
 }

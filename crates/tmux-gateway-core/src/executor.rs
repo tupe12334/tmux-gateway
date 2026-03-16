@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::TmuxError;
@@ -28,11 +29,37 @@ pub trait TmuxExecutor: Send + Sync {
     ) -> impl std::future::Future<Output = Result<TmuxOutput, TmuxError>> + Send;
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct RealTmuxExecutor;
+/// Executor that spawns real `tmux` processes.
+///
+/// By default connects to the system-default tmux server socket.
+/// Use [`RealTmuxExecutor::with_socket`] to target a specific server instance.
+#[derive(Debug, Clone, Default)]
+pub struct RealTmuxExecutor {
+    socket_path: Option<PathBuf>,
+}
+
+impl RealTmuxExecutor {
+    /// Create an executor that uses the default tmux server socket.
+    pub fn new() -> Self {
+        Self { socket_path: None }
+    }
+
+    /// Create an executor that targets a specific tmux server socket.
+    pub fn with_socket(path: impl Into<PathBuf>) -> Self {
+        Self {
+            socket_path: Some(path.into()),
+        }
+    }
+
+    /// Returns the configured socket path, if any.
+    pub fn socket_path(&self) -> Option<&std::path::Path> {
+        self.socket_path.as_deref()
+    }
+}
 
 impl TmuxExecutor for RealTmuxExecutor {
     async fn execute(&self, args: &[&str]) -> Result<TmuxOutput, TmuxError> {
+        let socket_path = self.socket_path.clone();
         let args: Vec<String> = args.iter().map(|s| s.to_string()).collect();
         let cmd_name = args.first().cloned().unwrap_or_default();
         let timeout_dur = command_timeout();
@@ -40,7 +67,11 @@ impl TmuxExecutor for RealTmuxExecutor {
         tokio::time::timeout(
             timeout_dur,
             tokio::task::spawn_blocking(move || {
-                let output = std::process::Command::new("tmux")
+                let mut cmd = std::process::Command::new("tmux");
+                if let Some(ref socket) = socket_path {
+                    cmd.arg("-S").arg(socket);
+                }
+                let output = cmd
                     .args(&args)
                     .output()
                     .map_err(|e| TmuxError::CommandFailed {

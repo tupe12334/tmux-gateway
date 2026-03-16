@@ -75,7 +75,7 @@ struct PaneResponse {
     )
 )]
 async fn health() -> (axum::http::StatusCode, Json<HealthResponse>) {
-    if tmux::is_available(&RealTmuxExecutor).await {
+    if tmux::is_available(&RealTmuxExecutor::new()).await {
         (
             axum::http::StatusCode::OK,
             Json(HealthResponse {
