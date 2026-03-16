@@ -1,9 +1,9 @@
 ---
 displayNumber: 181
-status: open
+status: closed
 priority: 3
 createdAt: 2026-03-16T05:04:05.638170+00:00
-updatedAt: 2026-03-16T05:04:05.638170+00:00
+updatedAt: 2026-03-16T05:29:27.863475+00:00
 ---
 
 # Add event-driven session example
