@@ -36,7 +36,11 @@ pub async fn list_server_environment(
 ) -> Result<Vec<EnvVar>, TmuxError> {
     let output = executor.execute(&["show-environment", "-g"]).await?;
     if !output.success {
-        return Err(TmuxError::from_stderr("show-environment", &output.stderr, ""));
+        return Err(TmuxError::from_stderr(
+            "show-environment",
+            &output.stderr,
+            "",
+        ));
     }
 
     let vars = output
@@ -62,7 +66,11 @@ pub async fn get_server_env(
         if stderr.contains("unknown variable") {
             return Ok(None);
         }
-        return Err(TmuxError::from_stderr("show-environment", &output.stderr, name));
+        return Err(TmuxError::from_stderr(
+            "show-environment",
+            &output.stderr,
+            name,
+        ));
     }
 
     let line = output.stdout.trim();
@@ -86,7 +94,11 @@ pub async fn set_server_env(
         .execute(&["set-environment", "-g", name, value])
         .await?;
     if !output.success {
-        return Err(TmuxError::from_stderr("set-environment", &output.stderr, name));
+        return Err(TmuxError::from_stderr(
+            "set-environment",
+            &output.stderr,
+            name,
+        ));
     }
     Ok(())
 }
@@ -102,7 +114,11 @@ pub async fn unset_server_env(
         .execute(&["set-environment", "-g", "-u", name])
         .await?;
     if !output.success {
-        return Err(TmuxError::from_stderr("set-environment", &output.stderr, name));
+        return Err(TmuxError::from_stderr(
+            "set-environment",
+            &output.stderr,
+            name,
+        ));
     }
     Ok(())
 }
