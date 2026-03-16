@@ -35,6 +35,7 @@ mod select_pane;
 mod select_window;
 mod send_keys;
 mod server_environment;
+pub mod session_lock;
 mod server_info;
 mod session_detail;
 mod session_environment;
@@ -96,6 +97,7 @@ pub use select_layout::{PaneLayout, build_select_layout_command, select_layout};
 pub use select_pane::{build_select_pane_command, select_pane};
 pub use select_window::{build_select_window_command, select_window};
 pub use send_keys::{build_send_keys_command, send_keys, send_keys_with_log};
+pub use session_lock::{SessionGuard, SessionLock};
 pub use server_environment::{
     EnvVar, get_server_env, list_server_environment, set_server_env, unset_server_env,
 };
