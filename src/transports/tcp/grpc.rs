@@ -14,9 +14,9 @@ pub async fn spawn(
     mut health_shutdown_rx: watch::Receiver<bool>,
 ) -> anyhow::Result<JoinHandle<()>> {
     let grpc_addr = format!("0.0.0.0:{port}");
-    let grpc_listener = TcpListener::bind(&grpc_addr).await.with_context(|| {
-        format!("failed to bind gRPC port {port} — port may already be in use")
-    })?;
+    let grpc_listener = TcpListener::bind(&grpc_addr)
+        .await
+        .with_context(|| format!("failed to bind gRPC port {port} — port may already be in use"))?;
     let reflection_service = tonic_reflection::server::Builder::configure()
         .register_file_descriptor_set(grpc::file_descriptor_set())
         .build_v1()

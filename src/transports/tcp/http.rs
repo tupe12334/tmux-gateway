@@ -10,9 +10,9 @@ pub async fn spawn(
     mut shutdown_rx: watch::Receiver<bool>,
 ) -> anyhow::Result<JoinHandle<()>> {
     let http_addr = format!("0.0.0.0:{port}");
-    let listener = TcpListener::bind(&http_addr).await.with_context(|| {
-        format!("failed to bind HTTP port {port} — port may already be in use")
-    })?;
+    let listener = TcpListener::bind(&http_addr)
+        .await
+        .with_context(|| format!("failed to bind HTTP port {port} — port may already be in use"))?;
     tracing::info!("HTTP server (REST + GraphQL + Swagger) listening on {http_addr}");
 
     Ok(tokio::spawn(async move {

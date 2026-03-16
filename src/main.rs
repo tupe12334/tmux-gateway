@@ -86,14 +86,11 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!(read_rps, write_rps, "Per-IP rate limiting enabled");
 
     // ── Spawn transports ─────────────────────────────────────────
-    let http_app = transports::build_http_app(cors, max_body_bytes, read_rate_limit, write_rate_limit);
+    let http_app =
+        transports::build_http_app(cors, max_body_bytes, read_rate_limit, write_rate_limit);
 
-    let http_handle = transports::tcp::http::spawn(
-        http_app.clone(),
-        http_port,
-        shutdown_tx.subscribe(),
-    )
-    .await?;
+    let http_handle =
+        transports::tcp::http::spawn(http_app.clone(), http_port, shutdown_tx.subscribe()).await?;
 
     let http_unix_handle = if let Some(ref socket_path) = http_socket {
         Some(transports::unix::http::spawn(http_app, socket_path, shutdown_tx.subscribe()).await?)
@@ -101,12 +98,9 @@ async fn main() -> anyhow::Result<()> {
         None
     };
 
-    let grpc_handle = transports::tcp::grpc::spawn(
-        grpc_port,
-        shutdown_tx.subscribe(),
-        shutdown_tx.subscribe(),
-    )
-    .await?;
+    let grpc_handle =
+        transports::tcp::grpc::spawn(grpc_port, shutdown_tx.subscribe(), shutdown_tx.subscribe())
+            .await?;
 
     let grpc_unix_handle = if let Some(ref socket_path) = grpc_socket {
         Some(transports::unix::grpc::spawn(socket_path, shutdown_tx.subscribe()).await?)
