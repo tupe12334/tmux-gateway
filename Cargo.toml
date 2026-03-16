@@ -63,6 +63,7 @@ path = "examples/options.rs"
 ignored = ["prost", "serde_json", "tonic-prost", "utoipa-axum", "hyper-util"]
 
 [profile.release]
+lto = true
 strip = true
 opt-level = "z"
 codegen-units = 1
