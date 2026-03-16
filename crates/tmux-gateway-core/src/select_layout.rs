@@ -1,3 +1,4 @@
+use crate::command_spec::TmuxCommandSpec;
 use crate::executor::TmuxExecutor;
 use crate::validation::WindowTarget;
 
@@ -28,21 +29,30 @@ impl PaneLayout {
     }
 }
 
+/// Pure: build the tmux command specification for selecting a layout.
+pub fn build_select_layout_command(target: &WindowTarget, layout: &PaneLayout) -> TmuxCommandSpec {
+    TmuxCommandSpec::new(vec![
+        "select-layout".into(),
+        "-t".into(),
+        target.as_str().into(),
+        layout.as_tmux_arg().into(),
+    ])
+}
+
+/// Imperative shell: orchestrate command building and I/O.
 #[tracing::instrument(skip(executor))]
 pub async fn select_layout(
     executor: &(impl TmuxExecutor + ?Sized),
     target: &WindowTarget,
     layout: PaneLayout,
 ) -> Result<(), TmuxError> {
-    let target_str = target.as_str();
-    let output = executor
-        .execute(&["select-layout", "-t", target_str, layout.as_tmux_arg()])
-        .await?;
+    let spec = build_select_layout_command(target, &layout);
+    let output = executor.execute(&spec.args()).await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
-            "select-layout",
+            spec.command_name(),
             &output.stderr,
-            target_str,
+            target.as_str(),
         ));
     }
     Ok(())

@@ -1,4 +1,5 @@
 use crate::TmuxSession;
+use crate::command_spec::TmuxCommandSpec;
 use crate::events::{EventSender, TmuxEvent};
 use crate::executor::TmuxExecutor;
 use crate::log_port::{LogLevel, LogPort, NoopLog};
@@ -6,6 +7,22 @@ use crate::sessions::parse_session_line;
 use crate::validation::{SessionName, validate_command};
 
 use super::TmuxError;
+
+/// Pure: build the tmux command specification for creating a new session.
+pub fn build_new_session_command(name: &SessionName, command: Option<&str>) -> TmuxCommandSpec {
+    let format_str = "#{session_id}\t#{session_name}\t#{session_windows}\t#{session_created}\t#{session_attached}";
+    let mut args = vec![
+        "new-session".to_string(),
+        "-d".to_string(),
+        "-s".to_string(),
+        name.as_str().to_string(),
+    ];
+    if let Some(cmd) = command {
+        args.push(cmd.to_string());
+    }
+    args.extend_from_slice(&["-P".to_string(), "-F".to_string(), format_str.to_string()]);
+    TmuxCommandSpec::new(args)
+}
 
 #[tracing::instrument(skip(executor))]
 pub async fn new_session(
@@ -37,6 +54,7 @@ pub async fn new_session_with_events(
     new_session_inner(executor, name, command, event_tx, &NoopLog).await
 }
 
+/// Imperative shell: orchestrate validation, command building, I/O, and parsing.
 async fn new_session_inner(
     executor: &(impl TmuxExecutor + ?Sized),
     name: &SessionName,
@@ -60,15 +78,10 @@ async fn new_session_inner(
         );
         return Err(e.into());
     }
-    let format_str = "#{session_id}\t#{session_name}\t#{session_windows}\t#{session_created}\t#{session_attached}";
-    let mut args = vec!["new-session", "-d", "-s", name_str];
-    if let Some(cmd) = command {
-        args.push(cmd);
-    }
-    args.extend_from_slice(&["-P", "-F", format_str]);
-    let output = executor.execute(&args).await?;
+    let spec = build_new_session_command(name, command);
+    let output = executor.execute(&spec.args()).await?;
     if !output.success {
-        let err = TmuxError::from_stderr("new-session", &output.stderr, name_str);
+        let err = TmuxError::from_stderr(spec.command_name(), &output.stderr, name_str);
         log.log(
             LogLevel::Error,
             "new-session",

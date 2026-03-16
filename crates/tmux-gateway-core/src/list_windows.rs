@@ -2,6 +2,7 @@ use std::fmt;
 
 use super::TmuxError;
 use super::validation::SessionName;
+use crate::command_spec::TmuxCommandSpec;
 use crate::executor::TmuxExecutor;
 use crate::pagination::{PaginatedResult, Pagination, paginate};
 
@@ -28,7 +29,19 @@ impl fmt::Display for TmuxWindow {
     }
 }
 
-pub(crate) fn parse_window_line(line: &str) -> Result<TmuxWindow, TmuxError> {
+/// Pure: build the tmux command specification for listing windows.
+pub fn build_list_windows_command(session: &SessionName) -> TmuxCommandSpec {
+    TmuxCommandSpec::new(vec![
+        "list-windows".into(),
+        "-t".into(),
+        session.as_str().into(),
+        "-F".into(),
+        "#{window_id}\t#{window_index}\t#{window_name}\t#{window_panes}\t#{window_active}".into(),
+    ])
+}
+
+/// Pure: parse a single line of list-windows output into a TmuxWindow.
+pub fn parse_window_line(line: &str) -> Result<TmuxWindow, TmuxError> {
     let parts: Vec<&str> = line.splitn(5, '\t').collect();
     if parts.len() < 5 {
         return Err(TmuxError::ParseError {
@@ -53,34 +66,31 @@ pub(crate) fn parse_window_line(line: &str) -> Result<TmuxWindow, TmuxError> {
     })
 }
 
+/// Pure: parse raw list-windows stdout into domain types.
+pub fn parse_list_windows_output(stdout: &str) -> Result<Vec<TmuxWindow>, TmuxError> {
+    stdout
+        .lines()
+        .filter(|line| !line.is_empty())
+        .map(parse_window_line)
+        .collect()
+}
+
+/// Imperative shell: orchestrate validation, command building, I/O, and parsing.
 #[tracing::instrument(skip(executor))]
 pub async fn list_windows(
     executor: &(impl TmuxExecutor + ?Sized),
     session: &SessionName,
 ) -> Result<Vec<TmuxWindow>, TmuxError> {
-    let session_str = session.as_str();
-    let output = executor
-        .execute(&[
-            "list-windows",
-            "-t",
-            session_str,
-            "-F",
-            "#{window_id}\t#{window_index}\t#{window_name}\t#{window_panes}\t#{window_active}",
-        ])
-        .await?;
+    let spec = build_list_windows_command(session);
+    let output = executor.execute(&spec.args()).await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
-            "list-windows",
+            spec.command_name(),
             &output.stderr,
-            session_str,
+            session.as_str(),
         ));
     }
-    output
-        .stdout
-        .lines()
-        .filter(|line| !line.is_empty())
-        .map(parse_window_line)
-        .collect()
+    parse_list_windows_output(&output.stdout)
 }
 
 #[tracing::instrument(skip(executor))]
@@ -167,18 +177,10 @@ mod tests {
         assert!(result.is_err());
     }
 
-    fn parse_windows(stdout: &str) -> Result<Vec<TmuxWindow>, TmuxError> {
-        stdout
-            .lines()
-            .filter(|line| !line.is_empty())
-            .map(parse_window_line)
-            .collect()
-    }
-
     #[test]
-    fn parse_windows_multiple_lines() {
+    fn parse_list_windows_output_multiple_lines() {
         let input = "@0\t0\tbash\t1\t1\n@1\t1\tvim\t2\t0\n";
-        let windows = parse_windows(input).unwrap();
+        let windows = parse_list_windows_output(input).unwrap();
         assert_eq!(windows.len(), 2);
         assert_eq!(windows[0].id, "@0");
         assert_eq!(windows[0].name, "bash");
@@ -187,23 +189,35 @@ mod tests {
     }
 
     #[test]
-    fn parse_windows_empty_input() {
-        let windows = parse_windows("").unwrap();
+    fn parse_list_windows_output_empty_input() {
+        let windows = parse_list_windows_output("").unwrap();
         assert!(windows.is_empty());
     }
 
     #[test]
-    fn parse_windows_skips_empty_lines() {
+    fn parse_list_windows_output_skips_empty_lines() {
         let input = "\n@0\t0\tbash\t1\t1\n\n";
-        let windows = parse_windows(input).unwrap();
+        let windows = parse_list_windows_output(input).unwrap();
         assert_eq!(windows.len(), 1);
     }
 
     #[test]
-    fn parse_windows_propagates_error() {
+    fn parse_list_windows_output_propagates_error() {
         let input = "@0\t0\tbash\t1\t1\nbad line";
-        let result = parse_windows(input);
+        let result = parse_list_windows_output(input);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn build_list_windows_command_produces_correct_args() {
+        let session = SessionName::try_from("my-session").unwrap();
+        let spec = build_list_windows_command(&session);
+        assert_eq!(spec.command_name(), "list-windows");
+        let args = spec.args();
+        assert_eq!(args[1], "-t");
+        assert_eq!(args[2], "my-session");
+        assert_eq!(args[3], "-F");
+        assert!(args[4].contains("window_id"));
     }
 
     // ── Mock executor tests for pagination ──

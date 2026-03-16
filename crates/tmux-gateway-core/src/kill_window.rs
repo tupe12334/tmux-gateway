@@ -1,8 +1,18 @@
+use crate::command_spec::TmuxCommandSpec;
 use crate::executor::TmuxExecutor;
 use crate::log_port::{LogLevel, LogPort, NoopLog};
 use crate::validation::WindowTarget;
 
 use super::TmuxError;
+
+/// Pure: build the tmux command specification for killing a window.
+pub fn build_kill_window_command(target: &WindowTarget) -> TmuxCommandSpec {
+    TmuxCommandSpec::new(vec![
+        "kill-window".into(),
+        "-t".into(),
+        target.as_str().into(),
+    ])
+}
 
 #[tracing::instrument(skip(executor))]
 pub async fn kill_window(
@@ -12,7 +22,7 @@ pub async fn kill_window(
     kill_window_with_log(executor, target, &NoopLog).await
 }
 
-/// Kill a window with domain-level logging.
+/// Imperative shell: kill a window with domain-level logging.
 #[tracing::instrument(skip(executor, log))]
 pub async fn kill_window_with_log(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -26,9 +36,10 @@ pub async fn kill_window_with_log(
         target_str,
         &format!("killing window '{target_str}'"),
     );
-    let output = executor.execute(&["kill-window", "-t", target_str]).await?;
+    let spec = build_kill_window_command(target);
+    let output = executor.execute(&spec.args()).await?;
     if !output.success {
-        let err = TmuxError::from_stderr("kill-window", &output.stderr, target_str);
+        let err = TmuxError::from_stderr(spec.command_name(), &output.stderr, target_str);
         log.log_with_target(
             LogLevel::Error,
             "kill-window",

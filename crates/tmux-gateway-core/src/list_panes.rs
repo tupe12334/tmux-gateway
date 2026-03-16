@@ -2,6 +2,7 @@ use std::fmt;
 
 use super::TmuxError;
 use super::validation::WindowTarget;
+use crate::command_spec::TmuxCommandSpec;
 use crate::executor::TmuxExecutor;
 use crate::pagination::{PaginatedResult, Pagination, paginate};
 
@@ -31,7 +32,19 @@ impl fmt::Display for TmuxPane {
     }
 }
 
-pub(crate) fn parse_pane_line(line: &str) -> Result<TmuxPane, TmuxError> {
+/// Pure: build the tmux command specification for listing panes.
+pub fn build_list_panes_command(target: &WindowTarget) -> TmuxCommandSpec {
+    TmuxCommandSpec::new(vec![
+        "list-panes".into(),
+        "-t".into(),
+        target.as_str().into(),
+        "-F".into(),
+        "#{pane_id}\t#{pane_width}\t#{pane_height}\t#{pane_active}\t#{pane_current_path}\t#{pane_current_command}\t#{pane_pid}".into(),
+    ])
+}
+
+/// Pure: parse a single line of list-panes output into a TmuxPane.
+pub fn parse_pane_line(line: &str) -> Result<TmuxPane, TmuxError> {
     let parts: Vec<&str> = line.splitn(7, '\t').collect();
     if parts.len() < 7 {
         return Err(TmuxError::ParseError {
@@ -62,34 +75,31 @@ pub(crate) fn parse_pane_line(line: &str) -> Result<TmuxPane, TmuxError> {
     })
 }
 
+/// Pure: parse raw list-panes stdout into domain types.
+pub fn parse_list_panes_output(stdout: &str) -> Result<Vec<TmuxPane>, TmuxError> {
+    stdout
+        .lines()
+        .filter(|line| !line.is_empty())
+        .map(parse_pane_line)
+        .collect()
+}
+
+/// Imperative shell: orchestrate command building, I/O, and parsing.
 #[tracing::instrument(skip(executor))]
 pub async fn list_panes(
     executor: &(impl TmuxExecutor + ?Sized),
     target: &WindowTarget,
 ) -> Result<Vec<TmuxPane>, TmuxError> {
-    let target_str = target.as_str();
-    let output = executor
-        .execute(&[
-            "list-panes",
-            "-t",
-            target_str,
-            "-F",
-            "#{pane_id}\t#{pane_width}\t#{pane_height}\t#{pane_active}\t#{pane_current_path}\t#{pane_current_command}\t#{pane_pid}",
-        ])
-        .await?;
+    let spec = build_list_panes_command(target);
+    let output = executor.execute(&spec.args()).await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
-            "list-panes",
+            spec.command_name(),
             &output.stderr,
-            target_str,
+            target.as_str(),
         ));
     }
-    output
-        .stdout
-        .lines()
-        .filter(|line| !line.is_empty())
-        .map(parse_pane_line)
-        .collect()
+    parse_list_panes_output(&output.stdout)
 }
 
 #[tracing::instrument(skip(executor))]
@@ -179,18 +189,10 @@ mod tests {
         assert!(result.is_err());
     }
 
-    fn parse_panes(stdout: &str) -> Result<Vec<TmuxPane>, TmuxError> {
-        stdout
-            .lines()
-            .filter(|line| !line.is_empty())
-            .map(parse_pane_line)
-            .collect()
-    }
-
     #[test]
-    fn parse_panes_multiple_lines() {
+    fn parse_list_panes_output_multiple_lines() {
         let input = "%0\t80\t24\t1\t/home\tbash\t1234\n%1\t80\t24\t0\t/tmp\tzsh\t5678\n";
-        let panes = parse_panes(input).unwrap();
+        let panes = parse_list_panes_output(input).unwrap();
         assert_eq!(panes.len(), 2);
         assert_eq!(panes[0].id, "%0");
         assert_eq!(panes[0].pid, 1234);
@@ -199,23 +201,35 @@ mod tests {
     }
 
     #[test]
-    fn parse_panes_empty_input() {
-        let panes = parse_panes("").unwrap();
+    fn parse_list_panes_output_empty_input() {
+        let panes = parse_list_panes_output("").unwrap();
         assert!(panes.is_empty());
     }
 
     #[test]
-    fn parse_panes_skips_empty_lines() {
+    fn parse_list_panes_output_skips_empty_lines() {
         let input = "\n%0\t80\t24\t1\t/home\tbash\t1234\n\n";
-        let panes = parse_panes(input).unwrap();
+        let panes = parse_list_panes_output(input).unwrap();
         assert_eq!(panes.len(), 1);
     }
 
     #[test]
-    fn parse_panes_propagates_error() {
+    fn parse_list_panes_output_propagates_error() {
         let input = "%0\t80\t24\t1\t/home\tbash\t1234\nbad line";
-        let result = parse_panes(input);
+        let result = parse_list_panes_output(input);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn build_list_panes_command_produces_correct_args() {
+        let target = WindowTarget::try_from("sess:win").unwrap();
+        let spec = build_list_panes_command(&target);
+        assert_eq!(spec.command_name(), "list-panes");
+        let args = spec.args();
+        assert_eq!(args[1], "-t");
+        assert_eq!(args[2], "sess:win");
+        assert_eq!(args[3], "-F");
+        assert!(args[4].contains("pane_id"));
     }
 
     // ── Mock executor tests for pagination ──

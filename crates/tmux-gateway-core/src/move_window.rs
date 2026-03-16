@@ -1,6 +1,21 @@
 use super::TmuxError;
+use crate::command_spec::TmuxCommandSpec;
 use crate::executor::TmuxExecutor;
 use crate::validation::{SessionName, WindowTarget};
+
+/// Pure: build the tmux command specification for moving a window.
+pub fn build_move_window_command(
+    source: &WindowTarget,
+    destination_session: &SessionName,
+) -> TmuxCommandSpec {
+    TmuxCommandSpec::new(vec![
+        "move-window".into(),
+        "-s".into(),
+        source.as_str().into(),
+        "-t".into(),
+        destination_session.as_str().into(),
+    ])
+}
 
 /// Move a window from one session to another.
 ///
@@ -12,16 +27,13 @@ pub async fn move_window(
     source: &WindowTarget,
     destination_session: &SessionName,
 ) -> Result<(), TmuxError> {
-    let source_str = source.as_str();
-    let dest_str = destination_session.as_str();
-    let output = executor
-        .execute(&["move-window", "-s", source_str, "-t", dest_str])
-        .await?;
+    let spec = build_move_window_command(source, destination_session);
+    let output = executor.execute(&spec.args()).await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
-            "move-window",
+            spec.command_name(),
             &output.stderr,
-            source_str,
+            source.as_str(),
         ));
     }
     Ok(())

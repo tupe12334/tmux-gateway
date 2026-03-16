@@ -1,8 +1,22 @@
+use crate::command_spec::TmuxCommandSpec;
 use crate::executor::TmuxExecutor;
 use crate::log_port::{LogLevel, LogPort, NoopLog};
 use crate::validation::{PaneTarget, ValidationError};
 
 use super::TmuxError;
+
+/// Pure: build the tmux command specification for sending keys.
+pub fn build_send_keys_command(target: &PaneTarget, keys: &[String]) -> TmuxCommandSpec {
+    let mut args = vec![
+        "send-keys".to_string(),
+        "-t".to_string(),
+        target.as_str().to_string(),
+    ];
+    for k in keys {
+        args.push(k.clone());
+    }
+    TmuxCommandSpec::new(args)
+}
 
 #[tracing::instrument(skip(executor))]
 pub async fn send_keys(
@@ -13,7 +27,7 @@ pub async fn send_keys(
     send_keys_with_log(executor, target, keys, &NoopLog).await
 }
 
-/// Send keys to a pane with domain-level logging.
+/// Imperative shell: send keys to a pane with domain-level logging.
 #[tracing::instrument(skip(executor, log))]
 pub async fn send_keys_with_log(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -38,13 +52,10 @@ pub async fn send_keys_with_log(
         );
         return Err(e.into());
     }
-    let mut args: Vec<&str> = vec!["send-keys", "-t", target_str];
-    for k in keys {
-        args.push(k.as_str());
-    }
-    let output = executor.execute(&args).await?;
+    let spec = build_send_keys_command(target, keys);
+    let output = executor.execute(&spec.args()).await?;
     if !output.success {
-        let err = TmuxError::from_stderr("send-keys", &output.stderr, target_str);
+        let err = TmuxError::from_stderr(spec.command_name(), &output.stderr, target_str);
         log.log_with_target(
             LogLevel::Error,
             "send-keys",

@@ -1,6 +1,24 @@
 use super::TmuxError;
+use crate::command_spec::TmuxCommandSpec;
 use crate::executor::TmuxExecutor;
 use crate::validation::{PaneTarget, validate_command};
+
+/// Pure: build the tmux command specification for respawning a pane.
+pub fn build_respawn_pane_command(
+    target: &PaneTarget,
+    command: Option<&str>,
+    kill_existing: bool,
+) -> TmuxCommandSpec {
+    let mut args: Vec<String> = vec!["respawn-pane".into()];
+    if kill_existing {
+        args.push("-k".into());
+    }
+    args.extend_from_slice(&["-t".into(), target.as_str().into()]);
+    if let Some(cmd) = command {
+        args.push(cmd.into());
+    }
+    TmuxCommandSpec::new(args)
+}
 
 /// Respawn a dead pane, optionally with a new command.
 ///
@@ -17,23 +35,13 @@ pub async fn respawn_pane(
     if let Some(cmd) = command {
         validate_command(cmd)?;
     }
-
-    let target_str = target.as_str();
-    let mut args: Vec<&str> = vec!["respawn-pane"];
-    if kill_existing {
-        args.push("-k");
-    }
-    args.extend_from_slice(&["-t", target_str]);
-    if let Some(cmd) = command {
-        args.push(cmd);
-    }
-
-    let output = executor.execute(&args).await?;
+    let spec = build_respawn_pane_command(target, command, kill_existing);
+    let output = executor.execute(&spec.args()).await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
-            "respawn-pane",
+            spec.command_name(),
             &output.stderr,
-            target_str,
+            target.as_str(),
         ));
     }
     Ok(())
@@ -148,5 +156,23 @@ mod tests {
         let target = PaneTarget::try_from("sess:0.0").unwrap();
         let result = respawn_pane(&executor, &target, None, false).await;
         assert!(matches!(result, Err(TmuxError::TmuxNotRunning)));
+    }
+
+    #[test]
+    fn build_respawn_pane_command_basic() {
+        let target = PaneTarget::try_from("sess:0.0").unwrap();
+        let spec = build_respawn_pane_command(&target, None, false);
+        assert_eq!(spec.command_name(), "respawn-pane");
+        assert_eq!(spec.args(), vec!["respawn-pane", "-t", "sess:0.0"]);
+    }
+
+    #[test]
+    fn build_respawn_pane_command_with_kill_and_command() {
+        let target = PaneTarget::try_from("sess:0.0").unwrap();
+        let spec = build_respawn_pane_command(&target, Some("bash"), true);
+        assert_eq!(
+            spec.args(),
+            vec!["respawn-pane", "-k", "-t", "sess:0.0", "bash"]
+        );
     }
 }

@@ -1,3 +1,4 @@
+use crate::command_spec::TmuxCommandSpec;
 use crate::executor::TmuxExecutor;
 use crate::validation::PaneTarget;
 
@@ -12,28 +13,40 @@ pub enum ResizeDirection {
     Right(u32),
 }
 
-#[tracing::instrument(skip(executor))]
-pub async fn resize_pane(
-    executor: &(impl TmuxExecutor + ?Sized),
+/// Pure: build the tmux command specification for resizing a pane.
+pub fn build_resize_pane_command(
     target: &PaneTarget,
     direction: ResizeDirection,
-) -> Result<(), TmuxError> {
-    let target_str = target.as_str();
+) -> TmuxCommandSpec {
     let (flag, amount) = match direction {
         ResizeDirection::Up(n) => ("-U", n),
         ResizeDirection::Down(n) => ("-D", n),
         ResizeDirection::Left(n) => ("-L", n),
         ResizeDirection::Right(n) => ("-R", n),
     };
-    let amount_str = amount.to_string();
-    let output = executor
-        .execute(&["resize-pane", flag, "-t", target_str, &amount_str])
-        .await?;
+    TmuxCommandSpec::new(vec![
+        "resize-pane".into(),
+        flag.into(),
+        "-t".into(),
+        target.as_str().into(),
+        amount.to_string(),
+    ])
+}
+
+/// Imperative shell: orchestrate command building and I/O.
+#[tracing::instrument(skip(executor))]
+pub async fn resize_pane(
+    executor: &(impl TmuxExecutor + ?Sized),
+    target: &PaneTarget,
+    direction: ResizeDirection,
+) -> Result<(), TmuxError> {
+    let spec = build_resize_pane_command(target, direction);
+    let output = executor.execute(&spec.args()).await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
-            "resize-pane",
+            spec.command_name(),
             &output.stderr,
-            target_str,
+            target.as_str(),
         ));
     }
     Ok(())

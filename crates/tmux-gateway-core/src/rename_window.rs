@@ -1,8 +1,20 @@
+use crate::command_spec::TmuxCommandSpec;
 use crate::executor::TmuxExecutor;
 use crate::validation::{WindowTarget, validate_window_name};
 
 use super::TmuxError;
 
+/// Pure: build the tmux command specification for renaming a window.
+pub fn build_rename_window_command(target: &WindowTarget, new_name: &str) -> TmuxCommandSpec {
+    TmuxCommandSpec::new(vec![
+        "rename-window".into(),
+        "-t".into(),
+        target.as_str().into(),
+        new_name.into(),
+    ])
+}
+
+/// Imperative shell: orchestrate validation, command building, and I/O.
 #[tracing::instrument(skip(executor))]
 pub async fn rename_window(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -10,15 +22,13 @@ pub async fn rename_window(
     new_name: &str,
 ) -> Result<(), TmuxError> {
     validate_window_name(new_name)?;
-    let target_str = target.as_str();
-    let output = executor
-        .execute(&["rename-window", "-t", target_str, new_name])
-        .await?;
+    let spec = build_rename_window_command(target, new_name);
+    let output = executor.execute(&spec.args()).await?;
     if !output.success {
         return Err(TmuxError::from_stderr(
-            "rename-window",
+            spec.command_name(),
             &output.stderr,
-            target_str,
+            target.as_str(),
         ));
     }
     Ok(())

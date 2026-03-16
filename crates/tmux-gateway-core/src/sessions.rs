@@ -1,6 +1,7 @@
 use std::fmt;
 
 use super::TmuxError;
+use crate::command_spec::TmuxCommandSpec;
 use crate::executor::TmuxExecutor;
 use crate::log_port::{LogLevel, LogPort, NoopLog};
 use crate::pagination::{PaginatedResult, Pagination, paginate};
@@ -49,7 +50,17 @@ pub async fn get_session(
     Ok(sessions.into_iter().find(|s| s.name == name))
 }
 
-pub(crate) fn parse_session_line(line: &str) -> Result<TmuxSession, TmuxError> {
+/// Pure: build the tmux command specification for listing sessions.
+pub fn build_list_sessions_command() -> TmuxCommandSpec {
+    TmuxCommandSpec::new(vec![
+        "list-sessions".into(),
+        "-F".into(),
+        "#{session_id}\t#{session_name}\t#{session_windows}\t#{session_created}\t#{session_attached}".into(),
+    ])
+}
+
+/// Pure: parse a single line of list-sessions output into a TmuxSession.
+pub fn parse_session_line(line: &str) -> Result<TmuxSession, TmuxError> {
     let parts: Vec<&str> = line.splitn(5, '\t').collect();
     if parts.len() < 5 {
         return Err(TmuxError::ParseError {
@@ -74,6 +85,15 @@ pub(crate) fn parse_session_line(line: &str) -> Result<TmuxSession, TmuxError> {
     })
 }
 
+/// Pure: parse raw list-sessions stdout into domain types.
+pub fn parse_list_sessions_output(stdout: &str) -> Result<Vec<TmuxSession>, TmuxError> {
+    stdout
+        .lines()
+        .filter(|line| !line.is_empty())
+        .map(parse_session_line)
+        .collect()
+}
+
 #[tracing::instrument(skip(executor))]
 pub async fn list_sessions(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -81,20 +101,15 @@ pub async fn list_sessions(
     list_sessions_with_log(executor, &NoopLog).await
 }
 
-/// List all sessions with domain-level logging.
+/// Imperative shell: list all sessions with domain-level logging.
 #[tracing::instrument(skip(executor, log))]
 pub async fn list_sessions_with_log(
     executor: &(impl TmuxExecutor + ?Sized),
     log: &dyn LogPort,
 ) -> Result<Vec<TmuxSession>, TmuxError> {
     log.log(LogLevel::Debug, "list-sessions", "listing all sessions");
-    let output = executor
-        .execute(&[
-            "list-sessions",
-            "-F",
-            "#{session_id}\t#{session_name}\t#{session_windows}\t#{session_created}\t#{session_attached}",
-        ])
-        .await?;
+    let spec = build_list_sessions_command();
+    let output = executor.execute(&spec.args()).await?;
 
     if !output.success {
         let stderr = &output.stderr;
@@ -106,7 +121,7 @@ pub async fn list_sessions_with_log(
             );
             return Ok(vec![]);
         }
-        let err = TmuxError::from_stderr("list-sessions", stderr, "");
+        let err = TmuxError::from_stderr(spec.command_name(), stderr, "");
         log.log(
             LogLevel::Error,
             "list-sessions",
@@ -115,12 +130,7 @@ pub async fn list_sessions_with_log(
         return Err(err);
     }
 
-    let sessions: Vec<TmuxSession> = output
-        .stdout
-        .lines()
-        .filter(|line| !line.is_empty())
-        .map(parse_session_line)
-        .collect::<Result<_, _>>()?;
+    let sessions = parse_list_sessions_output(&output.stdout)?;
 
     log.log(
         LogLevel::Debug,
@@ -203,18 +213,10 @@ mod tests {
         assert!(result.is_err());
     }
 
-    fn parse_sessions(stdout: &str) -> Result<Vec<TmuxSession>, TmuxError> {
-        stdout
-            .lines()
-            .filter(|line| !line.is_empty())
-            .map(parse_session_line)
-            .collect()
-    }
-
     #[test]
-    fn parse_sessions_multiple_lines() {
+    fn parse_list_sessions_output_multiple_lines() {
         let input = "$0\ta\t1\t100\t0\n$1\tb\t2\t200\t1\n";
-        let sessions = parse_sessions(input).unwrap();
+        let sessions = parse_list_sessions_output(input).unwrap();
         assert_eq!(sessions.len(), 2);
         assert_eq!(sessions[0].id, "$0");
         assert_eq!(sessions[0].name, "a");
@@ -223,23 +225,32 @@ mod tests {
     }
 
     #[test]
-    fn parse_sessions_empty_input() {
-        let sessions = parse_sessions("").unwrap();
+    fn parse_list_sessions_output_empty_input() {
+        let sessions = parse_list_sessions_output("").unwrap();
         assert!(sessions.is_empty());
     }
 
     #[test]
-    fn parse_sessions_skips_empty_lines() {
+    fn parse_list_sessions_output_skips_empty_lines() {
         let input = "\n$0\ta\t1\t100\t0\n\n";
-        let sessions = parse_sessions(input).unwrap();
+        let sessions = parse_list_sessions_output(input).unwrap();
         assert_eq!(sessions.len(), 1);
     }
 
     #[test]
-    fn parse_sessions_propagates_error() {
+    fn parse_list_sessions_output_propagates_error() {
         let input = "$0\tgood\t1\t100\t0\nbad line";
-        let result = parse_sessions(input);
+        let result = parse_list_sessions_output(input);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn build_list_sessions_command_produces_correct_args() {
+        let spec = build_list_sessions_command();
+        assert_eq!(spec.command_name(), "list-sessions");
+        let args = spec.args();
+        assert_eq!(args[1], "-F");
+        assert!(args[2].contains("session_id"));
     }
 
     #[tokio::test]
