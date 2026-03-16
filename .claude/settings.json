@@ -39,7 +39,9 @@
       "Bash(centy list:*)",
       "Bash(tmux list-sessions:*)",
       "Bash(tmux list-panes:*)",
-      "Bash(tmux capture-pane:*)"
+      "Bash(tmux capture-pane:*)",
+      "Bash(timeout:*)",
+      "Bash(cargo dylint:*)"
     ],
     "deny": ["Bash(gh issue create:*)"]
   },
