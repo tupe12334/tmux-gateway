@@ -1,4 +1,5 @@
 use crate::executor::TmuxExecutor;
+use crate::preconditions::require_window_exists;
 use crate::validation::{WindowTarget, validate_window_name};
 
 use super::TmuxError;
@@ -10,6 +11,7 @@ pub async fn rename_window(
     new_name: &str,
 ) -> Result<(), TmuxError> {
     validate_window_name(new_name)?;
+    require_window_exists(executor, target).await?;
     let target_str = target.as_str();
     let output = executor
         .execute(&["rename-window", "-t", target_str, new_name])

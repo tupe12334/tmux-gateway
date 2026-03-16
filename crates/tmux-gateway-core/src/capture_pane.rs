@@ -1,4 +1,5 @@
 use crate::executor::TmuxExecutor;
+use crate::preconditions::require_pane_exists;
 use crate::validation::PaneTarget;
 
 use super::TmuxError;
@@ -83,6 +84,7 @@ pub async fn capture_pane_with_options(
     target: &PaneTarget,
     opts: &CaptureOptions,
 ) -> Result<String, TmuxError> {
+    require_pane_exists(executor, target).await?;
     let target_str = target.as_str();
     let mut args: Vec<&str> = vec!["capture-pane", "-p", "-t", target_str];
 

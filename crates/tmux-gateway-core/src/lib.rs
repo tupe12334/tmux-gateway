@@ -21,6 +21,7 @@ mod new_session;
 mod new_window;
 pub mod options;
 pub mod pagination;
+mod preconditions;
 mod rename_session;
 mod rename_window;
 mod resize_pane;

@@ -2,6 +2,7 @@ use crate::TmuxSession;
 use crate::events::{EventSender, TmuxEvent};
 use crate::executor::TmuxExecutor;
 use crate::log_port::{LogLevel, LogPort, NoopLog};
+use crate::preconditions::require_session_not_exists;
 use crate::sessions::parse_session_line;
 use crate::validation::{SessionName, validate_command};
 
@@ -44,6 +45,7 @@ async fn new_session_inner(
     event_tx: Option<&EventSender>,
     log: &dyn LogPort,
 ) -> Result<TmuxSession, TmuxError> {
+    require_session_not_exists(executor, name).await?;
     let name_str = name.as_str();
     log.log(
         LogLevel::Info,
