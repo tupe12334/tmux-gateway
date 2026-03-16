@@ -18,26 +18,25 @@ No hand-written DTOs on the client side — pick your protocol, point your code 
 
 ## Architecture
 
-```
-┌──────────────────────────────────────────────┐
-│                 tmux-gateway                  │
-│                                              │
-│  :8080  ┌─────────┐  ┌──────────────┐       │
-│ ────────▸  REST    │  │   GraphQL    │       │
-│         └────┬─────┘  └──────┬───────┘       │
-│              │               │               │
-│  :50051 ┌───┼───────────────┼──────────┐     │
-│ ────────▸   │     gRPC      │          │     │
-│         └───┼───────────────┼──────────┘     │
-│             │               │                │
-│         ┌───▾───────────────▾──────────┐     │
-│         │   tmux-gateway-core (domain) │     │
-│         └──────────┬───────────────────┘     │
-│                    │                         │
-│           ┌────────▾────────┐                │
-│           │   tmux (local)  │                │
-│           └─────────────────┘                │
-└──────────────────────────────────────────────┘
+```mermaid
+graph TD
+    Client_HTTP[":8080"] --> REST
+    Client_HTTP --> GraphQL
+    Client_gRPC[":50051"] --> gRPC
+
+    REST --> Core["tmux-gateway-core (domain)"]
+    GraphQL --> Core
+    gRPC --> Core
+
+    Core --> Tmux["tmux (local)"]
+
+    subgraph tmux-gateway
+        REST
+        GraphQL
+        gRPC
+        Core
+        Tmux
+    end
 ```
 
 | Protocol | Port  | Use case                                                               |
