@@ -11,6 +11,7 @@ mod kill_pane;
 mod kill_session;
 mod kill_window;
 mod list_panes;
+pub mod log_port;
 mod list_windows;
 mod move_window;
 mod new_session;
@@ -44,14 +45,15 @@ pub use ensure_window::ensure_window;
 pub use error::TmuxError;
 pub use events::{EventReceiver, EventSender, TmuxEvent};
 pub use executor::{RealTmuxExecutor, TmuxExecutor, TmuxOutput};
-pub use health::{HealthStatus, health_check};
+pub use health::{HealthStatus, health_check, health_check_with_log};
+pub use log_port::{LogLevel, LogPort, NoopLog};
 pub use kill_pane::kill_pane;
-pub use kill_session::kill_session;
-pub use kill_window::kill_window;
+pub use kill_session::{kill_session, kill_session_with_log};
+pub use kill_window::{kill_window, kill_window_with_log};
 pub use list_panes::{TmuxPane, list_panes, list_panes_paginated};
 pub use list_windows::{TmuxWindow, get_window, list_windows, list_windows_paginated};
 pub use move_window::move_window;
-pub use new_session::{new_session, new_session_with_events};
+pub use new_session::{new_session, new_session_with_events, new_session_with_log};
 pub use new_window::new_window;
 pub use options::{OptionScope, TmuxOption, get_option, list_options, set_option};
 pub use pagination::{PaginatedResult, Pagination};
@@ -61,14 +63,15 @@ pub use resize_pane::{ResizeDirection, resize_pane};
 pub use select_layout::{PaneLayout, select_layout};
 pub use select_pane::select_pane;
 pub use select_window::select_window;
-pub use send_keys::send_keys;
+pub use send_keys::{send_keys, send_keys_with_log};
 pub use server_environment::{
     EnvVar, get_server_env, list_server_environment, set_server_env, unset_server_env,
 };
 pub use server_info::{TmuxServerInfo, is_available, server_info};
 pub use session_detail::{SessionDetail, WindowDetail, get_session_detail};
 pub use sessions::{
-    TmuxSession, get_session, list_sessions, list_sessions_paginated, session_exists,
+    TmuxSession, get_session, list_sessions, list_sessions_paginated, list_sessions_with_log,
+    session_exists,
 };
 pub use split_window::split_window;
 pub use swap_panes::swap_panes;
