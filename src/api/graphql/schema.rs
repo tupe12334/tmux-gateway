@@ -8,6 +8,8 @@ use crate::tmux::{self, RealTmuxExecutor, TmuxCommands};
 
 pub type AppSchema = Schema<QueryRoot, MutationRoot, SubscriptionRoot>;
 
+/// A tmux session.
+/// See: https://man.openbsd.org/tmux#CLIENTS_AND_SESSIONS
 #[derive(SimpleObject)]
 struct Session {
     id: String,
@@ -17,6 +19,8 @@ struct Session {
     attached: bool,
 }
 
+/// A tmux window.
+/// See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES
 #[derive(SimpleObject)]
 struct Window {
     id: String,
@@ -26,6 +30,8 @@ struct Window {
     active: bool,
 }
 
+/// A tmux pane.
+/// See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES
 #[derive(SimpleObject)]
 struct Pane {
     id: String,
@@ -37,6 +43,8 @@ struct Pane {
     pid: u32,
 }
 
+/// Scope at which a tmux option is set.
+/// See: https://man.openbsd.org/tmux#OPTIONS
 #[derive(Enum, Copy, Clone, Eq, PartialEq)]
 enum GqlOptionScope {
     Global,
@@ -64,6 +72,8 @@ impl From<tmux::OptionScope> for GqlOptionScope {
     }
 }
 
+/// A tmux option (name-value pair with scope).
+/// See: https://man.openbsd.org/tmux#OPTIONS
 #[derive(SimpleObject)]
 struct TmuxOptionGql {
     name: String,
@@ -83,6 +93,8 @@ impl QueryRoot {
         "healthy"
     }
 
+    /// List all tmux sessions.
+    /// See: https://man.openbsd.org/tmux#list-sessions
     async fn ls(&self) -> async_graphql::Result<Vec<Session>> {
         let sessions = GraphqlHandler
             .ls()
@@ -103,6 +115,8 @@ impl QueryRoot {
             .collect())
     }
 
+    /// List windows in a session.
+    /// See: https://man.openbsd.org/tmux#list-windows
     async fn list_windows(&self, session: String) -> async_graphql::Result<Vec<Window>> {
         let windows = GraphqlHandler
             .list_windows(&session)
@@ -121,6 +135,8 @@ impl QueryRoot {
             .collect())
     }
 
+    /// List panes in a window.
+    /// See: https://man.openbsd.org/tmux#list-panes
     async fn list_panes(&self, target: String) -> async_graphql::Result<Vec<Pane>> {
         let panes = GraphqlHandler
             .list_panes(&target)
@@ -141,6 +157,8 @@ impl QueryRoot {
             .collect())
     }
 
+    /// Capture the visible contents of a pane.
+    /// See: https://man.openbsd.org/tmux#capture-pane
     async fn capture_pane(&self, target: String) -> async_graphql::Result<String> {
         GraphqlHandler
             .capture_pane(&target)
@@ -148,6 +166,8 @@ impl QueryRoot {
             .map_err(|e| async_graphql::Error::new(e.to_string()))
     }
 
+    /// Capture pane contents with advanced options.
+    /// See: https://man.openbsd.org/tmux#capture-pane
     async fn capture_pane_with_options(
         &self,
         target: String,
@@ -166,6 +186,8 @@ impl QueryRoot {
             .map_err(|e| async_graphql::Error::new(e.to_string()))
     }
 
+    /// Get a tmux option value.
+    /// See: https://man.openbsd.org/tmux#show-options
     async fn get_option(
         &self,
         name: String,
@@ -179,6 +201,8 @@ impl QueryRoot {
         Ok(opt.value)
     }
 
+    /// List tmux options for a scope.
+    /// See: https://man.openbsd.org/tmux#show-options
     async fn list_options(
         &self,
         scope: GqlOptionScope,
@@ -204,6 +228,8 @@ pub struct MutationRoot;
 
 #[Object]
 impl MutationRoot {
+    /// Create a new tmux session.
+    /// See: https://man.openbsd.org/tmux#new-session
     async fn create_session(
         &self,
         name: String,
@@ -224,6 +250,8 @@ impl MutationRoot {
         })
     }
 
+    /// Destroy a session.
+    /// See: https://man.openbsd.org/tmux#kill-session
     async fn kill_session(&self, target: String) -> async_graphql::Result<bool> {
         GraphqlHandler
             .kill_session(&target)
@@ -232,6 +260,8 @@ impl MutationRoot {
         Ok(true)
     }
 
+    /// Destroy a window.
+    /// See: https://man.openbsd.org/tmux#kill-window
     async fn kill_window(&self, target: String) -> async_graphql::Result<bool> {
         GraphqlHandler
             .kill_window(&target)
@@ -240,6 +270,8 @@ impl MutationRoot {
         Ok(true)
     }
 
+    /// Destroy a pane.
+    /// See: https://man.openbsd.org/tmux#kill-pane
     async fn kill_pane(&self, target: String) -> async_graphql::Result<bool> {
         GraphqlHandler
             .kill_pane(&target)
@@ -248,6 +280,8 @@ impl MutationRoot {
         Ok(true)
     }
 
+    /// Send key(s) to a pane.
+    /// See: https://man.openbsd.org/tmux#send-keys
     async fn send_keys(&self, target: String, keys: Vec<String>) -> async_graphql::Result<bool> {
         GraphqlHandler
             .send_keys(&target, &keys)
@@ -256,6 +290,8 @@ impl MutationRoot {
         Ok(true)
     }
 
+    /// Rename a session.
+    /// See: https://man.openbsd.org/tmux#rename-session
     async fn rename_session(
         &self,
         target: String,
@@ -268,6 +304,8 @@ impl MutationRoot {
         Ok(true)
     }
 
+    /// Rename a window.
+    /// See: https://man.openbsd.org/tmux#rename-window
     async fn rename_window(&self, target: String, new_name: String) -> async_graphql::Result<bool> {
         GraphqlHandler
             .rename_window(&target, &new_name)
@@ -276,6 +314,8 @@ impl MutationRoot {
         Ok(true)
     }
 
+    /// Create a new window in a session.
+    /// See: https://man.openbsd.org/tmux#new-window
     async fn new_window(
         &self,
         session: String,
@@ -295,6 +335,8 @@ impl MutationRoot {
         })
     }
 
+    /// Split a pane to create a new pane.
+    /// See: https://man.openbsd.org/tmux#split-window
     async fn split_window(
         &self,
         target: String,
@@ -316,6 +358,8 @@ impl MutationRoot {
         })
     }
 
+    /// Create a session with multiple named windows.
+    /// See: https://man.openbsd.org/tmux#new-session
     async fn create_session_with_windows(
         &self,
         name: String,
@@ -337,6 +381,8 @@ impl MutationRoot {
         })
     }
 
+    /// Swap two panes.
+    /// See: https://man.openbsd.org/tmux#swap-pane
     async fn swap_panes(&self, src: String, dst: String) -> async_graphql::Result<bool> {
         GraphqlHandler
             .swap_panes(&src, &dst)
@@ -345,6 +391,8 @@ impl MutationRoot {
         Ok(true)
     }
 
+    /// Move a window to another session.
+    /// See: https://man.openbsd.org/tmux#move-window
     async fn move_window(
         &self,
         source: String,

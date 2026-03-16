@@ -7,10 +7,14 @@ use utoipa::OpenApi;
 
 use crate::api::{graphql, grpc, rest};
 use crate::asyncapi;
+use crate::tmux_docs;
 
 pub fn openapi_json() -> String {
     let openapi = rest::ApiDoc::openapi();
-    serde_json::to_string_pretty(&openapi).expect("Failed to serialize OpenAPI spec")
+    let mut value =
+        serde_json::to_value(&openapi).expect("Failed to convert OpenAPI spec to Value");
+    tmux_docs::enrich_openapi(&mut value);
+    serde_json::to_string_pretty(&value).expect("Failed to serialize OpenAPI spec")
 }
 
 pub fn graphql_sdl() -> String {
@@ -33,10 +37,13 @@ fn try_export_all() -> anyhow::Result<()> {
     let schemas_dir = Path::new("schemas");
     fs::create_dir_all(schemas_dir).context("failed to create schemas directory")?;
 
-    // Export OpenAPI JSON
+    // Export OpenAPI JSON (enriched with tmux doc links)
     let openapi = rest::ApiDoc::openapi();
+    let mut openapi_value =
+        serde_json::to_value(&openapi).context("failed to convert OpenAPI spec to Value")?;
+    tmux_docs::enrich_openapi(&mut openapi_value);
     let openapi_json =
-        serde_json::to_string_pretty(&openapi).context("failed to serialize OpenAPI spec")?;
+        serde_json::to_string_pretty(&openapi_value).context("failed to serialize OpenAPI spec")?;
     fs::write(schemas_dir.join("openapi.json"), openapi_json)
         .context("failed to write openapi.json")?;
     tracing::info!("Exported schemas/openapi.json");
@@ -47,12 +54,10 @@ fn try_export_all() -> anyhow::Result<()> {
     fs::write(schemas_dir.join("schema.graphql"), sdl).context("failed to write schema.graphql")?;
     tracing::info!("Exported schemas/schema.graphql");
 
-    // Export gRPC proto schema
-    fs::write(
-        schemas_dir.join("tmux_gateway.proto"),
-        grpc::proto_content(),
-    )
-    .context("failed to write tmux_gateway.proto")?;
+    // Export gRPC proto schema (enriched with tmux doc links)
+    let proto = tmux_docs::enrich_proto(&grpc::proto_content());
+    fs::write(schemas_dir.join("tmux_gateway.proto"), &proto)
+        .context("failed to write tmux_gateway.proto")?;
     tracing::info!("Exported schemas/tmux_gateway.proto");
 
     // Export gRPC file descriptor set

@@ -4,6 +4,7 @@ pub mod cors;
 pub mod export_schemas;
 pub mod port_table;
 pub mod preflight;
+pub mod tmux_docs;
 pub mod transports;
 
 pub use tmux_gateway_core as tmux;

@@ -52,56 +52,59 @@ macro_rules! define_proto_struct {
 // ── Helper: generate proto text for a single message ─────────────────────────
 
 macro_rules! message_proto_text {
-    ($name:ident {}) => {
+    ($name:ident {} []) => {
         concat!("message ", stringify!($name), " {}\n\n")
     };
-    ($name:ident { $($fields:tt)+ }) => {
-        message_proto_text!(@build $name [] $($fields)*)
+    ($name:ident {} [$($doc:literal)*]) => {
+        concat!($("// ", $doc, "\n",)* "message ", stringify!($name), " {}\n\n")
     };
-    (@build $name:ident [$($acc:tt)*] string $field:ident = $tag:literal; $($rest:tt)*) => {
+    ($name:ident { $($fields:tt)+ } [$($doc:literal)*]) => {
+        message_proto_text!(@build $name [] [$($doc)*] $($fields)*)
+    };
+    (@build $name:ident [$($acc:tt)*] [$($doc:literal)*] string $field:ident = $tag:literal; $($rest:tt)*) => {
         message_proto_text!(@build $name [
             $($acc)* "  string ", stringify!($field), " = ", $tag, ";\n",
-        ] $($rest)*)
+        ] [$($doc)*] $($rest)*)
     };
-    (@build $name:ident [$($acc:tt)*] uint32 $field:ident = $tag:literal; $($rest:tt)*) => {
+    (@build $name:ident [$($acc:tt)*] [$($doc:literal)*] uint32 $field:ident = $tag:literal; $($rest:tt)*) => {
         message_proto_text!(@build $name [
             $($acc)* "  uint32 ", stringify!($field), " = ", $tag, ";\n",
-        ] $($rest)*)
+        ] [$($doc)*] $($rest)*)
     };
-    (@build $name:ident [$($acc:tt)*] int32 $field:ident = $tag:literal; $($rest:tt)*) => {
+    (@build $name:ident [$($acc:tt)*] [$($doc:literal)*] int32 $field:ident = $tag:literal; $($rest:tt)*) => {
         message_proto_text!(@build $name [
             $($acc)* "  int32 ", stringify!($field), " = ", $tag, ";\n",
-        ] $($rest)*)
+        ] [$($doc)*] $($rest)*)
     };
-    (@build $name:ident [$($acc:tt)*] int64 $field:ident = $tag:literal; $($rest:tt)*) => {
+    (@build $name:ident [$($acc:tt)*] [$($doc:literal)*] int64 $field:ident = $tag:literal; $($rest:tt)*) => {
         message_proto_text!(@build $name [
             $($acc)* "  int64 ", stringify!($field), " = ", $tag, ";\n",
-        ] $($rest)*)
+        ] [$($doc)*] $($rest)*)
     };
-    (@build $name:ident [$($acc:tt)*] bool $field:ident = $tag:literal; $($rest:tt)*) => {
+    (@build $name:ident [$($acc:tt)*] [$($doc:literal)*] bool $field:ident = $tag:literal; $($rest:tt)*) => {
         message_proto_text!(@build $name [
             $($acc)* "  bool ", stringify!($field), " = ", $tag, ";\n",
-        ] $($rest)*)
+        ] [$($doc)*] $($rest)*)
     };
-    (@build $name:ident [$($acc:tt)*] repeated $msg:ident $field:ident = $tag:literal; $($rest:tt)*) => {
+    (@build $name:ident [$($acc:tt)*] [$($doc:literal)*] repeated $msg:ident $field:ident = $tag:literal; $($rest:tt)*) => {
         message_proto_text!(@build $name [
             $($acc)* "  repeated ", stringify!($msg), " ", stringify!($field), " = ", $tag, ";\n",
-        ] $($rest)*)
+        ] [$($doc)*] $($rest)*)
     };
-    (@build $name:ident [$($acc:tt)*] repeated_string $field:ident = $tag:literal; $($rest:tt)*) => {
+    (@build $name:ident [$($acc:tt)*] [$($doc:literal)*] repeated_string $field:ident = $tag:literal; $($rest:tt)*) => {
         message_proto_text!(@build $name [
             $($acc)* "  repeated string ", stringify!($field), " = ", $tag, ";\n",
-        ] $($rest)*)
+        ] [$($doc)*] $($rest)*)
     };
-    (@build $name:ident [$($acc:tt)*]) => {
-        concat!("message ", stringify!($name), " {\n", $($acc)* "}\n\n")
+    (@build $name:ident [$($acc:tt)*] [$($doc:literal)*]) => {
+        concat!($("// ", $doc, "\n",)* "message ", stringify!($name), " {\n", $($acc)* "}\n\n")
     };
 }
 
 // ── Main macro: defines all message structs + messages_proto() ───────────────
 
 macro_rules! proto_messages {
-    ($(message $name:ident { $($fields:tt)* })*) => {
+    ($($(#[doc = $doc:literal])* message $name:ident { $($fields:tt)* })*) => {
         $(
             define_proto_struct!($name { $($fields)* });
         )*
@@ -109,7 +112,7 @@ macro_rules! proto_messages {
         pub fn messages_proto() -> String {
             let mut s = String::new();
             $(
-                s.push_str(message_proto_text!($name { $($fields)* }));
+                s.push_str(message_proto_text!($name { $($fields)* } [$($doc)*]));
             )*
             s
         }
@@ -125,6 +128,7 @@ proto_messages! {
         repeated TmuxSession sessions = "1";
     }
 
+    #[doc = "A tmux session. See: https://man.openbsd.org/tmux#CLIENTS_AND_SESSIONS"]
     message TmuxSession {
         string id = "1";
         string name = "2";
@@ -172,6 +176,7 @@ proto_messages! {
         repeated TmuxWindow windows = "1";
     }
 
+    #[doc = "A tmux window. See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES"]
     message TmuxWindow {
         string id = "1";
         uint32 index = "2";
@@ -188,6 +193,7 @@ proto_messages! {
         repeated TmuxPaneMsg panes = "1";
     }
 
+    #[doc = "A tmux pane. See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES"]
     message TmuxPaneMsg {
         string id = "1";
         uint32 width = "2";
@@ -324,6 +330,7 @@ proto_messages! {
 
     message SelectLayoutResponse {}
 
+    #[doc = "A tmux option. See: https://man.openbsd.org/tmux#OPTIONS"]
     message GetOptionRequest {
         string name = "1";
         string scope = "2";
@@ -354,6 +361,7 @@ proto_messages! {
         repeated TmuxOptionMsg options = "1";
     }
 
+    #[doc = "A tmux option (name-value pair with scope). See: https://man.openbsd.org/tmux#OPTIONS"]
     message TmuxOptionMsg {
         string name = "1";
         string value = "2";
