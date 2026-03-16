@@ -2,6 +2,7 @@ use anyhow::Context;
 use axum::extract::DefaultBodyLimit;
 use std::env;
 use std::net::SocketAddr;
+use std::path::Path;
 use std::time::Duration;
 use tmux_gateway::api::{graphql, grpc, middleware, rest, ws};
 use tmux_gateway::{export_schemas, port_table, preflight};
@@ -33,6 +34,8 @@ async fn main() -> anyhow::Result<()> {
 
     let http_port = config.http_port;
     let grpc_port = config.grpc_port;
+    let http_socket = config.http_socket;
+    let grpc_socket = config.grpc_socket;
 
     let shutdown_timeout = env::var("SHUTDOWN_TIMEOUT_SECS")
         .ok()
@@ -48,6 +51,13 @@ async fn main() -> anyhow::Result<()> {
         ("GraphQL", http_port, graphql_url.as_str()),
         ("gRPC", grpc_port, grpcui_cmd.as_str()),
     ]);
+
+    if let Some(ref path) = http_socket {
+        tracing::info!(path, "HTTP Unix socket enabled");
+    }
+    if let Some(ref path) = grpc_socket {
+        tracing::info!(path, "gRPC Unix socket enabled");
+    }
 
     // Shutdown signal: sender notifies both servers to begin graceful shutdown.
     let (shutdown_tx, _) = watch::channel(false);
@@ -186,6 +196,30 @@ async fn main() -> anyhow::Result<()> {
     })?;
     tracing::info!("HTTP server (REST + GraphQL + Swagger) listening on {http_addr}");
 
+    // Optionally bind an HTTP Unix socket listener.
+    let http_unix_handle = if let Some(ref socket_path) = http_socket {
+        remove_stale_socket(socket_path);
+        let uds = tokio::net::UnixListener::bind(socket_path).with_context(|| {
+            format!("failed to bind HTTP Unix socket at {socket_path}")
+        })?;
+        tracing::info!("HTTP Unix socket listening on {socket_path}");
+        let app = http_app.clone();
+        let mut rx = shutdown_tx.subscribe();
+        Some(tokio::spawn(async move {
+            if let Err(e) = axum::serve(uds, app.into_make_service())
+                .with_graceful_shutdown(async move {
+                    let _ = rx.wait_for(|&v| v).await;
+                    tracing::info!("HTTP Unix socket server shutting down...");
+                })
+                .await
+            {
+                tracing::error!("HTTP Unix socket server error: {e:#}");
+            }
+        }))
+    } else {
+        None
+    };
+
     let http_handle = tokio::spawn(async move {
         if let Err(e) = axum::serve(
             listener,
@@ -302,6 +336,51 @@ async fn main() -> anyhow::Result<()> {
         }
     });
 
+    // Optionally bind a gRPC Unix socket listener.
+    let grpc_unix_handle = if let Some(ref socket_path) = grpc_socket {
+        remove_stale_socket(socket_path);
+        let uds = tokio::net::UnixListener::bind(socket_path).with_context(|| {
+            format!("failed to bind gRPC Unix socket at {socket_path}")
+        })?;
+        tracing::info!("gRPC Unix socket listening on {socket_path}");
+        let incoming = tokio_stream::wrappers::UnixListenerStream::new(uds);
+
+        let reflection_service = tonic_reflection::server::Builder::configure()
+            .register_file_descriptor_set(grpc::file_descriptor_set())
+            .build_v1()
+            .context("failed to build gRPC reflection service (unix)")?;
+
+        let (_, health_service) = tonic_health::server::health_reporter();
+        let mut rx = shutdown_tx.subscribe();
+        let x_request_id = http::HeaderName::from_static("x-request-id");
+
+        Some(tokio::spawn(async move {
+            if let Err(e) = tonic::transport::Server::builder()
+                .layer(
+                    tower::ServiceBuilder::new()
+                        .layer(SetRequestIdLayer::new(
+                            x_request_id.clone(),
+                            middleware::UuidRequestId,
+                        ))
+                        .layer(PropagateRequestIdLayer::new(x_request_id))
+                        .into_inner(),
+                )
+                .add_service(health_service)
+                .add_service(grpc::grpc_server())
+                .add_service(reflection_service)
+                .serve_with_incoming_shutdown(incoming, async move {
+                    let _ = rx.wait_for(|&v| v).await;
+                    tracing::info!("gRPC Unix socket server shutting down...");
+                })
+                .await
+            {
+                tracing::error!("gRPC Unix socket server error: {e:#}");
+            }
+        }))
+    } else {
+        None
+    };
+
     // Wait for shutdown signal (Ctrl+C or SIGTERM).
     shutdown_signal().await;
     tracing::info!("Shutdown signal received, draining in-flight requests...");
@@ -312,6 +391,12 @@ async fn main() -> anyhow::Result<()> {
     // Wait for servers to drain, with a timeout.
     let drain = async {
         let _ = tokio::join!(http_handle, grpc_handle);
+        if let Some(h) = http_unix_handle {
+            let _ = h.await;
+        }
+        if let Some(h) = grpc_unix_handle {
+            let _ = h.await;
+        }
     };
     if tokio::time::timeout(Duration::from_secs(shutdown_timeout), drain)
         .await
@@ -323,6 +408,15 @@ async fn main() -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+/// Removes a stale Unix socket file if it exists, so we can bind a fresh one.
+fn remove_stale_socket(path: &str) {
+    let p = Path::new(path);
+    if p.exists() {
+        tracing::info!(path, "Removing stale Unix socket file");
+        let _ = std::fs::remove_file(p);
+    }
 }
 
 /// Initializes the tracing subscriber.
