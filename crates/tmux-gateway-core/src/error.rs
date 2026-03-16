@@ -1,3 +1,14 @@
+/// Classifies whether an error is likely to resolve on retry.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ErrorRecoverability {
+    /// Error will not resolve by retrying with the same input.
+    Permanent,
+    /// Error may resolve if retried after a short delay.
+    Transient,
+    /// Recoverability depends on external state — caller should inspect context.
+    Unknown,
+}
+
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
 pub enum TmuxError {
     #[error("session not found: {0}")]
@@ -29,6 +40,29 @@ pub enum TmuxError {
 }
 
 impl TmuxError {
+    /// Classify this error's recoverability to guide retry decisions.
+    pub fn recoverability(&self) -> ErrorRecoverability {
+        match self {
+            Self::SessionNotFound(_)
+            | Self::WindowNotFound(_)
+            | Self::PaneNotFound(_)
+            | Self::SessionAlreadyExists(_)
+            | Self::InvalidTarget(_)
+            | Self::Validation(_)
+            | Self::ParseError { .. } => ErrorRecoverability::Permanent,
+            Self::TmuxNotRunning => ErrorRecoverability::Transient,
+            Self::CommandFailed { .. } => ErrorRecoverability::Unknown,
+        }
+    }
+
+    /// Whether this error is safe to retry without side effects.
+    pub fn is_retryable(&self) -> bool {
+        matches!(
+            self.recoverability(),
+            ErrorRecoverability::Transient | ErrorRecoverability::Unknown
+        )
+    }
+
     /// Classify a tmux stderr output into the appropriate error variant.
     pub(crate) fn from_stderr(command: &str, stderr: &str, target: &str) -> Self {
         let stderr_lower = stderr.to_lowercase();
@@ -279,5 +313,77 @@ mod tests {
             err,
             TmuxError::Validation(crate::validation::ValidationError::InvalidTarget { .. })
         ));
+    }
+
+    // --- ErrorRecoverability ---
+
+    #[test]
+    fn session_not_found_is_permanent() {
+        let err = TmuxError::SessionNotFound("s".into());
+        assert_eq!(err.recoverability(), ErrorRecoverability::Permanent);
+        assert!(!err.is_retryable());
+    }
+
+    #[test]
+    fn window_not_found_is_permanent() {
+        let err = TmuxError::WindowNotFound("w".into());
+        assert_eq!(err.recoverability(), ErrorRecoverability::Permanent);
+        assert!(!err.is_retryable());
+    }
+
+    #[test]
+    fn pane_not_found_is_permanent() {
+        let err = TmuxError::PaneNotFound("%1".into());
+        assert_eq!(err.recoverability(), ErrorRecoverability::Permanent);
+        assert!(!err.is_retryable());
+    }
+
+    #[test]
+    fn session_already_exists_is_permanent() {
+        let err = TmuxError::SessionAlreadyExists("s".into());
+        assert_eq!(err.recoverability(), ErrorRecoverability::Permanent);
+        assert!(!err.is_retryable());
+    }
+
+    #[test]
+    fn invalid_target_is_permanent() {
+        let err = TmuxError::InvalidTarget("bad".into());
+        assert_eq!(err.recoverability(), ErrorRecoverability::Permanent);
+        assert!(!err.is_retryable());
+    }
+
+    #[test]
+    fn validation_error_is_permanent() {
+        let ve = crate::validation::ValidationError::EmptyInput { field: "name" };
+        let err = TmuxError::Validation(ve);
+        assert_eq!(err.recoverability(), ErrorRecoverability::Permanent);
+        assert!(!err.is_retryable());
+    }
+
+    #[test]
+    fn parse_error_is_permanent() {
+        let err = TmuxError::ParseError {
+            command: "list-sessions".into(),
+            details: "bad format".into(),
+        };
+        assert_eq!(err.recoverability(), ErrorRecoverability::Permanent);
+        assert!(!err.is_retryable());
+    }
+
+    #[test]
+    fn tmux_not_running_is_transient() {
+        let err = TmuxError::TmuxNotRunning;
+        assert_eq!(err.recoverability(), ErrorRecoverability::Transient);
+        assert!(err.is_retryable());
+    }
+
+    #[test]
+    fn command_failed_is_unknown() {
+        let err = TmuxError::CommandFailed {
+            command: "cmd".into(),
+            stderr: "something".into(),
+        };
+        assert_eq!(err.recoverability(), ErrorRecoverability::Unknown);
+        assert!(err.is_retryable());
     }
 }

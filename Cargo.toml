@@ -64,6 +64,8 @@ ignored = ["prost", "serde_json", "tonic-prost", "utoipa-axum", "hyper-util"]
 
 [profile.release]
 strip = true
+opt-level = "z"
+codegen-units = 1
 
 [workspace.metadata.dylint]
 libraries = [
