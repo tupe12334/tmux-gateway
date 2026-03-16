@@ -34,12 +34,15 @@ pub async fn spawn(
                 const CHECK_TIMEOUT: Duration = Duration::from_secs(3);
 
                 loop {
-                    let healthy = tokio::time::timeout(
-                        CHECK_TIMEOUT,
-                        tmux_gateway_core::is_available(&tmux_gateway_core::RealTmuxExecutor::new()),
-                    )
-                    .await
-                    .unwrap_or(false);
+                    let healthy =
+                        tokio::time::timeout(
+                            CHECK_TIMEOUT,
+                            tmux_gateway_core::is_available(
+                                &tmux_gateway_core::RealTmuxExecutor::new(),
+                            ),
+                        )
+                        .await
+                        .unwrap_or(false);
 
                     if healthy {
                         reporter
