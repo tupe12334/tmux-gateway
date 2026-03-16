@@ -55,7 +55,9 @@ pub use ensure_session::ensure_session;
 pub use ensure_window::ensure_window;
 pub use error::{ErrorRecoverability, TmuxError};
 pub use events::{EventReceiver, EventSender, TmuxEvent};
-pub use executor::{RealTmuxExecutor, TmuxExecutor, TmuxOutput};
+pub use executor::{
+    OperationTimeout, RealTmuxExecutor, TmuxExecutor, TmuxOutput, execute_with_timeout,
+};
 pub use has_session::{has_session, has_session_with_log};
 pub use health::{HealthStatus, health_check, health_check_with_log};
 pub use kill_pane::kill_pane;
