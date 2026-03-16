@@ -32,7 +32,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     send_keys(
         &executor,
         &target,
-        &["echo hello from tmux-gateway".to_string(), "Enter".to_string()],
+        &[
+            "echo hello from tmux-gateway".to_string(),
+            "Enter".to_string(),
+        ],
     )
     .await?;
 
@@ -61,7 +64,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         escape_sequences: false,
     };
     let history_output = capture_pane_with_options(&executor, &target, &opts).await?;
-    println!("\nCaptured with options (start_line=-5, including scroll history):\n{history_output}");
+    println!(
+        "\nCaptured with options (start_line=-5, including scroll history):\n{history_output}"
+    );
 
     // 5. Cleanup
     println!("\nCleaning up session '{SESSION_NAME}'...");
