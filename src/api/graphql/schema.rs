@@ -454,7 +454,7 @@ impl SubscriptionRoot {
 
             loop {
                 ticker.tick().await;
-                match tmux::capture_pane(&RealTmuxExecutor, &target).await {
+                match tmux::capture_pane(&RealTmuxExecutor::new(), &target).await {
                     Ok(content) => {
                         if content != last_content {
                             last_content = content.clone();

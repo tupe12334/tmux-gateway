@@ -40,7 +40,7 @@ pub async fn run() -> ServerConfig {
     let mut tmux_version = String::new();
 
     // ── tmux binary ──────────────────────────────────────────────
-    let info = tmux_gateway_core::server_info(&tmux_gateway_core::RealTmuxExecutor).await;
+    let info = tmux_gateway_core::server_info(&tmux_gateway_core::RealTmuxExecutor::new()).await;
     if info.running {
         tmux_version = info.version.clone();
         checks.push(Check {

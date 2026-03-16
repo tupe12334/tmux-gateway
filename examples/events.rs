@@ -12,7 +12,7 @@ use tmux_gateway_core::{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let executor = RealTmuxExecutor;
+    let executor = RealTmuxExecutor::new();
     let session_name = "events-demo";
 
     // Create a broadcast channel for tmux events.
