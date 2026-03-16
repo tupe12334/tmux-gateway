@@ -22,6 +22,7 @@ fn tmux_err_to_http(e: TmuxError) -> (StatusCode, String) {
         TmuxError::InvalidTarget(_) | TmuxError::Validation(_) | TmuxError::ParseError { .. } => {
             StatusCode::BAD_REQUEST
         }
+        TmuxError::Timeout { .. } => StatusCode::GATEWAY_TIMEOUT,
         TmuxError::TmuxNotRunning | TmuxError::CommandFailed { .. } => {
             StatusCode::INTERNAL_SERVER_ERROR
         }

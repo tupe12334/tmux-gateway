@@ -35,6 +35,7 @@ fn tmux_err_to_status(e: TmuxError) -> Status {
         TmuxError::InvalidTarget(_) | TmuxError::Validation(_) | TmuxError::ParseError { .. } => {
             Status::invalid_argument(msg)
         }
+        TmuxError::Timeout { .. } => Status::deadline_exceeded(msg),
         TmuxError::TmuxNotRunning | TmuxError::CommandFailed { .. } => Status::internal(msg),
     }
 }

@@ -37,6 +37,9 @@ pub enum TmuxError {
 
     #[error("failed to parse tmux output for {command}: {details}")]
     ParseError { command: String, details: String },
+
+    #[error("tmux command timed out: {command}")]
+    Timeout { command: String },
 }
 
 impl TmuxError {
@@ -50,7 +53,7 @@ impl TmuxError {
             | Self::InvalidTarget(_)
             | Self::Validation(_)
             | Self::ParseError { .. } => ErrorRecoverability::Permanent,
-            Self::TmuxNotRunning => ErrorRecoverability::Transient,
+            Self::TmuxNotRunning | Self::Timeout { .. } => ErrorRecoverability::Transient,
             Self::CommandFailed { .. } => ErrorRecoverability::Unknown,
         }
     }
@@ -385,5 +388,22 @@ mod tests {
         };
         assert_eq!(err.recoverability(), ErrorRecoverability::Unknown);
         assert!(err.is_retryable());
+    }
+
+    #[test]
+    fn timeout_is_transient() {
+        let err = TmuxError::Timeout {
+            command: "list-sessions".into(),
+        };
+        assert_eq!(err.recoverability(), ErrorRecoverability::Transient);
+        assert!(err.is_retryable());
+    }
+
+    #[test]
+    fn timeout_display_includes_command() {
+        let err = TmuxError::Timeout {
+            command: "kill-session".into(),
+        };
+        assert_eq!(err.to_string(), "tmux command timed out: kill-session");
     }
 }
