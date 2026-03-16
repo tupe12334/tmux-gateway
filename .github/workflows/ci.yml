@@ -142,6 +142,21 @@ jobs:
       - name: Check spelling
         run: cspell "**/*" --no-progress
 
+  asyncapi-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install AsyncAPI CLI
+        run: npm install -g @asyncapi/cli
+
+      - name: Validate AsyncAPI spec
+        run: asyncapi validate schemas/asyncapi.json
+
   docker-build:
     runs-on: ubuntu-latest
     steps:

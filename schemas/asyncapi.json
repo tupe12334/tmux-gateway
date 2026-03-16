@@ -1,0 +1,184 @@
+{
+  "asyncapi": "3.0.0",
+  "channels": {
+    "graphqlPaneOutput": {
+      "address": "paneOutput",
+      "description": "GraphQL subscription for pane output events over the /graphql/ws WebSocket endpoint. Yields PaneOutputEvent objects containing content and an RFC 3339 timestamp whenever the pane content changes.",
+      "messages": {
+        "PaneOutputEvent": {
+          "$ref": "#/components/messages/GraphqlPaneOutputEvent"
+        }
+      },
+      "title": "GraphQL pane output subscription"
+    },
+    "grpcStreamPaneOutput": {
+      "address": "tmux_gateway.TmuxGateway/StreamPaneOutput",
+      "description": "Server-side stream of pane output events via gRPC. The client sends a StreamPaneOutputRequest and receives a stream of StreamPaneOutputResponse messages, each containing pane content and a Unix timestamp. Only changed content is sent.",
+      "messages": {
+        "StreamPaneOutputResponse": {
+          "$ref": "#/components/messages/GrpcStreamPaneOutputResponse"
+        }
+      },
+      "title": "gRPC server-streaming pane output"
+    },
+    "wsPaneOutput": {
+      "address": "/ws/pane/{target}",
+      "bindings": {
+        "ws": {
+          "query": {
+            "properties": {
+              "interval_ms": {
+                "default": 500,
+                "description": "Polling interval in milliseconds (minimum 100)",
+                "minimum": 100,
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          }
+        }
+      },
+      "description": "Real-time pane content pushed to clients over WebSocket. The server polls tmux at a configurable interval and sends a text frame only when the pane content changes.",
+      "messages": {
+        "PaneContent": {
+          "$ref": "#/components/messages/WsPaneContent"
+        }
+      },
+      "parameters": {
+        "target": {
+          "description": "Tmux pane target identifier (e.g. \"%0\", \"mysession:0.1\")"
+        }
+      },
+      "title": "WebSocket pane streaming"
+    }
+  },
+  "components": {
+    "messages": {
+      "GraphqlPaneOutputEvent": {
+        "contentType": "application/json",
+        "description": "GraphQL subscription event with pane content and RFC 3339 timestamp",
+        "name": "GraphqlPaneOutputEvent",
+        "payload": {
+          "$ref": "#/components/schemas/PaneOutputEvent"
+        },
+        "title": "GraphQL PaneOutputEvent"
+      },
+      "GrpcStreamPaneOutputResponse": {
+        "contentType": "application/protobuf",
+        "description": "Protobuf-encoded streaming response with pane content and timestamp",
+        "name": "GrpcStreamPaneOutputResponse",
+        "payload": {
+          "$ref": "#/components/schemas/StreamPaneOutputResponse"
+        },
+        "title": "gRPC StreamPaneOutputResponse"
+      },
+      "WsPaneContent": {
+        "contentType": "text/plain",
+        "description": "Plain-text WebSocket message containing the full captured pane content",
+        "name": "WsPaneContent",
+        "payload": {
+          "$ref": "#/components/schemas/PaneContentText"
+        },
+        "title": "WebSocket pane content frame"
+      }
+    },
+    "schemas": {
+      "PaneContentText": {
+        "description": "Full captured content of a tmux pane",
+        "type": "string"
+      },
+      "PaneOutputEvent": {
+        "description": "GraphQL subscription event for pane output",
+        "properties": {
+          "content": {
+            "description": "Full captured pane content",
+            "type": "string"
+          },
+          "timestamp": {
+            "description": "RFC 3339 timestamp of when the content was captured",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content",
+          "timestamp"
+        ],
+        "type": "object"
+      },
+      "StreamPaneOutputRequest": {
+        "description": "gRPC request to start streaming pane output",
+        "properties": {
+          "interval_ms": {
+            "default": 0,
+            "description": "Polling interval in milliseconds (minimum 100)",
+            "format": "uint32",
+            "type": "integer"
+          },
+          "target": {
+            "description": "Tmux pane target identifier",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "type": "object"
+      },
+      "StreamPaneOutputResponse": {
+        "description": "gRPC streaming response with pane content",
+        "properties": {
+          "content": {
+            "description": "Full captured pane content",
+            "type": "string"
+          },
+          "timestamp": {
+            "description": "Unix timestamp (seconds since epoch)",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "content",
+          "timestamp"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "id": "urn:tmux-gateway",
+  "info": {
+    "description": "Async messaging interfaces for real-time tmux pane streaming",
+    "license": {
+      "name": "MIT"
+    },
+    "title": "tmux-gateway",
+    "version": "0.1.0"
+  },
+  "operations": {
+    "receiveGraphqlPaneOutput": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/graphqlPaneOutput"
+      },
+      "description": "Subscribes to the paneOutput field with a target pane and optional interval. Events are delivered over the /graphql/ws WebSocket transport as PaneOutputEvent objects.",
+      "summary": "Subscribe to pane output via GraphQL subscription"
+    },
+    "receiveGrpcStreamPaneOutput": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/grpcStreamPaneOutput"
+      },
+      "description": "Initiates a server-streaming RPC. The client sends a StreamPaneOutputRequest with a target pane identifier and polling interval, then receives a stream of StreamPaneOutputResponse messages with content and timestamps.",
+      "summary": "Receive pane output via gRPC server streaming"
+    },
+    "receiveWsPaneOutput": {
+      "action": "receive",
+      "channel": {
+        "$ref": "#/channels/wsPaneOutput"
+      },
+      "description": "After upgrading the HTTP connection to WebSocket at /ws/pane/{target}, the server polls the target pane at the requested interval and pushes text frames containing the full pane content whenever it changes. The client may close the connection at any time.",
+      "summary": "Receive real-time pane content via WebSocket"
+    }
+  }
+}

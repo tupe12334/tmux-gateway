@@ -1,4 +1,5 @@
 pub mod api;
+pub mod asyncapi;
 pub mod cors;
 pub mod export_schemas;
 pub mod port_table;
