@@ -74,25 +74,9 @@ type MutationRoot {
 	See: https://man.openbsd.org/tmux#select-window
 	"""
 	selectWindow(target: String!): Boolean!
-	"""
-	Select (activate) a pane.
-	See: https://man.openbsd.org/tmux#select-pane
-	"""
 	selectPane(target: String!): Boolean!
-	"""
-	Apply a layout to a window.
-	See: https://man.openbsd.org/tmux#select-layout
-	"""
 	selectLayout(target: String!, layout: String!): Boolean!
-	"""
-	Resize a pane.
-	See: https://man.openbsd.org/tmux#resize-pane
-	"""
 	resizePane(target: String!, direction: String!, amount: Int!): Boolean!
-	"""
-	Set a tmux option.
-	See: https://man.openbsd.org/tmux#set-option
-	"""
 	setOption(name: String!, value: String!, scope: GqlOptionScope!, target: String = null): Boolean!
 }
 

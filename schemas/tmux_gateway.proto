@@ -64,6 +64,7 @@ message LsResponse {
 }
 
 // A tmux session. See: https://man.openbsd.org/tmux#CLIENTS_AND_SESSIONS
+// A tmux session. See: https://man.openbsd.org/tmux#CLIENTS_AND_SESSIONS
 message TmuxSession {
   string id = 1;
   string name = 2;
@@ -112,6 +113,7 @@ message ListWindowsResponse {
 }
 
 // A tmux window. See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES
+// A tmux window. See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES
 message TmuxWindow {
   string id = 1;
   uint32 index = 2;
@@ -128,6 +130,7 @@ message ListPanesResponse {
   repeated TmuxPaneMsg panes = 1;
 }
 
+// A tmux pane. See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES
 // A tmux pane. See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES
 message TmuxPaneMsg {
   string id = 1;
@@ -266,6 +269,7 @@ message SelectLayoutRequest {
 message SelectLayoutResponse {}
 
 // A tmux option. See: https://man.openbsd.org/tmux#OPTIONS
+// A tmux option. See: https://man.openbsd.org/tmux#OPTIONS
 message GetOptionRequest {
   string name = 1;
   string scope = 2;
@@ -297,6 +301,7 @@ message ListOptionsResponse {
 }
 
 // A tmux option (name-value pair with scope). See: https://man.openbsd.org/tmux#OPTIONS
+// A tmux option (name-value pair with scope). See: https://man.openbsd.org/tmux#OPTIONS
 message TmuxOptionMsg {
   string name = 1;
   string value = 2;
@@ -312,3 +317,4 @@ message StreamPaneOutputResponse {
   string content = 1;
   int64 timestamp = 2;
 }
+

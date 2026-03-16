@@ -405,6 +405,8 @@ impl MutationRoot {
         Ok(true)
     }
 
+    /// Select (activate) a window.
+    /// See: https://man.openbsd.org/tmux#select-window
     async fn select_window(&self, target: String) -> async_graphql::Result<bool> {
         GraphqlHandler
             .select_window(&target)
@@ -413,6 +415,8 @@ impl MutationRoot {
         Ok(true)
     }
 
+    /// Select (activate) a pane.
+    /// See: https://man.openbsd.org/tmux#select-pane
     async fn select_pane(&self, target: String) -> async_graphql::Result<bool> {
         GraphqlHandler
             .select_pane(&target)
@@ -421,6 +425,8 @@ impl MutationRoot {
         Ok(true)
     }
 
+    /// Apply a layout to a window.
+    /// See: https://man.openbsd.org/tmux#select-layout
     async fn select_layout(&self, target: String, layout: String) -> async_graphql::Result<bool> {
         let l = match layout.as_str() {
             "even-horizontal" => tmux::PaneLayout::EvenHorizontal,

@@ -1,32 +1,632 @@
 {
-  "openapi": "3.1.0",
-  "info": {
-    "title": "tmux-gateway",
-    "description": "REST API for interacting with local tmux sessions",
-    "license": {
-      "name": "MIT",
-      "identifier": "MIT"
-    },
-    "version": "0.1.0"
+  "components": {
+    "schemas": {
+      "CapturePaneRequest": {
+        "properties": {
+          "target": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "type": "object"
+      },
+      "CapturePaneResponse": {
+        "description": "Response containing captured pane content. See: https://man.openbsd.org/tmux#capture-pane",
+        "properties": {
+          "content": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "type": "object"
+      },
+      "CapturePaneWithOptionsRequest": {
+        "properties": {
+          "end_line": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "escape_sequences": {
+            "type": "boolean"
+          },
+          "start_line": {
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "target": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "type": "object"
+      },
+      "CreateSessionWithWindowsRequest": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "window_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "window_names"
+        ],
+        "type": "object"
+      },
+      "CreateSessionWithWindowsResponse": {
+        "properties": {
+          "attached": {
+            "type": "boolean"
+          },
+          "created": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "windows": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "windows",
+          "created",
+          "attached"
+        ],
+        "type": "object"
+      },
+      "GetOptionRequest": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "scope"
+        ],
+        "type": "object"
+      },
+      "HealthResponse": {
+        "properties": {
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "type": "object"
+      },
+      "KillTargetRequest": {
+        "properties": {
+          "target": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "type": "object"
+      },
+      "ListOptionsRequest": {
+        "properties": {
+          "scope": {
+            "type": "string"
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "scope"
+        ],
+        "type": "object"
+      },
+      "ListPanesRequest": {
+        "properties": {
+          "target": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "type": "object"
+      },
+      "ListWindowsRequest": {
+        "properties": {
+          "session": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session"
+        ],
+        "type": "object"
+      },
+      "MoveWindowRequest": {
+        "properties": {
+          "destination_session": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "destination_session"
+        ],
+        "type": "object"
+      },
+      "NewSessionRequest": {
+        "properties": {
+          "command": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "NewSessionResponse": {
+        "description": "A tmux session. See: https://man.openbsd.org/tmux#CLIENTS_AND_SESSIONS",
+        "properties": {
+          "attached": {
+            "type": "boolean"
+          },
+          "created": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "windows": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "windows",
+          "created",
+          "attached"
+        ],
+        "type": "object"
+      },
+      "NewWindowRequest": {
+        "properties": {
+          "command": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "session": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "session",
+          "name"
+        ],
+        "type": "object"
+      },
+      "NewWindowResponse": {
+        "description": "A tmux window. See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "index": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "panes": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "index",
+          "name",
+          "panes",
+          "active"
+        ],
+        "type": "object"
+      },
+      "OptionResponse": {
+        "description": "A tmux option. See: https://man.openbsd.org/tmux#OPTIONS",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "value",
+          "scope"
+        ],
+        "type": "object"
+      },
+      "PaneResponse": {
+        "description": "A tmux pane. See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "current_command": {
+            "type": "string"
+          },
+          "current_path": {
+            "type": "string"
+          },
+          "height": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "pid": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "width": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "width",
+          "height",
+          "active",
+          "current_path",
+          "current_command",
+          "pid"
+        ],
+        "type": "object"
+      },
+      "RenameRequest": {
+        "properties": {
+          "new_name": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "target",
+          "new_name"
+        ],
+        "type": "object"
+      },
+      "ResizePaneRequest": {
+        "properties": {
+          "amount": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "direction": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "target",
+          "direction",
+          "amount"
+        ],
+        "type": "object"
+      },
+      "SelectLayoutRequest": {
+        "properties": {
+          "layout": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "target",
+          "layout"
+        ],
+        "type": "object"
+      },
+      "SendKeysRequest": {
+        "properties": {
+          "keys": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "target": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "target",
+          "keys"
+        ],
+        "type": "object"
+      },
+      "SessionResponse": {
+        "description": "A tmux session. See: https://man.openbsd.org/tmux#CLIENTS_AND_SESSIONS",
+        "properties": {
+          "attached": {
+            "type": "boolean"
+          },
+          "created": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "windows": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "windows",
+          "created",
+          "attached"
+        ],
+        "type": "object"
+      },
+      "SetOptionRequest": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "value",
+          "scope"
+        ],
+        "type": "object"
+      },
+      "SplitWindowRequest": {
+        "properties": {
+          "command": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "horizontal": {
+            "type": "boolean"
+          },
+          "target": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "target",
+          "horizontal"
+        ],
+        "type": "object"
+      },
+      "SplitWindowResponse": {
+        "description": "A tmux pane created by split-window. See: https://man.openbsd.org/tmux#split-window",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "current_command": {
+            "type": "string"
+          },
+          "current_path": {
+            "type": "string"
+          },
+          "height": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "id": {
+            "type": "string"
+          },
+          "pid": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "width": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "width",
+          "height",
+          "active",
+          "current_path",
+          "current_command",
+          "pid"
+        ],
+        "type": "object"
+      },
+      "SwapPanesRequest": {
+        "properties": {
+          "dst": {
+            "type": "string"
+          },
+          "src": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "src",
+          "dst"
+        ],
+        "type": "object"
+      },
+      "WindowResponse": {
+        "description": "A tmux window. See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "index": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "panes": {
+            "format": "int32",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "index",
+          "name",
+          "panes",
+          "active"
+        ],
+        "type": "object"
+      }
+    }
   },
   "externalDocs": {
     "description": "tmux manual",
     "url": "https://man.openbsd.org/tmux"
   },
+  "info": {
+    "description": "REST API for interacting with local tmux sessions",
+    "license": {
+      "identifier": "MIT",
+      "name": "MIT"
+    },
+    "title": "tmux-gateway",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
   "paths": {
     "/capture-pane": {
       "get": {
-        "tags": [],
-        "operationId": "capture_pane",
         "externalDocs": {
           "description": "tmux capture-pane",
           "url": "https://man.openbsd.org/tmux#capture-pane"
         },
+        "operationId": "capture_pane",
         "parameters": [
           {
-            "name": "target",
-            "in": "query",
             "description": "Pane target",
+            "in": "query",
+            "name": "target",
             "required": true,
             "schema": {
               "type": "string"
@@ -35,14 +635,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Pane content captured",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CapturePaneResponse"
                 }
               }
-            }
+            },
+            "description": "Pane content captured"
           },
           "404": {
             "description": "Pane not found"
@@ -50,17 +650,17 @@
           "500": {
             "description": "Failed to capture pane"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/capture-pane-with-options": {
       "post": {
-        "tags": [],
-        "operationId": "capture_pane_with_options",
         "externalDocs": {
           "description": "tmux capture-pane",
           "url": "https://man.openbsd.org/tmux#capture-pane"
         },
+        "operationId": "capture_pane_with_options",
         "requestBody": {
           "content": {
             "application/json": {
@@ -73,14 +673,14 @@
         },
         "responses": {
           "200": {
-            "description": "Pane content captured with options",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CapturePaneResponse"
                 }
               }
-            }
+            },
+            "description": "Pane content captured with options"
           },
           "404": {
             "description": "Pane not found"
@@ -88,17 +688,17 @@
           "500": {
             "description": "Failed to capture pane"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/create-session-with-windows": {
       "post": {
-        "tags": [],
-        "operationId": "create_session_with_windows",
         "externalDocs": {
           "description": "tmux new-session",
           "url": "https://man.openbsd.org/tmux#new-session"
         },
+        "operationId": "create_session_with_windows",
         "requestBody": {
           "content": {
             "application/json": {
@@ -111,14 +711,14 @@
         },
         "responses": {
           "201": {
-            "description": "Session created with windows",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CreateSessionWithWindowsResponse"
                 }
               }
-            }
+            },
+            "description": "Session created with windows"
           },
           "400": {
             "description": "Invalid session or window name"
@@ -129,40 +729,40 @@
           "500": {
             "description": "Failed to create session"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/get-option": {
       "get": {
-        "tags": [],
-        "operationId": "get_option",
         "externalDocs": {
           "description": "tmux show-options",
           "url": "https://man.openbsd.org/tmux#show-options"
         },
+        "operationId": "get_option",
         "parameters": [
           {
-            "name": "name",
-            "in": "query",
             "description": "Option name",
+            "in": "query",
+            "name": "name",
             "required": true,
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "scope",
-            "in": "query",
             "description": "Option scope: global, session, or window",
+            "in": "query",
+            "name": "scope",
             "required": true,
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "target",
-            "in": "query",
             "description": "Target (session or window) for non-global scopes",
+            "in": "query",
+            "name": "target",
             "required": false,
             "schema": {
               "type": "string"
@@ -171,14 +771,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Option value retrieved",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OptionResponse"
                 }
               }
-            }
+            },
+            "description": "Option value retrieved"
           },
           "400": {
             "description": "Invalid option name or scope"
@@ -186,45 +786,45 @@
           "500": {
             "description": "Failed to get option"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/health": {
       "get": {
-        "tags": [],
         "operationId": "health",
         "responses": {
           "200": {
-            "description": "Healthy — tmux is reachable",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HealthResponse"
                 }
               }
-            }
+            },
+            "description": "Healthy — tmux is reachable"
           },
           "503": {
-            "description": "Degraded — tmux is not available",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HealthResponse"
                 }
               }
-            }
+            },
+            "description": "Degraded — tmux is not available"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/kill-pane": {
       "post": {
-        "tags": [],
-        "operationId": "kill_pane",
         "externalDocs": {
           "description": "tmux kill-pane",
           "url": "https://man.openbsd.org/tmux#kill-pane"
         },
+        "operationId": "kill_pane",
         "requestBody": {
           "content": {
             "application/json": {
@@ -248,17 +848,17 @@
           "500": {
             "description": "Failed to kill pane"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/kill-session": {
       "post": {
-        "tags": [],
-        "operationId": "kill_session",
         "externalDocs": {
           "description": "tmux kill-session",
           "url": "https://man.openbsd.org/tmux#kill-session"
         },
+        "operationId": "kill_session",
         "requestBody": {
           "content": {
             "application/json": {
@@ -282,17 +882,17 @@
           "500": {
             "description": "Failed to kill session"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/kill-window": {
       "post": {
-        "tags": [],
-        "operationId": "kill_window",
         "externalDocs": {
           "description": "tmux kill-window",
           "url": "https://man.openbsd.org/tmux#kill-window"
         },
+        "operationId": "kill_window",
         "requestBody": {
           "content": {
             "application/json": {
@@ -316,31 +916,31 @@
           "500": {
             "description": "Failed to kill window"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/list-options": {
       "get": {
-        "tags": [],
-        "operationId": "list_options",
         "externalDocs": {
           "description": "tmux show-options",
           "url": "https://man.openbsd.org/tmux#show-options"
         },
+        "operationId": "list_options",
         "parameters": [
           {
-            "name": "scope",
-            "in": "query",
             "description": "Option scope: global, session, or window",
+            "in": "query",
+            "name": "scope",
             "required": true,
             "schema": {
               "type": "string"
             }
           },
           {
-            "name": "target",
-            "in": "query",
             "description": "Target (session or window) for non-global scopes",
+            "in": "query",
+            "name": "target",
             "required": false,
             "schema": {
               "type": "string"
@@ -349,17 +949,17 @@
         ],
         "responses": {
           "200": {
-            "description": "List options",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/OptionResponse"
-                  }
+                  },
+                  "type": "array"
                 }
               }
-            }
+            },
+            "description": "List options"
           },
           "400": {
             "description": "Invalid scope"
@@ -367,22 +967,22 @@
           "500": {
             "description": "Failed to list options"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/list-panes": {
       "get": {
-        "tags": [],
-        "operationId": "list_panes",
         "externalDocs": {
           "description": "tmux list-panes",
           "url": "https://man.openbsd.org/tmux#list-panes"
         },
+        "operationId": "list_panes",
         "parameters": [
           {
-            "name": "target",
-            "in": "query",
             "description": "Window target",
+            "in": "query",
+            "name": "target",
             "required": true,
             "schema": {
               "type": "string"
@@ -391,17 +991,17 @@
         ],
         "responses": {
           "200": {
-            "description": "List panes in window",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/PaneResponse"
-                  }
+                  },
+                  "type": "array"
                 }
               }
-            }
+            },
+            "description": "List panes in window"
           },
           "404": {
             "description": "Window not found"
@@ -409,22 +1009,22 @@
           "500": {
             "description": "Failed to list panes"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/list-windows": {
       "get": {
-        "tags": [],
-        "operationId": "list_windows",
         "externalDocs": {
           "description": "tmux list-windows",
           "url": "https://man.openbsd.org/tmux#list-windows"
         },
+        "operationId": "list_windows",
         "parameters": [
           {
-            "name": "session",
-            "in": "query",
             "description": "Session name",
+            "in": "query",
+            "name": "session",
             "required": true,
             "schema": {
               "type": "string"
@@ -433,17 +1033,17 @@
         ],
         "responses": {
           "200": {
-            "description": "List windows in session",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/WindowResponse"
-                  }
+                  },
+                  "type": "array"
                 }
               }
-            }
+            },
+            "description": "List windows in session"
           },
           "404": {
             "description": "Session not found"
@@ -451,45 +1051,45 @@
           "500": {
             "description": "Failed to list windows"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/ls": {
       "get": {
-        "tags": [],
-        "operationId": "ls",
         "externalDocs": {
           "description": "tmux list-sessions",
           "url": "https://man.openbsd.org/tmux#list-sessions"
         },
+        "operationId": "ls",
         "responses": {
           "200": {
-            "description": "List tmux sessions",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/SessionResponse"
-                  }
+                  },
+                  "type": "array"
                 }
               }
-            }
+            },
+            "description": "List tmux sessions"
           },
           "500": {
             "description": "Failed to list sessions"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/move-window": {
       "post": {
-        "tags": [],
-        "operationId": "move_window",
         "externalDocs": {
           "description": "tmux move-window",
           "url": "https://man.openbsd.org/tmux#move-window"
         },
+        "operationId": "move_window",
         "requestBody": {
           "content": {
             "application/json": {
@@ -513,17 +1113,17 @@
           "500": {
             "description": "Failed to move window"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/new": {
       "post": {
-        "tags": [],
-        "operationId": "new",
         "externalDocs": {
           "description": "tmux new-session",
           "url": "https://man.openbsd.org/tmux#new-session"
         },
+        "operationId": "new",
         "requestBody": {
           "content": {
             "application/json": {
@@ -536,14 +1136,14 @@
         },
         "responses": {
           "201": {
-            "description": "Session created",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NewSessionResponse"
                 }
               }
-            }
+            },
+            "description": "Session created"
           },
           "400": {
             "description": "Invalid session name"
@@ -551,17 +1151,17 @@
           "500": {
             "description": "Failed to create session"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/new-window": {
       "post": {
-        "tags": [],
-        "operationId": "new_window",
         "externalDocs": {
           "description": "tmux new-window",
           "url": "https://man.openbsd.org/tmux#new-window"
         },
+        "operationId": "new_window",
         "requestBody": {
           "content": {
             "application/json": {
@@ -574,14 +1174,14 @@
         },
         "responses": {
           "201": {
-            "description": "Window created",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NewWindowResponse"
                 }
               }
-            }
+            },
+            "description": "Window created"
           },
           "404": {
             "description": "Session not found"
@@ -589,17 +1189,17 @@
           "500": {
             "description": "Failed to create window"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/rename-session": {
       "post": {
-        "tags": [],
-        "operationId": "rename_session",
         "externalDocs": {
           "description": "tmux rename-session",
           "url": "https://man.openbsd.org/tmux#rename-session"
         },
+        "operationId": "rename_session",
         "requestBody": {
           "content": {
             "application/json": {
@@ -620,17 +1220,17 @@
           "500": {
             "description": "Failed to rename session"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/rename-window": {
       "post": {
-        "tags": [],
-        "operationId": "rename_window",
         "externalDocs": {
           "description": "tmux rename-window",
           "url": "https://man.openbsd.org/tmux#rename-window"
         },
+        "operationId": "rename_window",
         "requestBody": {
           "content": {
             "application/json": {
@@ -651,17 +1251,17 @@
           "500": {
             "description": "Failed to rename window"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/resize-pane": {
       "post": {
-        "tags": [],
-        "operationId": "resize_pane",
         "externalDocs": {
           "description": "tmux resize-pane",
           "url": "https://man.openbsd.org/tmux#resize-pane"
         },
+        "operationId": "resize_pane",
         "requestBody": {
           "content": {
             "application/json": {
@@ -685,17 +1285,17 @@
           "500": {
             "description": "Failed to resize pane"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/select-layout": {
       "post": {
-        "tags": [],
-        "operationId": "select_layout",
         "externalDocs": {
           "description": "tmux select-layout",
           "url": "https://man.openbsd.org/tmux#select-layout"
         },
+        "operationId": "select_layout",
         "requestBody": {
           "content": {
             "application/json": {
@@ -719,17 +1319,17 @@
           "500": {
             "description": "Failed to select layout"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/select-pane": {
       "post": {
-        "tags": [],
-        "operationId": "select_pane",
         "externalDocs": {
           "description": "tmux select-pane",
           "url": "https://man.openbsd.org/tmux#select-pane"
         },
+        "operationId": "select_pane",
         "requestBody": {
           "content": {
             "application/json": {
@@ -753,17 +1353,17 @@
           "500": {
             "description": "Failed to select pane"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/select-window": {
       "post": {
-        "tags": [],
-        "operationId": "select_window",
         "externalDocs": {
           "description": "tmux select-window",
           "url": "https://man.openbsd.org/tmux#select-window"
         },
+        "operationId": "select_window",
         "requestBody": {
           "content": {
             "application/json": {
@@ -787,17 +1387,17 @@
           "500": {
             "description": "Failed to select window"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/send-keys": {
       "post": {
-        "tags": [],
-        "operationId": "send_keys",
         "externalDocs": {
           "description": "tmux send-keys",
           "url": "https://man.openbsd.org/tmux#send-keys"
         },
+        "operationId": "send_keys",
         "requestBody": {
           "content": {
             "application/json": {
@@ -818,17 +1418,17 @@
           "500": {
             "description": "Failed to send keys"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/set-option": {
       "post": {
-        "tags": [],
-        "operationId": "set_option",
         "externalDocs": {
           "description": "tmux set-option",
           "url": "https://man.openbsd.org/tmux#set-option"
         },
+        "operationId": "set_option",
         "requestBody": {
           "content": {
             "application/json": {
@@ -849,17 +1449,17 @@
           "500": {
             "description": "Failed to set option"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/split-window": {
       "post": {
-        "tags": [],
-        "operationId": "split_window",
         "externalDocs": {
           "description": "tmux split-window",
           "url": "https://man.openbsd.org/tmux#split-window"
         },
+        "operationId": "split_window",
         "requestBody": {
           "content": {
             "application/json": {
@@ -872,14 +1472,14 @@
         },
         "responses": {
           "200": {
-            "description": "Window split",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SplitWindowResponse"
                 }
               }
-            }
+            },
+            "description": "Window split"
           },
           "404": {
             "description": "Target not found"
@@ -887,17 +1487,17 @@
           "500": {
             "description": "Failed to split window"
           }
-        }
+        },
+        "tags": []
       }
     },
     "/swap-panes": {
       "post": {
-        "tags": [],
-        "operationId": "swap_panes",
         "externalDocs": {
           "description": "tmux swap-pane",
           "url": "https://man.openbsd.org/tmux#swap-pane"
         },
+        "operationId": "swap_panes",
         "requestBody": {
           "content": {
             "application/json": {
@@ -921,608 +1521,8 @@
           "500": {
             "description": "Failed to swap panes"
           }
-        }
-      }
-    }
-  },
-  "components": {
-    "schemas": {
-      "CapturePaneRequest": {
-        "type": "object",
-        "required": [
-          "target"
-        ],
-        "properties": {
-          "target": {
-            "type": "string"
-          }
-        }
-      },
-      "CapturePaneResponse": {
-        "type": "object",
-        "description": "Response containing captured pane content. See: https://man.openbsd.org/tmux#capture-pane",
-        "required": [
-          "content"
-        ],
-        "properties": {
-          "content": {
-            "type": "string"
-          }
-        }
-      },
-      "CapturePaneWithOptionsRequest": {
-        "type": "object",
-        "required": [
-          "target"
-        ],
-        "properties": {
-          "end_line": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32"
-          },
-          "escape_sequences": {
-            "type": "boolean"
-          },
-          "start_line": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32"
-          },
-          "target": {
-            "type": "string"
-          }
-        }
-      },
-      "CreateSessionWithWindowsRequest": {
-        "type": "object",
-        "required": [
-          "name",
-          "window_names"
-        ],
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "window_names": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "CreateSessionWithWindowsResponse": {
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "windows",
-          "created",
-          "attached"
-        ],
-        "properties": {
-          "attached": {
-            "type": "boolean"
-          },
-          "created": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "windows": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          }
-        }
-      },
-      "GetOptionRequest": {
-        "type": "object",
-        "required": [
-          "name",
-          "scope"
-        ],
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "scope": {
-            "type": "string"
-          },
-          "target": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
-      "HealthResponse": {
-        "type": "object",
-        "required": [
-          "status"
-        ],
-        "properties": {
-          "detail": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "status": {
-            "type": "string"
-          }
-        }
-      },
-      "KillTargetRequest": {
-        "type": "object",
-        "required": [
-          "target"
-        ],
-        "properties": {
-          "target": {
-            "type": "string"
-          }
-        }
-      },
-      "ListOptionsRequest": {
-        "type": "object",
-        "required": [
-          "scope"
-        ],
-        "properties": {
-          "scope": {
-            "type": "string"
-          },
-          "target": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        }
-      },
-      "ListPanesRequest": {
-        "type": "object",
-        "required": [
-          "target"
-        ],
-        "properties": {
-          "target": {
-            "type": "string"
-          }
-        }
-      },
-      "ListWindowsRequest": {
-        "type": "object",
-        "required": [
-          "session"
-        ],
-        "properties": {
-          "session": {
-            "type": "string"
-          }
-        }
-      },
-      "MoveWindowRequest": {
-        "type": "object",
-        "required": [
-          "source",
-          "destination_session"
-        ],
-        "properties": {
-          "destination_session": {
-            "type": "string"
-          },
-          "source": {
-            "type": "string"
-          }
-        }
-      },
-      "NewSessionRequest": {
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "properties": {
-          "command": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "name": {
-            "type": "string"
-          }
-        }
-      },
-      "NewSessionResponse": {
-        "type": "object",
-        "description": "A tmux session. See: https://man.openbsd.org/tmux#CLIENTS_AND_SESSIONS",
-        "required": [
-          "id",
-          "name",
-          "windows",
-          "created",
-          "attached"
-        ],
-        "properties": {
-          "attached": {
-            "type": "boolean"
-          },
-          "created": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "windows": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          }
-        }
-      },
-      "NewWindowRequest": {
-        "type": "object",
-        "required": [
-          "session",
-          "name"
-        ],
-        "properties": {
-          "command": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "name": {
-            "type": "string"
-          },
-          "session": {
-            "type": "string"
-          }
-        }
-      },
-      "NewWindowResponse": {
-        "type": "object",
-        "description": "A tmux window. See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES",
-        "required": [
-          "id",
-          "index",
-          "name",
-          "panes",
-          "active"
-        ],
-        "properties": {
-          "active": {
-            "type": "boolean"
-          },
-          "id": {
-            "type": "string"
-          },
-          "index": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "name": {
-            "type": "string"
-          },
-          "panes": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          }
-        }
-      },
-      "OptionResponse": {
-        "type": "object",
-        "description": "A tmux option. See: https://man.openbsd.org/tmux#OPTIONS",
-        "required": [
-          "name",
-          "value",
-          "scope"
-        ],
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "scope": {
-            "type": "string"
-          },
-          "value": {
-            "type": "string"
-          }
-        }
-      },
-      "PaneResponse": {
-        "type": "object",
-        "description": "A tmux pane. See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES",
-        "required": [
-          "id",
-          "width",
-          "height",
-          "active",
-          "current_path",
-          "current_command",
-          "pid"
-        ],
-        "properties": {
-          "active": {
-            "type": "boolean"
-          },
-          "current_command": {
-            "type": "string"
-          },
-          "current_path": {
-            "type": "string"
-          },
-          "height": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "id": {
-            "type": "string"
-          },
-          "pid": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "width": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          }
-        }
-      },
-      "RenameRequest": {
-        "type": "object",
-        "required": [
-          "target",
-          "new_name"
-        ],
-        "properties": {
-          "new_name": {
-            "type": "string"
-          },
-          "target": {
-            "type": "string"
-          }
-        }
-      },
-      "ResizePaneRequest": {
-        "type": "object",
-        "required": [
-          "target",
-          "direction",
-          "amount"
-        ],
-        "properties": {
-          "amount": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "direction": {
-            "type": "string"
-          },
-          "target": {
-            "type": "string"
-          }
-        }
-      },
-      "SelectLayoutRequest": {
-        "type": "object",
-        "required": [
-          "target",
-          "layout"
-        ],
-        "properties": {
-          "layout": {
-            "type": "string"
-          },
-          "target": {
-            "type": "string"
-          }
-        }
-      },
-      "SendKeysRequest": {
-        "type": "object",
-        "required": [
-          "target",
-          "keys"
-        ],
-        "properties": {
-          "keys": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "target": {
-            "type": "string"
-          }
-        }
-      },
-      "SessionResponse": {
-        "type": "object",
-        "description": "A tmux session. See: https://man.openbsd.org/tmux#CLIENTS_AND_SESSIONS",
-        "required": [
-          "id",
-          "name",
-          "windows",
-          "created",
-          "attached"
-        ],
-        "properties": {
-          "attached": {
-            "type": "boolean"
-          },
-          "created": {
-            "type": "string"
-          },
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "windows": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          }
-        }
-      },
-      "SetOptionRequest": {
-        "type": "object",
-        "required": [
-          "name",
-          "value",
-          "scope"
-        ],
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "scope": {
-            "type": "string"
-          },
-          "target": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "value": {
-            "type": "string"
-          }
-        }
-      },
-      "SplitWindowRequest": {
-        "type": "object",
-        "required": [
-          "target",
-          "horizontal"
-        ],
-        "properties": {
-          "command": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "horizontal": {
-            "type": "boolean"
-          },
-          "target": {
-            "type": "string"
-          }
-        }
-      },
-      "SplitWindowResponse": {
-        "type": "object",
-        "description": "A tmux pane created by split-window. See: https://man.openbsd.org/tmux#split-window",
-        "required": [
-          "id",
-          "width",
-          "height",
-          "active",
-          "current_path",
-          "current_command",
-          "pid"
-        ],
-        "properties": {
-          "active": {
-            "type": "boolean"
-          },
-          "current_command": {
-            "type": "string"
-          },
-          "current_path": {
-            "type": "string"
-          },
-          "height": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "id": {
-            "type": "string"
-          },
-          "pid": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "width": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          }
-        }
-      },
-      "SwapPanesRequest": {
-        "type": "object",
-        "required": [
-          "src",
-          "dst"
-        ],
-        "properties": {
-          "dst": {
-            "type": "string"
-          },
-          "src": {
-            "type": "string"
-          }
-        }
-      },
-      "WindowResponse": {
-        "type": "object",
-        "description": "A tmux window. See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES",
-        "required": [
-          "id",
-          "index",
-          "name",
-          "panes",
-          "active"
-        ],
-        "properties": {
-          "active": {
-            "type": "boolean"
-          },
-          "id": {
-            "type": "string"
-          },
-          "index": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "name": {
-            "type": "string"
-          },
-          "panes": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          }
-        }
+        },
+        "tags": []
       }
     }
   }
