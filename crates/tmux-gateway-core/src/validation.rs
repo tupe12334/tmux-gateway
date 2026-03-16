@@ -330,10 +330,7 @@ pub fn validate_buffer_name(name: &str) -> Result<(), ValidationError> {
             ),
         });
     }
-    if !name
-        .chars()
-        .all(|c| c.is_ascii_alphanumeric() || c == '_')
-    {
+    if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
         return Err(ValidationError::InvalidBufferName {
             reason: "must contain only alphanumeric characters or underscores".to_string(),
         });
