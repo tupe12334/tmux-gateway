@@ -45,7 +45,7 @@ pub use commands::TmuxCommands;
 pub use create_session_with_windows::create_session_with_windows;
 pub use ensure_session::ensure_session;
 pub use ensure_window::ensure_window;
-pub use error::TmuxError;
+pub use error::{ErrorRecoverability, TmuxError};
 pub use events::{EventReceiver, EventSender, TmuxEvent};
 pub use executor::{RealTmuxExecutor, TmuxExecutor, TmuxOutput};
 pub use health::{HealthStatus, health_check, health_check_with_log};
