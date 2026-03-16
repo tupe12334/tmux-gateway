@@ -30,7 +30,8 @@
       "Bash(which centy:*)",
       "Bash(centy create:*)",
       "Bash(centy:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(ls:*)"
     ],
     "deny": ["Bash(gh issue create:*)"]
   },
