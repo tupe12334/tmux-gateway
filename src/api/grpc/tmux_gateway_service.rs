@@ -24,6 +24,7 @@ use crate::tmux::{self, RealTmuxExecutor, TmuxCommands, TmuxError};
 pub struct TmuxGatewayServiceImpl;
 
 impl TmuxCommands for TmuxGatewayServiceImpl {
+    #[allow(unknown_lints, no_wrapper_functions)]
     fn executor(&self) -> RealTmuxExecutor {
         RealTmuxExecutor::new()
     }
