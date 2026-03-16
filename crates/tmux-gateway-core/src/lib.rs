@@ -36,6 +36,7 @@ mod session_detail;
 mod session_environment;
 mod session_spec;
 mod sessions;
+mod show_messages;
 mod split_window;
 mod swap_panes;
 mod swap_window;
@@ -87,6 +88,7 @@ pub use sessions::{
     TmuxSession, get_session, list_sessions, list_sessions_paginated, list_sessions_with_log,
     session_exists,
 };
+pub use show_messages::{TmuxMessage, show_messages};
 pub use split_window::split_window;
 pub use swap_panes::swap_panes;
 pub use swap_window::swap_window;
