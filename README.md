@@ -42,11 +42,12 @@ graph TD
     end
 ```
 
-| Protocol | Port  | Unix Socket                          | Use case                                                               |
-| -------- | ----- | ------------------------------------ | ---------------------------------------------------------------------- |
-| REST     | 8080  | `/tmp/tmux-gateway-http.sock`        | Simple integrations, curl, scripts                                     |
-| GraphQL  | 8080  | `/tmp/tmux-gateway-http.sock`        | Flexible queries, web UIs (includes GraphiQL playground at `/graphql`) |
-| gRPC     | 50051 | `/tmp/tmux-gateway-grpc.sock`        | High-performance, typed clients, service-to-service                    |
+| Protocol  | Port  | Unix Socket                          | Use case                                                               |
+| --------- | ----- | ------------------------------------ | ---------------------------------------------------------------------- |
+| REST      | 8080  | `/tmp/tmux-gateway-http.sock`        | Simple integrations, curl, scripts                                     |
+| GraphQL   | 8080  | `/tmp/tmux-gateway-http.sock`        | Flexible queries, web UIs (includes GraphiQL playground at `/graphql`) |
+| WebSocket | 8080  | `/tmp/tmux-gateway-http.sock`        | Real-time pane streaming (`/ws/pane/{target}`)                         |
+| gRPC      | 50051 | `/tmp/tmux-gateway-grpc.sock`        | High-performance, typed clients, service-to-service                    |
 
 ## Getting Started
 
@@ -146,6 +147,30 @@ curl --unix-socket /tmp/tmux-gateway-http.sock -X POST http://localhost/graphql 
   -H "Content-Type: application/json" \
   -d '{"query": "{ sessions { name windows created attached } }"}'
 ```
+
+### WebSocket
+
+Stream live pane output over WebSocket:
+
+```
+ws://localhost:8080/ws/pane/{session}:{window}
+```
+
+Optional query parameter: `?interval_ms=500` (polling interval in ms, default 500, minimum 100).
+
+The server sends a text message whenever the pane content changes — no messages are sent when idle. The connection is receive-only; the only client message the server handles is a close frame.
+
+To test interactively, use [Hoppscotch](https://hoppscotch.io/realtime/websocket) or any WebSocket client:
+
+```bash
+# Using websocat
+websocat ws://localhost:8080/ws/pane/my-session:my-window
+
+# With a custom interval
+websocat "ws://localhost:8080/ws/pane/my-session:my-window?interval_ms=200"
+```
+
+GraphQL subscriptions are also available over WebSocket at `/graphql/ws` (see the GraphiQL playground).
 
 ### gRPC
 
