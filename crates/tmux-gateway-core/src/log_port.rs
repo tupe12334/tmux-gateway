@@ -51,7 +51,12 @@ mod tests {
     fn log_port_is_object_safe() {
         let log: &dyn LogPort = &NoopLog;
         log.log(LogLevel::Info, "test-op", "object-safe call");
-        log.log_with_target(LogLevel::Warn, "test-op", "target", "object-safe targeted call");
+        log.log_with_target(
+            LogLevel::Warn,
+            "test-op",
+            "target",
+            "object-safe targeted call",
+        );
     }
 
     #[test]
@@ -97,13 +102,7 @@ mod tests {
             ));
         }
 
-        fn log_with_target(
-            &self,
-            level: LogLevel,
-            operation: &str,
-            target: &str,
-            message: &str,
-        ) {
+        fn log_with_target(&self, level: LogLevel, operation: &str, target: &str, message: &str) {
             self.entries.lock().unwrap().push((
                 level,
                 operation.to_string(),
