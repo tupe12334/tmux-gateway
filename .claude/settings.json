@@ -42,7 +42,9 @@
       "Bash(tmux capture-pane:*)",
       "Bash(timeout:*)",
       "Bash(cargo dylint:*)",
-      "Bash(cargo fmt:*)"
+      "Bash(cargo fmt:*)",
+      "Bash(cargo test:*)",
+      "Bash(git diff:*)"
     ],
     "deny": ["Bash(gh issue create:*)"]
   },
