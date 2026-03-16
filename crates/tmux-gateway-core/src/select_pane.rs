@@ -3,6 +3,9 @@ use crate::validation::PaneTarget;
 
 use super::TmuxError;
 
+/// Select (activate) a pane.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#select-pane)
 #[tracing::instrument(skip(executor))]
 pub async fn select_pane(
     executor: &(impl TmuxExecutor + ?Sized),

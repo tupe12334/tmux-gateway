@@ -5,6 +5,9 @@ use crate::validation::{PaneTarget, ValidationError};
 
 use super::TmuxError;
 
+/// Send key(s) to a pane.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#send-keys)
 #[tracing::instrument(skip(executor))]
 pub async fn send_keys(
     executor: &(impl TmuxExecutor + ?Sized),

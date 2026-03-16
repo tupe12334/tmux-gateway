@@ -7,6 +7,8 @@ use crate::validation::{WindowTarget, validate_command};
 /// If `kill_existing` is `true`, the `-k` flag is passed to kill an active
 /// window before respawning it. Without `-k`, tmux will error when the
 /// window is still running.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#respawn-window)
 #[tracing::instrument(skip(executor))]
 pub async fn respawn_window(
     executor: &(impl TmuxExecutor + ?Sized),

@@ -3,6 +3,8 @@ use crate::executor::TmuxExecutor;
 use crate::validation::PaneTarget;
 
 /// Swap two panes by their targets (format: `session:window.pane`).
+///
+/// [tmux docs](https://man.openbsd.org/tmux#swap-pane)
 #[tracing::instrument(skip(executor))]
 pub async fn swap_panes(
     executor: &(impl TmuxExecutor + ?Sized),

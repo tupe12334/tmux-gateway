@@ -9,11 +9,19 @@
     },
     "version": "0.1.0"
   },
+  "externalDocs": {
+    "description": "tmux manual",
+    "url": "https://man.openbsd.org/tmux"
+  },
   "paths": {
     "/capture-pane": {
       "get": {
         "tags": [],
         "operationId": "capture_pane",
+        "externalDocs": {
+          "description": "tmux capture-pane",
+          "url": "https://man.openbsd.org/tmux#capture-pane"
+        },
         "parameters": [
           {
             "name": "target",
@@ -49,6 +57,10 @@
       "post": {
         "tags": [],
         "operationId": "capture_pane_with_options",
+        "externalDocs": {
+          "description": "tmux capture-pane",
+          "url": "https://man.openbsd.org/tmux#capture-pane"
+        },
         "requestBody": {
           "content": {
             "application/json": {
@@ -83,6 +95,10 @@
       "post": {
         "tags": [],
         "operationId": "create_session_with_windows",
+        "externalDocs": {
+          "description": "tmux new-session",
+          "url": "https://man.openbsd.org/tmux#new-session"
+        },
         "requestBody": {
           "content": {
             "application/json": {
@@ -120,6 +136,10 @@
       "get": {
         "tags": [],
         "operationId": "get_option",
+        "externalDocs": {
+          "description": "tmux show-options",
+          "url": "https://man.openbsd.org/tmux#show-options"
+        },
         "parameters": [
           {
             "name": "name",
@@ -201,6 +221,10 @@
       "post": {
         "tags": [],
         "operationId": "kill_pane",
+        "externalDocs": {
+          "description": "tmux kill-pane",
+          "url": "https://man.openbsd.org/tmux#kill-pane"
+        },
         "requestBody": {
           "content": {
             "application/json": {
@@ -231,6 +255,10 @@
       "post": {
         "tags": [],
         "operationId": "kill_session",
+        "externalDocs": {
+          "description": "tmux kill-session",
+          "url": "https://man.openbsd.org/tmux#kill-session"
+        },
         "requestBody": {
           "content": {
             "application/json": {
@@ -261,6 +289,10 @@
       "post": {
         "tags": [],
         "operationId": "kill_window",
+        "externalDocs": {
+          "description": "tmux kill-window",
+          "url": "https://man.openbsd.org/tmux#kill-window"
+        },
         "requestBody": {
           "content": {
             "application/json": {
@@ -291,6 +323,10 @@
       "get": {
         "tags": [],
         "operationId": "list_options",
+        "externalDocs": {
+          "description": "tmux show-options",
+          "url": "https://man.openbsd.org/tmux#show-options"
+        },
         "parameters": [
           {
             "name": "scope",
@@ -338,6 +374,10 @@
       "get": {
         "tags": [],
         "operationId": "list_panes",
+        "externalDocs": {
+          "description": "tmux list-panes",
+          "url": "https://man.openbsd.org/tmux#list-panes"
+        },
         "parameters": [
           {
             "name": "target",
@@ -376,6 +416,10 @@
       "get": {
         "tags": [],
         "operationId": "list_windows",
+        "externalDocs": {
+          "description": "tmux list-windows",
+          "url": "https://man.openbsd.org/tmux#list-windows"
+        },
         "parameters": [
           {
             "name": "session",
@@ -414,6 +458,10 @@
       "get": {
         "tags": [],
         "operationId": "ls",
+        "externalDocs": {
+          "description": "tmux list-sessions",
+          "url": "https://man.openbsd.org/tmux#list-sessions"
+        },
         "responses": {
           "200": {
             "description": "List tmux sessions",
@@ -438,6 +486,10 @@
       "post": {
         "tags": [],
         "operationId": "move_window",
+        "externalDocs": {
+          "description": "tmux move-window",
+          "url": "https://man.openbsd.org/tmux#move-window"
+        },
         "requestBody": {
           "content": {
             "application/json": {
@@ -468,6 +520,10 @@
       "post": {
         "tags": [],
         "operationId": "new",
+        "externalDocs": {
+          "description": "tmux new-session",
+          "url": "https://man.openbsd.org/tmux#new-session"
+        },
         "requestBody": {
           "content": {
             "application/json": {
@@ -502,6 +558,10 @@
       "post": {
         "tags": [],
         "operationId": "new_window",
+        "externalDocs": {
+          "description": "tmux new-window",
+          "url": "https://man.openbsd.org/tmux#new-window"
+        },
         "requestBody": {
           "content": {
             "application/json": {
@@ -536,6 +596,10 @@
       "post": {
         "tags": [],
         "operationId": "rename_session",
+        "externalDocs": {
+          "description": "tmux rename-session",
+          "url": "https://man.openbsd.org/tmux#rename-session"
+        },
         "requestBody": {
           "content": {
             "application/json": {
@@ -563,6 +627,10 @@
       "post": {
         "tags": [],
         "operationId": "rename_window",
+        "externalDocs": {
+          "description": "tmux rename-window",
+          "url": "https://man.openbsd.org/tmux#rename-window"
+        },
         "requestBody": {
           "content": {
             "application/json": {
@@ -590,6 +658,10 @@
       "post": {
         "tags": [],
         "operationId": "resize_pane",
+        "externalDocs": {
+          "description": "tmux resize-pane",
+          "url": "https://man.openbsd.org/tmux#resize-pane"
+        },
         "requestBody": {
           "content": {
             "application/json": {
@@ -620,6 +692,10 @@
       "post": {
         "tags": [],
         "operationId": "select_layout",
+        "externalDocs": {
+          "description": "tmux select-layout",
+          "url": "https://man.openbsd.org/tmux#select-layout"
+        },
         "requestBody": {
           "content": {
             "application/json": {
@@ -650,6 +726,10 @@
       "post": {
         "tags": [],
         "operationId": "select_pane",
+        "externalDocs": {
+          "description": "tmux select-pane",
+          "url": "https://man.openbsd.org/tmux#select-pane"
+        },
         "requestBody": {
           "content": {
             "application/json": {
@@ -680,6 +760,10 @@
       "post": {
         "tags": [],
         "operationId": "select_window",
+        "externalDocs": {
+          "description": "tmux select-window",
+          "url": "https://man.openbsd.org/tmux#select-window"
+        },
         "requestBody": {
           "content": {
             "application/json": {
@@ -710,6 +794,10 @@
       "post": {
         "tags": [],
         "operationId": "send_keys",
+        "externalDocs": {
+          "description": "tmux send-keys",
+          "url": "https://man.openbsd.org/tmux#send-keys"
+        },
         "requestBody": {
           "content": {
             "application/json": {
@@ -737,6 +825,10 @@
       "post": {
         "tags": [],
         "operationId": "set_option",
+        "externalDocs": {
+          "description": "tmux set-option",
+          "url": "https://man.openbsd.org/tmux#set-option"
+        },
         "requestBody": {
           "content": {
             "application/json": {
@@ -764,6 +856,10 @@
       "post": {
         "tags": [],
         "operationId": "split_window",
+        "externalDocs": {
+          "description": "tmux split-window",
+          "url": "https://man.openbsd.org/tmux#split-window"
+        },
         "requestBody": {
           "content": {
             "application/json": {
@@ -798,6 +894,10 @@
       "post": {
         "tags": [],
         "operationId": "swap_panes",
+        "externalDocs": {
+          "description": "tmux swap-pane",
+          "url": "https://man.openbsd.org/tmux#swap-pane"
+        },
         "requestBody": {
           "content": {
             "application/json": {
@@ -840,6 +940,7 @@
       },
       "CapturePaneResponse": {
         "type": "object",
+        "description": "Response containing captured pane content. See: https://man.openbsd.org/tmux#capture-pane",
         "required": [
           "content"
         ],
@@ -1046,6 +1147,7 @@
       },
       "NewSessionResponse": {
         "type": "object",
+        "description": "A tmux session. See: https://man.openbsd.org/tmux#CLIENTS_AND_SESSIONS",
         "required": [
           "id",
           "name",
@@ -1096,6 +1198,7 @@
       },
       "NewWindowResponse": {
         "type": "object",
+        "description": "A tmux window. See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES",
         "required": [
           "id",
           "index",
@@ -1127,6 +1230,7 @@
       },
       "OptionResponse": {
         "type": "object",
+        "description": "A tmux option. See: https://man.openbsd.org/tmux#OPTIONS",
         "required": [
           "name",
           "value",
@@ -1146,6 +1250,7 @@
       },
       "PaneResponse": {
         "type": "object",
+        "description": "A tmux pane. See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES",
         "required": [
           "id",
           "width",
@@ -1256,6 +1361,7 @@
       },
       "SessionResponse": {
         "type": "object",
+        "description": "A tmux session. See: https://man.openbsd.org/tmux#CLIENTS_AND_SESSIONS",
         "required": [
           "id",
           "name",
@@ -1331,6 +1437,7 @@
       },
       "SplitWindowResponse": {
         "type": "object",
+        "description": "A tmux pane created by split-window. See: https://man.openbsd.org/tmux#split-window",
         "required": [
           "id",
           "width",
@@ -1387,6 +1494,7 @@
       },
       "WindowResponse": {
         "type": "object",
+        "description": "A tmux window. See: https://man.openbsd.org/tmux#WINDOWS_AND_PANES",
         "required": [
           "id",
           "index",

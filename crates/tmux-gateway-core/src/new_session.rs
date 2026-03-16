@@ -8,6 +8,9 @@ use crate::validation::{SessionName, validate_command};
 
 use super::TmuxError;
 
+/// Create a new tmux session.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#new-session)
 #[tracing::instrument(skip(executor))]
 pub async fn new_session(
     executor: &(impl TmuxExecutor + ?Sized),

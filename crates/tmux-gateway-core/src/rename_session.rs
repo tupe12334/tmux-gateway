@@ -4,6 +4,9 @@ use crate::validation::SessionName;
 
 use super::TmuxError;
 
+/// Rename a session.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#rename-session)
 #[tracing::instrument(skip(executor))]
 pub async fn rename_session(
     executor: &(impl TmuxExecutor + ?Sized),

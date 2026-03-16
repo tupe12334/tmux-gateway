@@ -4,6 +4,9 @@ use crate::validation::{WindowTarget, validate_window_name};
 
 use super::TmuxError;
 
+/// Rename a window.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#rename-window)
 #[tracing::instrument(skip(executor))]
 pub async fn rename_window(
     executor: &(impl TmuxExecutor + ?Sized),

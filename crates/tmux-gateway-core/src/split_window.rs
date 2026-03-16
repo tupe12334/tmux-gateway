@@ -5,6 +5,9 @@ use crate::validation::{PaneTarget, validate_command};
 
 use super::TmuxError;
 
+/// Split a pane to create a new pane.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#split-window)
 #[tracing::instrument(skip(executor))]
 pub async fn split_window(
     executor: &(impl TmuxExecutor + ?Sized),

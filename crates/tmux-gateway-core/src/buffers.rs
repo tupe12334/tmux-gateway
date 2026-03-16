@@ -5,6 +5,9 @@ use crate::validation::{PaneTarget, validate_buffer_name};
 
 use super::TmuxError;
 
+/// A tmux paste buffer.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#BUFFERS)
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TmuxBuffer {
     pub name: String,
@@ -37,6 +40,8 @@ pub(crate) fn parse_buffer_line(line: &str) -> Result<TmuxBuffer, TmuxError> {
 }
 
 /// List all paste buffers.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#list-buffers)
 #[tracing::instrument(skip(executor))]
 pub async fn list_buffers(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -63,6 +68,8 @@ pub async fn list_buffers(
 
 /// Get the content of a paste buffer.
 /// If `name` is `None`, gets the most recent buffer.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#show-buffer)
 #[tracing::instrument(skip(executor))]
 pub async fn get_buffer(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -89,6 +96,8 @@ pub async fn get_buffer(
 
 /// Set the content of a paste buffer.
 /// If `name` is `None`, creates a new buffer with an auto-assigned name.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#set-buffer)
 #[tracing::instrument(skip(executor, content))]
 pub async fn set_buffer(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -117,6 +126,8 @@ pub async fn set_buffer(
 
 /// Paste buffer content into a pane.
 /// If `name` is `None`, pastes the most recent buffer.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#paste-buffer)
 #[tracing::instrument(skip(executor))]
 pub async fn paste_buffer(
     executor: &(impl TmuxExecutor + ?Sized),
@@ -144,6 +155,8 @@ pub async fn paste_buffer(
 }
 
 /// Delete a paste buffer.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#delete-buffer)
 #[tracing::instrument(skip(executor))]
 pub async fn delete_buffer(
     executor: &(impl TmuxExecutor + ?Sized),

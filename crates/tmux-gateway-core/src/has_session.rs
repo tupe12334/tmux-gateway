@@ -5,6 +5,8 @@ use crate::validation::SessionName;
 use super::TmuxError;
 
 /// Check if a session exists using tmux `has-session` (O(1) exit-code check).
+///
+/// [tmux docs](https://man.openbsd.org/tmux#has-session)
 #[tracing::instrument(skip(executor))]
 pub async fn has_session(
     executor: &(impl TmuxExecutor + ?Sized),

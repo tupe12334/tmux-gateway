@@ -5,6 +5,9 @@ use crate::validation::SessionName;
 
 use super::TmuxError;
 
+/// Destroy the given session.
+///
+/// [tmux docs](https://man.openbsd.org/tmux#kill-session)
 #[tracing::instrument(skip(executor))]
 pub async fn kill_session(
     executor: &(impl TmuxExecutor + ?Sized),
