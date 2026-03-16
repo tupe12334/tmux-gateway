@@ -36,7 +36,10 @@
       "Bash(gh repo:*)",
       "Bash(find:*)",
       "Bash(uuidgen:*)",
-      "Bash(centy list:*)"
+      "Bash(centy list:*)",
+      "Bash(tmux list-sessions:*)",
+      "Bash(tmux list-panes:*)",
+      "Bash(tmux capture-pane:*)"
     ],
     "deny": ["Bash(gh issue create:*)"]
   },
