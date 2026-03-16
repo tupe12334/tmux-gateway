@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-03-16
+
+### Added
+
+- Working directory and multi-arg command support to `new_session`
+- `SessionLock` for per-session mutation serialization
+- `kill-server` domain operation for full tmux server shutdown
+- `show-messages` domain operation for tmux server message log access
+- `respawn-pane` and `respawn-window` domain operations
+- `has_session` domain query for O(1) session existence checks
+- Domain precondition checks before destructive and mutating operations
+- Domain-level `OperationTimeout` with configurable per-operation deadlines
+- `ErrorRecoverability` enum for domain error retry guidance
+- Validated newtypes for domain identifiers (`SessionName`, `WindowTarget`, `PaneTarget`)
+- Declarative session specification value objects and `apply_session_spec`
+- Pane target validation to `capture_pane`
+- `tmux_docs` module for schema enrichment with tmux documentation links
+- Auto-generated AsyncAPI 3.0 spec for async messaging interfaces
+- Injectable tmux server socket path in domain operations
+- Shutdown integration tests
+- Commitlint with conventional commits and husky commit-msg hook
+- Rust examples: basic session lifecycle, window/pane management, send keys and capture output
+
+### Changed
+
+- Separated `TmuxExecutor` port trait from `RealTmuxExecutor` adapter
+- Extracted pure validate-build-parse pipeline for each domain operation
+- Release binary optimizations: LTO, strip debug symbols, `opt-level = "z"`, `codegen-units = 1`
+
+### Fixed
+
+- Clippy warnings: duplicated_attributes, thin-wrapper, collapsible-if lint errors
+- Formatting and import ordering across codebase
+
 ## [0.1.1] - 2026-03-16
 
 ### Added
@@ -101,5 +135,6 @@ Initial release.
 - `Makefile` with test, lint, and check targets
 - MIT license
 
+[0.1.2]: https://github.com/tupe12334/tmux-gateway/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/tupe12334/tmux-gateway/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/tupe12334/tmux-gateway/releases/tag/v0.1.0
