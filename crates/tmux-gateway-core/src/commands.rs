@@ -3,12 +3,12 @@ use super::{
     ResizeDirection, SessionDetail, TmuxBuffer, TmuxEnvVar, TmuxError, TmuxOption, TmuxPane,
     TmuxSession, TmuxWindow, capture_pane, capture_pane_with_options, create_session_with_windows,
     delete_buffer, ensure_session, ensure_window, get_buffer, get_option, get_server_env,
-    get_session_detail, has_session, health_check, kill_pane, kill_session, kill_window,
-    list_buffers, list_options, list_panes, list_server_environment, list_sessions, list_windows,
-    move_window, new_session, new_window, paste_buffer, rename_session, rename_window, resize_pane,
-    respawn_pane, respawn_window, select_layout, select_pane, select_window, send_keys, set_buffer,
-    set_environment, set_option, set_server_env, show_environment, split_window, swap_panes,
-    swap_window, unset_environment, unset_server_env,
+    get_session_detail, has_session, health_check, kill_pane, kill_server, kill_session,
+    kill_window, list_buffers, list_options, list_panes, list_server_environment, list_sessions,
+    list_windows, move_window, new_session, new_window, paste_buffer, rename_session,
+    rename_window, resize_pane, respawn_pane, respawn_window, select_layout, select_pane,
+    select_window, send_keys, set_buffer, set_environment, set_option, set_server_env,
+    show_environment, split_window, swap_panes, swap_window, unset_environment, unset_server_env,
 };
 use crate::validation::{PaneTarget, SessionName, WindowTarget};
 
@@ -85,6 +85,10 @@ pub trait TmuxCommands {
             let target = PaneTarget::try_from(target)?;
             kill_pane(&executor, &target).await
         }
+    }
+    fn kill_server(&self) -> impl std::future::Future<Output = Result<(), TmuxError>> + Send {
+        let executor = self.executor();
+        async move { kill_server(&executor).await }
     }
     fn list_windows(
         &self,
