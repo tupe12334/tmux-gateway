@@ -35,7 +35,7 @@ pub trait TmuxExecutor: Send + Sync {
 /// Use [`RealTmuxExecutor::with_socket`] to target a specific server instance.
 #[derive(Debug, Clone, Default)]
 pub struct RealTmuxExecutor {
-    socket_path: Option<PathBuf>,
+    pub socket_path: Option<PathBuf>,
 }
 
 impl RealTmuxExecutor {
@@ -49,11 +49,6 @@ impl RealTmuxExecutor {
         Self {
             socket_path: Some(path.into()),
         }
-    }
-
-    /// Returns the configured socket path, if any.
-    pub fn socket_path(&self) -> Option<&std::path::Path> {
-        self.socket_path.as_deref()
     }
 }
 

@@ -1,3 +1,4 @@
+mod apply_session_spec;
 mod buffers;
 mod capture_pane;
 mod commands;
@@ -32,12 +33,14 @@ mod server_environment;
 mod server_info;
 mod session_detail;
 mod session_environment;
+mod session_spec;
 mod sessions;
 mod split_window;
 mod swap_panes;
 mod swap_window;
 pub mod validation;
 
+pub use apply_session_spec::apply_session_spec;
 pub use buffers::{TmuxBuffer, delete_buffer, get_buffer, list_buffers, paste_buffer, set_buffer};
 pub use capture_pane::{
     CaptureOptions, CapturedContent, capture_pane, capture_pane_with_options,
@@ -77,6 +80,7 @@ pub use server_environment::{
 pub use server_info::{TmuxServerInfo, is_available, server_info};
 pub use session_detail::{SessionDetail, WindowDetail, get_session_detail};
 pub use session_environment::{TmuxEnvVar, set_environment, show_environment, unset_environment};
+pub use session_spec::{PaneSpec, SessionSpec, SplitDirection, WindowSpec};
 pub use sessions::{
     TmuxSession, get_session, list_sessions, list_sessions_paginated, list_sessions_with_log,
     session_exists,
