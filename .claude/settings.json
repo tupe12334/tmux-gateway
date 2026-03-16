@@ -33,7 +33,8 @@
       "Bash(grep:*)",
       "Bash(ls:*)",
       "WebSearch",
-      "Bash(gh repo:*)"
+      "Bash(gh repo:*)",
+      "Bash(find:*)"
     ],
     "deny": ["Bash(gh issue create:*)"]
   },
