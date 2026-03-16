@@ -2,6 +2,7 @@ use std::fmt;
 
 use super::TmuxError;
 use crate::executor::TmuxExecutor;
+use crate::log_port::{LogLevel, LogPort, NoopLog};
 use crate::pagination::{PaginatedResult, Pagination, paginate};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -77,6 +78,16 @@ pub(crate) fn parse_session_line(line: &str) -> Result<TmuxSession, TmuxError> {
 pub async fn list_sessions(
     executor: &(impl TmuxExecutor + ?Sized),
 ) -> Result<Vec<TmuxSession>, TmuxError> {
+    list_sessions_with_log(executor, &NoopLog).await
+}
+
+/// List all sessions with domain-level logging.
+#[tracing::instrument(skip(executor, log))]
+pub async fn list_sessions_with_log(
+    executor: &(impl TmuxExecutor + ?Sized),
+    log: &dyn LogPort,
+) -> Result<Vec<TmuxSession>, TmuxError> {
+    log.log(LogLevel::Debug, "list-sessions", "listing all sessions");
     let output = executor
         .execute(&[
             "list-sessions",
@@ -88,17 +99,35 @@ pub async fn list_sessions(
     if !output.success {
         let stderr = &output.stderr;
         if stderr.contains("no server running") || stderr.contains("no sessions") {
+            log.log(
+                LogLevel::Debug,
+                "list-sessions",
+                "no server running or no sessions — returning empty list",
+            );
             return Ok(vec![]);
         }
-        return Err(TmuxError::from_stderr("list-sessions", stderr, ""));
+        let err = TmuxError::from_stderr("list-sessions", stderr, "");
+        log.log(
+            LogLevel::Error,
+            "list-sessions",
+            &format!("tmux command failed: {err}"),
+        );
+        return Err(err);
     }
 
-    output
+    let sessions: Vec<TmuxSession> = output
         .stdout
         .lines()
         .filter(|line| !line.is_empty())
         .map(parse_session_line)
-        .collect()
+        .collect::<Result<_, _>>()?;
+
+    log.log(
+        LogLevel::Debug,
+        "list-sessions",
+        &format!("parsed {} sessions from tmux output", sessions.len()),
+    );
+    Ok(sessions)
 }
 
 #[tracing::instrument(skip(executor))]

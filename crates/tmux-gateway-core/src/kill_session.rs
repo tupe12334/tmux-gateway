@@ -1,4 +1,5 @@
 use crate::executor::TmuxExecutor;
+use crate::log_port::{LogLevel, LogPort, NoopLog};
 use crate::validation::validate_session_target;
 
 use super::TmuxError;
@@ -8,15 +9,48 @@ pub async fn kill_session(
     executor: &(impl TmuxExecutor + ?Sized),
     target: &str,
 ) -> Result<(), TmuxError> {
-    validate_session_target(target)?;
+    kill_session_with_log(executor, target, &NoopLog).await
+}
+
+/// Kill a session with domain-level logging.
+#[tracing::instrument(skip(executor, log))]
+pub async fn kill_session_with_log(
+    executor: &(impl TmuxExecutor + ?Sized),
+    target: &str,
+    log: &dyn LogPort,
+) -> Result<(), TmuxError> {
+    log.log_with_target(
+        LogLevel::Info,
+        "kill-session",
+        target,
+        &format!("killing session '{target}'"),
+    );
+    if let Err(e) = validate_session_target(target) {
+        log.log_with_target(
+            LogLevel::Warn,
+            "kill-session",
+            target,
+            &format!("validation rejected target '{target}' — {e}"),
+        );
+        return Err(e.into());
+    }
     let output = executor.execute(&["kill-session", "-t", target]).await?;
     if !output.success {
-        return Err(TmuxError::from_stderr(
+        let err = TmuxError::from_stderr("kill-session", &output.stderr, target);
+        log.log_with_target(
+            LogLevel::Error,
             "kill-session",
-            &output.stderr,
             target,
-        ));
+            &format!("tmux command failed: {err}"),
+        );
+        return Err(err);
     }
+    log.log_with_target(
+        LogLevel::Info,
+        "kill-session",
+        target,
+        &format!("session '{target}' killed successfully"),
+    );
     Ok(())
 }
 
