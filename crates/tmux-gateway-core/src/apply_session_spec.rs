@@ -52,9 +52,13 @@ pub async fn apply_session_spec(
         }
 
         // Create panes for the first window
-        if let Err(e) =
-            create_panes_for_window(executor, &spec.name, &first_window.name, &first_window.panes)
-                .await
+        if let Err(e) = create_panes_for_window(
+            executor,
+            &spec.name,
+            &first_window.name,
+            &first_window.panes,
+        )
+        .await
         {
             let _ = super::kill_session(executor, &spec.name).await;
             return Err(e);
@@ -74,13 +78,9 @@ pub async fn apply_session_spec(
                 return Err(e);
             }
 
-            if let Err(e) = create_panes_for_window(
-                executor,
-                &spec.name,
-                &window_spec.name,
-                &window_spec.panes,
-            )
-            .await
+            if let Err(e) =
+                create_panes_for_window(executor, &spec.name, &window_spec.name, &window_spec.panes)
+                    .await
             {
                 let _ = super::kill_session(executor, &spec.name).await;
                 return Err(e);
@@ -90,9 +90,7 @@ pub async fn apply_session_spec(
 
     // Step 3: Set environment variables
     for (name, value) in &spec.environment {
-        if let Err(e) =
-            super::set_environment(executor, &spec.name, name, value).await
-        {
+        if let Err(e) = super::set_environment(executor, &spec.name, name, value).await {
             let _ = super::kill_session(executor, &spec.name).await;
             return Err(e);
         }
@@ -111,12 +109,10 @@ async fn create_panes_for_window(
 ) -> Result<(), TmuxError> {
     // Each new pane splits from the last pane in the window.
     // The first pane (index 0) is created with the window itself.
-    let mut next_pane_index: u32 = 0;
-    for pane_spec in panes {
+    for (next_pane_index, pane_spec) in (0_u32..).zip(panes.iter()) {
         let target = format!("{session}:{window}.{next_pane_index}");
         let horizontal = pane_spec.split == SplitDirection::Horizontal;
         super::split_window(executor, &target, horizontal, pane_spec.command.as_deref()).await?;
-        next_pane_index += 1;
     }
     Ok(())
 }

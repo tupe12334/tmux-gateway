@@ -434,7 +434,7 @@ mod tests {
         let executor = RealTmuxExecutor::with_socket(&socket);
 
         // Verify socket_path accessor returns the configured path
-        assert_eq!(executor.socket_path(), Some(socket.as_path()));
+        assert_eq!(executor.socket_path.as_deref(), Some(socket.as_path()));
 
         // Start a new server on the custom socket
         let session_name = "__socket_test__";

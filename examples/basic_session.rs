@@ -6,9 +6,7 @@
 //!
 //! Run with: `cargo run --example basic_session`
 
-use tmux_gateway_core::{
-    RealTmuxExecutor, capture_pane, kill_session, list_sessions, new_session,
-};
+use tmux_gateway_core::{RealTmuxExecutor, capture_pane, kill_session, list_sessions, new_session};
 
 const SESSION_NAME: &str = "basic-session-example";
 
