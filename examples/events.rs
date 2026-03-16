@@ -66,8 +66,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     // --- Send keys and broadcast the event ---
-    let target =
-        PaneTarget::try_from(format!("{session_name}:{}.0", window.index).as_str())?;
+    let target = PaneTarget::try_from(format!("{session_name}:{}.0", window.index).as_str())?;
     let keys = ["echo hello from events demo".to_string()];
     send_keys(&executor, &target, &keys).await?;
     let _ = tx.send(TmuxEvent::KeysSent {

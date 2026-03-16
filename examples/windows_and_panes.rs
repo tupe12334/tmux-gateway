@@ -55,8 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\nPanes in each window:");
     let windows = list_windows(&executor, &session).await?;
     for window in &windows {
-        let target =
-            WindowTarget::try_from(format!("{SESSION_NAME}:{}", window.index).as_str())?;
+        let target = WindowTarget::try_from(format!("{SESSION_NAME}:{}", window.index).as_str())?;
         let panes = list_panes(&executor, &target).await?;
         println!(
             "  {} (index={}) — {} panes:",

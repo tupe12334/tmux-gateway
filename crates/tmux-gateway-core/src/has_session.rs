@@ -27,9 +27,7 @@ pub async fn has_session_with_log(
         target_str,
         &format!("checking if session '{target_str}' exists"),
     );
-    let output = executor
-        .execute(&["has-session", "-t", target_str])
-        .await?;
+    let output = executor.execute(&["has-session", "-t", target_str]).await?;
     if output.success {
         log.log_with_target(
             LogLevel::Debug,

@@ -419,10 +419,7 @@ impl WindowTarget {
 
     /// Returns the window part of the target.
     pub fn window(&self) -> &str {
-        self.0
-            .split(':')
-            .nth(1)
-            .expect("validated at construction")
+        self.0.split(':').nth(1).expect("validated at construction")
     }
 }
 
@@ -475,11 +472,7 @@ impl PaneTarget {
 
     /// Returns the window part of the target (between `:` and `.`).
     pub fn window(&self) -> &str {
-        let after_colon = self
-            .0
-            .split(':')
-            .nth(1)
-            .expect("validated at construction");
+        let after_colon = self.0.split(':').nth(1).expect("validated at construction");
         after_colon
             .split('.')
             .next()
@@ -488,11 +481,7 @@ impl PaneTarget {
 
     /// Returns the pane part of the target (after `.`).
     pub fn pane(&self) -> &str {
-        let after_colon = self
-            .0
-            .split(':')
-            .nth(1)
-            .expect("validated at construction");
+        let after_colon = self.0.split(':').nth(1).expect("validated at construction");
         after_colon
             .split('.')
             .nth(1)

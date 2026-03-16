@@ -26,9 +26,7 @@ pub async fn kill_window_with_log(
         target_str,
         &format!("killing window '{target_str}'"),
     );
-    let output = executor
-        .execute(&["kill-window", "-t", target_str])
-        .await?;
+    let output = executor.execute(&["kill-window", "-t", target_str]).await?;
     if !output.success {
         let err = TmuxError::from_stderr("kill-window", &output.stderr, target_str);
         log.log_with_target(
