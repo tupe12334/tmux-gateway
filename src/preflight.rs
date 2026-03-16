@@ -184,15 +184,16 @@ fn check_socket_env(var: &str, checks: &mut Vec<Check>) -> Option<String> {
         Ok(val) if val.is_empty() => None,
         Ok(val) => {
             let path = Path::new(&val);
-            if let Some(parent) = path.parent() {
-                if !parent.as_os_str().is_empty() && !parent.exists() {
-                    checks.push(Check {
-                        name: var.into(),
-                        status: Status::Fail,
-                        message: format!("parent directory {} does not exist", parent.display()),
-                    });
-                    return None;
-                }
+            if let Some(parent) = path.parent()
+                && !parent.as_os_str().is_empty()
+                && !parent.exists()
+            {
+                checks.push(Check {
+                    name: var.into(),
+                    status: Status::Fail,
+                    message: format!("parent directory {} does not exist", parent.display()),
+                });
+                return None;
             }
             checks.push(Check {
                 name: var.into(),
