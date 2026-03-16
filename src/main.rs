@@ -1,21 +1,11 @@
-use anyhow::Context;
-use axum::extract::DefaultBodyLimit;
 use std::env;
-use std::net::SocketAddr;
-use std::path::Path;
 use std::time::Duration;
-use tmux_gateway::api::{graphql, grpc, middleware, rest, ws};
-use tmux_gateway::{export_schemas, port_table, preflight};
-use tokio::net::TcpListener;
-use tokio::signal;
+use tmux_gateway::api::middleware;
+use tmux_gateway::{export_schemas, port_table, preflight, transports};
 use tokio::sync::watch;
 use tower_http::cors::{AllowOrigin, CorsLayer};
-use tower_http::request_id::{PropagateRequestIdLayer, SetRequestIdLayer};
-use tower_http::trace::TraceLayer;
-use tracing::{Span, info};
+use tracing::info;
 use tracing_subscriber::EnvFilter;
-use utoipa::OpenApi;
-use utoipa_swagger_ui::SwaggerUi;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -61,8 +51,6 @@ async fn main() -> anyhow::Result<()> {
 
     // Shutdown signal: sender notifies both servers to begin graceful shutdown.
     let (shutdown_tx, _) = watch::channel(false);
-    let mut http_shutdown_rx = shutdown_tx.subscribe();
-    let mut grpc_shutdown_rx = shutdown_tx.subscribe();
 
     let cors = {
         let origins_raw = env::var("CORS_ORIGINS")
@@ -134,253 +122,37 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::info!(read_rps, write_rps, "Per-IP rate limiting enabled");
 
-    let x_request_id = http::HeaderName::from_static("x-request-id");
+    // ── Spawn transports ─────────────────────────────────────────
+    let http_app = transports::build_http_app(cors, max_body_bytes, read_rate_limit, write_rate_limit);
 
-    let http_app = axum::Router::new()
-        .merge(ws::router())
-        .merge(
-            rest::read_router().route_layer(axum::middleware::from_fn_with_state(
-                read_rate_limit,
-                middleware::rate_limit,
-            )),
-        )
-        .merge(
-            rest::write_router().route_layer(axum::middleware::from_fn_with_state(
-                write_rate_limit.clone(),
-                middleware::rate_limit,
-            )),
-        )
-        .merge(
-            graphql::router().route_layer(axum::middleware::from_fn_with_state(
-                write_rate_limit,
-                middleware::rate_limit,
-            )),
-        )
-        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", rest::ApiDoc::openapi()))
-        .layer(DefaultBodyLimit::max(max_body_bytes))
-        .layer(cors)
-        .layer(PropagateRequestIdLayer::new(x_request_id.clone()))
-        .layer(
-            TraceLayer::new_for_http()
-                .make_span_with(|request: &http::Request<_>| {
-                    let request_id = request
-                        .headers()
-                        .get("x-request-id")
-                        .and_then(|v| v.to_str().ok())
-                        .unwrap_or("-");
-                    tracing::info_span!(
-                        "http_request",
-                        method = %request.method(),
-                        path = %request.uri().path(),
-                        request_id = %request_id,
-                    )
-                })
-                .on_response(
-                    |response: &http::Response<_>, latency: Duration, _span: &Span| {
-                        tracing::info!(
-                            status = response.status().as_u16(),
-                            latency_ms = latency.as_millis(),
-                            "response"
-                        );
-                    },
-                ),
-        )
-        .layer(SetRequestIdLayer::new(
-            x_request_id,
-            middleware::UuidRequestId,
-        ));
+    let http_handle = transports::tcp::http::spawn(
+        http_app.clone(),
+        http_port,
+        shutdown_tx.subscribe(),
+    )
+    .await?;
 
-    let http_addr = format!("0.0.0.0:{http_port}");
-    let listener = TcpListener::bind(&http_addr).await.with_context(|| {
-        format!("failed to bind HTTP port {http_port} — port may already be in use")
-    })?;
-    tracing::info!("HTTP server (REST + GraphQL + Swagger) listening on {http_addr}");
-
-    // Optionally bind an HTTP Unix socket listener.
     let http_unix_handle = if let Some(ref socket_path) = http_socket {
-        remove_stale_socket(socket_path);
-        let uds = tokio::net::UnixListener::bind(socket_path)
-            .with_context(|| format!("failed to bind HTTP Unix socket at {socket_path}"))?;
-        tracing::info!("HTTP Unix socket listening on {socket_path}");
-        let app = http_app.clone();
-        let mut rx = shutdown_tx.subscribe();
-        Some(tokio::spawn(async move {
-            if let Err(e) = axum::serve(uds, app.into_make_service())
-                .with_graceful_shutdown(async move {
-                    let _ = rx.wait_for(|&v| v).await;
-                    tracing::info!("HTTP Unix socket server shutting down...");
-                })
-                .await
-            {
-                tracing::error!("HTTP Unix socket server error: {e:#}");
-            }
-        }))
+        Some(transports::unix::http::spawn(http_app, socket_path, shutdown_tx.subscribe()).await?)
     } else {
         None
     };
 
-    let http_handle = tokio::spawn(async move {
-        if let Err(e) = axum::serve(
-            listener,
-            http_app.into_make_service_with_connect_info::<SocketAddr>(),
-        )
-        .with_graceful_shutdown(async move {
-            let _ = http_shutdown_rx.wait_for(|&v| v).await;
-            tracing::info!("HTTP server shutting down...");
-        })
-        .await
-        {
-            tracing::error!("HTTP server error: {e:#}");
-        }
-    });
+    let grpc_handle = transports::tcp::grpc::spawn(
+        grpc_port,
+        shutdown_tx.subscribe(),
+        shutdown_tx.subscribe(),
+    )
+    .await?;
 
-    let grpc_addr = format!("0.0.0.0:{grpc_port}");
-    let grpc_listener = TcpListener::bind(&grpc_addr).await.with_context(|| {
-        format!("failed to bind gRPC port {grpc_port} — port may already be in use")
-    })?;
-    let reflection_service = tonic_reflection::server::Builder::configure()
-        .register_file_descriptor_set(grpc::file_descriptor_set())
-        .build_v1()
-        .context("failed to build gRPC reflection service")?;
-
-    let mut health_shutdown_rx = shutdown_tx.subscribe();
-
-    let grpc_handle = tokio::spawn(async move {
-        let (health_reporter, health_service) = tonic_health::server::health_reporter();
-
-        // Spawn a background task that periodically verifies tmux is responsive
-        // and updates the gRPC health status accordingly.
-        {
-            let reporter = health_reporter.clone();
-            tokio::spawn(async move {
-                const CHECK_INTERVAL: Duration = Duration::from_secs(5);
-                const CHECK_TIMEOUT: Duration = Duration::from_secs(3);
-
-                loop {
-                    let healthy = tokio::time::timeout(
-                        CHECK_TIMEOUT,
-                        tmux_gateway_core::is_available(&tmux_gateway_core::RealTmuxExecutor),
-                    )
-                    .await
-                    .unwrap_or(false);
-
-                    if healthy {
-                        reporter
-                            .set_serving::<grpc::TmuxGatewayServerConcrete>()
-                            .await;
-                    } else {
-                        reporter
-                            .set_not_serving::<grpc::TmuxGatewayServerConcrete>()
-                            .await;
-                    }
-
-                    tokio::select! {
-                        _ = tokio::time::sleep(CHECK_INTERVAL) => {}
-                        _ = health_shutdown_rx.wait_for(|&v| v) => break,
-                    }
-                }
-
-                tracing::info!("Health check loop stopped");
-            });
-        }
-
-        let x_request_id = http::HeaderName::from_static("x-request-id");
-        let incoming = tokio_stream::wrappers::TcpListenerStream::new(grpc_listener);
-
-        tracing::info!("gRPC server listening on {grpc_addr}");
-        if let Err(e) = tonic::transport::Server::builder()
-            .layer(
-                tower::ServiceBuilder::new()
-                    .layer(SetRequestIdLayer::new(
-                        x_request_id.clone(),
-                        middleware::UuidRequestId,
-                    ))
-                    .layer(
-                        TraceLayer::new_for_grpc()
-                            .make_span_with(|request: &http::Request<_>| {
-                                let request_id = request
-                                    .headers()
-                                    .get("x-request-id")
-                                    .and_then(|v| v.to_str().ok())
-                                    .unwrap_or("-");
-                                tracing::info_span!(
-                                    "grpc_request",
-                                    method = %request.uri().path(),
-                                    request_id = %request_id,
-                                )
-                            })
-                            .on_response(
-                                |response: &http::Response<_>, latency: Duration, _span: &Span| {
-                                    tracing::info!(
-                                        status = response.status().as_u16(),
-                                        latency_ms = latency.as_millis(),
-                                        "response"
-                                    );
-                                },
-                            ),
-                    )
-                    .layer(PropagateRequestIdLayer::new(x_request_id))
-                    .into_inner(),
-            )
-            .add_service(health_service)
-            .add_service(grpc::grpc_server())
-            .add_service(reflection_service)
-            .serve_with_incoming_shutdown(incoming, async move {
-                let _ = grpc_shutdown_rx.wait_for(|&v| v).await;
-                tracing::info!("gRPC server shutting down...");
-            })
-            .await
-        {
-            tracing::error!("gRPC server error: {e:#}");
-        }
-    });
-
-    // Optionally bind a gRPC Unix socket listener.
     let grpc_unix_handle = if let Some(ref socket_path) = grpc_socket {
-        remove_stale_socket(socket_path);
-        let uds = tokio::net::UnixListener::bind(socket_path)
-            .with_context(|| format!("failed to bind gRPC Unix socket at {socket_path}"))?;
-        tracing::info!("gRPC Unix socket listening on {socket_path}");
-        let incoming = tokio_stream::wrappers::UnixListenerStream::new(uds);
-
-        let reflection_service = tonic_reflection::server::Builder::configure()
-            .register_file_descriptor_set(grpc::file_descriptor_set())
-            .build_v1()
-            .context("failed to build gRPC reflection service (unix)")?;
-
-        let (_, health_service) = tonic_health::server::health_reporter();
-        let mut rx = shutdown_tx.subscribe();
-        let x_request_id = http::HeaderName::from_static("x-request-id");
-
-        Some(tokio::spawn(async move {
-            if let Err(e) = tonic::transport::Server::builder()
-                .layer(
-                    tower::ServiceBuilder::new()
-                        .layer(SetRequestIdLayer::new(
-                            x_request_id.clone(),
-                            middleware::UuidRequestId,
-                        ))
-                        .layer(PropagateRequestIdLayer::new(x_request_id))
-                        .into_inner(),
-                )
-                .add_service(health_service)
-                .add_service(grpc::grpc_server())
-                .add_service(reflection_service)
-                .serve_with_incoming_shutdown(incoming, async move {
-                    let _ = rx.wait_for(|&v| v).await;
-                    tracing::info!("gRPC Unix socket server shutting down...");
-                })
-                .await
-            {
-                tracing::error!("gRPC Unix socket server error: {e:#}");
-            }
-        }))
+        Some(transports::unix::grpc::spawn(socket_path, shutdown_tx.subscribe()).await?)
     } else {
         None
     };
 
     // Wait for shutdown signal (Ctrl+C or SIGTERM).
-    shutdown_signal().await;
+    transports::shutdown::shutdown_signal().await;
     tracing::info!("Shutdown signal received, draining in-flight requests...");
 
     // Notify both servers to begin graceful shutdown.
@@ -408,15 +180,6 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Removes a stale Unix socket file if it exists, so we can bind a fresh one.
-fn remove_stale_socket(path: &str) {
-    let p = Path::new(path);
-    if p.exists() {
-        tracing::info!(path, "Removing stale Unix socket file");
-        let _ = std::fs::remove_file(p);
-    }
-}
-
 /// Initializes the tracing subscriber.
 /// Set `RUST_LOG_FORMAT=json` for JSON-formatted logs (recommended for production).
 fn init_tracing() {
@@ -433,24 +196,5 @@ fn init_tracing() {
             .init();
     } else {
         tracing_subscriber::fmt().with_env_filter(filter).init();
-    }
-}
-
-async fn shutdown_signal() {
-    let ctrl_c = signal::ctrl_c();
-
-    #[cfg(unix)]
-    {
-        let mut sigterm = signal::unix::signal(signal::unix::SignalKind::terminate())
-            .expect("failed to install SIGTERM handler");
-        tokio::select! {
-            _ = ctrl_c => {}
-            _ = sigterm.recv() => {}
-        }
-    }
-
-    #[cfg(not(unix))]
-    {
-        ctrl_c.await.expect("failed to listen for Ctrl+C");
     }
 }
