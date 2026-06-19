@@ -6,12 +6,21 @@ resolver = "3"
 edition = "2024"
 license = "MIT"
 
+[workspace.lints.clippy]
+# Flag bindings prefixed with `_` (the "intentionally unused" convention)
+# that are then actually read or used. The underscore misleads readers into
+# thinking the value is discarded; rename to a normal binding instead.
+used_underscore_binding = "warn"
+
 [package]
 name = "tmux-gateway"
 version = "0.1.1"
 edition.workspace = true
 default-run = "tmux-gateway"
 license.workspace = true
+
+[lints]
+workspace = true
 
 [dependencies]
 tmux-gateway-core = { path = "crates/tmux-gateway-core" }
