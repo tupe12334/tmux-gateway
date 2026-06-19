@@ -5,6 +5,9 @@ edition = "2024"
 license = "MIT"
 description = "Core tmux session management library — no networking"
 
+[lints]
+workspace = true
+
 [dependencies]
 tokio = { version = "1", features = ["rt", "macros", "sync", "time"] }
 thiserror = "2"

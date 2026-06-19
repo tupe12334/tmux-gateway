@@ -58,6 +58,7 @@
     "tnotanumber",
     "TOCTOU",
     "txyz",
+    "uninlined",
     "utoipa",
     "websocat",
     "asyncapi",
