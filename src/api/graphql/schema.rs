@@ -112,8 +112,7 @@ impl QueryRoot {
                 name: s.name,
                 windows: s.windows,
                 created: DateTime::<Utc>::from_timestamp(s.created, 0)
-                    .map(|dt| dt.to_rfc3339())
-                    .unwrap_or_else(|| s.created.to_string()),
+                    .map_or_else(|| s.created.to_string(), |dt| dt.to_rfc3339()),
                 attached: s.attached,
             })
             .collect())
@@ -266,8 +265,7 @@ impl MutationRoot {
             name: s.name,
             windows: s.windows,
             created: DateTime::<Utc>::from_timestamp(s.created, 0)
-                .map(|dt| dt.to_rfc3339())
-                .unwrap_or_else(|| s.created.to_string()),
+                .map_or_else(|| s.created.to_string(), |dt| dt.to_rfc3339()),
             attached: s.attached,
         })
     }
@@ -397,8 +395,7 @@ impl MutationRoot {
             name: session.name,
             windows: session.windows,
             created: DateTime::<Utc>::from_timestamp(session.created, 0)
-                .map(|dt| dt.to_rfc3339())
-                .unwrap_or_else(|| session.created.to_string()),
+                .map_or_else(|| session.created.to_string(), |dt| dt.to_rfc3339()),
             attached: session.attached,
         })
     }
@@ -563,9 +560,7 @@ pub fn build_schema() -> AppSchema {
         .ok()
         .and_then(|v| v.parse().ok())
         .unwrap_or(500);
-    let introspection = std::env::var("GRAPHQL_INTROSPECTION")
-        .map(|v| v != "false")
-        .unwrap_or(true);
+    let introspection = std::env::var("GRAPHQL_INTROSPECTION").map_or(true, |v| v != "false");
 
     let mut builder = Schema::build(QueryRoot, MutationRoot, SubscriptionRoot)
         .limit_depth(max_depth)
