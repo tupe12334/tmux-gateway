@@ -6,12 +6,21 @@ resolver = "3"
 edition = "2024"
 license = "MIT"
 
+[workspace.lints.clippy]
+# Flag functions that return `Result`/`Option` but never actually produce
+# `Err`/`None`. Such wrappers force every caller into needless error handling
+# or unwrapping; the signature should reflect that the value is always present.
+unnecessary_wraps = "warn"
+
 [package]
 name = "tmux-gateway"
 version = "0.1.1"
 edition.workspace = true
 default-run = "tmux-gateway"
 license.workspace = true
+
+[lints]
+workspace = true
 
 [dependencies]
 tmux-gateway-core = { path = "crates/tmux-gateway-core" }
