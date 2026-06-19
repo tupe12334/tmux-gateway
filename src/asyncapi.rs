@@ -119,9 +119,8 @@ fn enrich(spec: &mut Value) {
 }
 
 fn enrich_channels(obj: &mut serde_json::Map<String, Value>) {
-    let channels = match obj.get_mut("channels").and_then(Value::as_object_mut) {
-        Some(c) => c,
-        None => return,
+    let Some(channels) = obj.get_mut("channels").and_then(Value::as_object_mut) else {
+        return;
     };
 
     if let Some(ws) = channels
@@ -189,9 +188,8 @@ fn enrich_channels(obj: &mut serde_json::Map<String, Value>) {
 }
 
 fn enrich_operations(obj: &mut serde_json::Map<String, Value>) {
-    let ops = match obj.get_mut("operations").and_then(Value::as_object_mut) {
-        Some(o) => o,
-        None => return,
+    let Some(ops) = obj.get_mut("operations").and_then(Value::as_object_mut) else {
+        return;
     };
 
     let enrichments = [
