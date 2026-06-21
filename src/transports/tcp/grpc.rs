@@ -55,7 +55,7 @@ pub async fn spawn(
                     }
 
                     tokio::select! {
-                        _ = tokio::time::sleep(CHECK_INTERVAL) => {}
+                        () = tokio::time::sleep(CHECK_INTERVAL) => {}
                         _ = health_shutdown_rx.wait_for(|&v| v) => break,
                     }
                 }

@@ -6,12 +6,25 @@ resolver = "3"
 edition = "2024"
 license = "MIT"
 
+[workspace.lints.clippy]
+# Flag `_` patterns that match a value of the unit type `()`. Writing `()`
+# instead of `_` documents that the matched value carries no information and
+# makes the author's intent explicit. It also guards against silent breakage:
+# if the matched expression later changes from `()` to a meaningful type, the
+# `()` pattern stops compiling and forces the code to be revisited, whereas a
+# blanket `_` would keep swallowing the new value. Set at "warn" to flag
+# without breaking the build.
+ignored_unit_patterns = "warn"
+
 [package]
 name = "tmux-gateway"
 version = "0.1.1"
 edition.workspace = true
 default-run = "tmux-gateway"
 license.workspace = true
+
+[lints]
+workspace = true
 
 [dependencies]
 tmux-gateway-core = { path = "crates/tmux-gateway-core" }

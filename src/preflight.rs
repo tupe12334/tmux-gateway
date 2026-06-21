@@ -209,10 +209,10 @@ fn check_socket_env(var: &str, checks: &mut Vec<Check>) -> Option<String> {
 fn check_schemas_dir(checks: &mut Vec<Check>) {
     let schemas_dir = Path::new("schemas");
     match std::fs::create_dir_all(schemas_dir) {
-        Ok(_) => {
+        Ok(()) => {
             let test_file = schemas_dir.join(".preflight_check");
             match std::fs::write(&test_file, b"") {
-                Ok(_) => {
+                Ok(()) => {
                     let _ = std::fs::remove_file(&test_file);
                     checks.push(Check {
                         name: "schemas directory".into(),
