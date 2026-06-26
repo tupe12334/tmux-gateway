@@ -161,7 +161,7 @@ async fn new(
     let working_directory = body.working_directory.as_deref();
     let session = if let Some(args) = &body.command_args {
         if !args.is_empty() {
-            let args_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+            let args_refs: Vec<&str> = args.iter().map(std::string::String::as_str).collect();
             RestHandler
                 .create_session_with_args(&body.name, &args_refs, working_directory)
                 .await

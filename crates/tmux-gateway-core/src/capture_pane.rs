@@ -65,7 +65,7 @@ impl AsRef<str> for CapturedContent {
 /// - Trims trailing whitespace from each line
 /// - Removes trailing blank lines (tmux pads output to pane height)
 pub fn normalize_pane_content(raw: &str) -> String {
-    let trimmed_lines: Vec<&str> = raw.lines().map(|line| line.trim_end()).collect();
+    let trimmed_lines: Vec<&str> = raw.lines().map(str::trim_end).collect();
     let last_non_empty = trimmed_lines.iter().rposition(|line| !line.is_empty());
     match last_non_empty {
         Some(idx) => trimmed_lines[..=idx].join("\n"),

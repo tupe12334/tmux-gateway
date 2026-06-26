@@ -42,7 +42,7 @@ impl RealTmuxExecutor {
 impl TmuxExecutor for RealTmuxExecutor {
     async fn execute(&self, args: &[&str]) -> Result<TmuxOutput, TmuxError> {
         let socket_path = self.socket_path.clone();
-        let args: Vec<String> = args.iter().map(|s| s.to_string()).collect();
+        let args: Vec<String> = args.iter().map(std::string::ToString::to_string).collect();
         let cmd_name = args.first().cloned().unwrap_or_default();
         let timeout_dur = command_timeout();
         let cmd_for_timeout = cmd_name.clone();

@@ -6,12 +6,21 @@ resolver = "3"
 edition = "2024"
 license = "MIT"
 
+[workspace.lints.clippy]
+# Replace `|x| x.method()` closures with direct method references (`Type::method`).
+# Method references are shorter, state intent directly, and avoid an unnecessary
+# indirection layer that obscures what the closure is actually doing.
+redundant_closure_for_method_calls = "deny"
+
 [package]
 name = "tmux-gateway"
 version = "0.1.1"
 edition.workspace = true
 default-run = "tmux-gateway"
 license.workspace = true
+
+[lints]
+workspace = true
 
 [dependencies]
 tmux-gateway-core = { path = "crates/tmux-gateway-core" }

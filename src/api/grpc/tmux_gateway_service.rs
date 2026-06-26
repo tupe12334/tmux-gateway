@@ -104,7 +104,7 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
             Some(inner.working_directory.as_str())
         };
         let session = if !inner.command_args.is_empty() {
-            let args_refs: Vec<&str> = inner.command_args.iter().map(|s| s.as_str()).collect();
+            let args_refs: Vec<&str> = inner.command_args.iter().map(std::string::String::as_str).collect();
             TmuxCommands::create_session_with_args(self, &inner.name, &args_refs, working_directory)
                 .await
                 .map_err(tmux_err_to_status)?

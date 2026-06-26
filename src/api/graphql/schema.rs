@@ -244,7 +244,7 @@ impl MutationRoot {
         let wd = working_directory.as_deref();
         let s = if let Some(args) = &command_args {
             if !args.is_empty() {
-                let args_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+                let args_refs: Vec<&str> = args.iter().map(std::string::String::as_str).collect();
                 GraphqlHandler
                     .create_session_with_args(&name, &args_refs, wd)
                     .await
