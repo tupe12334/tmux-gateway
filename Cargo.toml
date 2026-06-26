@@ -6,6 +6,13 @@ resolver = "3"
 edition = "2024"
 license = "MIT"
 
+[workspace.lints.clippy]
+# `dbg!` writes to stderr and is a debugging aid that should never reach
+# production: it pollutes structured log output and leaks internal state to
+# users. Denying it at the workspace level catches stray debug prints before
+# they ship.
+dbg_macro = "deny"
+
 [package]
 name = "tmux-gateway"
 version = "0.1.1"
@@ -63,6 +70,9 @@ path = "examples/options.rs"
 
 [package.metadata.cargo-machete]
 ignored = ["prost", "serde_json", "tonic-prost", "utoipa-axum", "hyper-util"]
+
+[lints]
+workspace = true
 
 [profile.release]
 lto = true
