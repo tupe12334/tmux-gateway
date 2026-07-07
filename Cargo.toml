@@ -6,6 +6,12 @@ resolver = "3"
 edition = "2024"
 license = "MIT"
 
+[workspace.lints.clippy]
+# Values captured inline in the format string (`format!("{x}")`) are easier to read
+# than positional args (`format!("{}", x)`) and can't drift out of sync with the
+# template when a line is edited.
+uninlined_format_args = "warn"
+
 [package]
 name = "tmux-gateway"
 version = "0.1.1"
@@ -63,6 +69,9 @@ path = "examples/options.rs"
 
 [package.metadata.cargo-machete]
 ignored = ["prost", "serde_json", "tonic-prost", "utoipa-axum", "hyper-util"]
+
+[lints]
+workspace = true
 
 [profile.release]
 lto = true
