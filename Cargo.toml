@@ -78,6 +78,9 @@ strip = true
 opt-level = "z"
 codegen-units = 1
 
+[workspace.lints.clippy]
+if_not_else = "warn"
+
 [workspace.metadata.dylint]
 libraries = [
     { git = "https://github.com/tupe12334/agent_dylint_lints" },

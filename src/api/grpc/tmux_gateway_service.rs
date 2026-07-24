@@ -103,13 +103,13 @@ impl TmuxGateway for TmuxGatewayServiceImpl {
         } else {
             Some(inner.working_directory.as_str())
         };
-        let session = if !inner.command_args.is_empty() {
-            let args_refs: Vec<&str> = inner.command_args.iter().map(|s| s.as_str()).collect();
-            TmuxCommands::create_session_with_args(self, &inner.name, &args_refs, working_directory)
+        let session = if inner.command_args.is_empty() {
+            TmuxCommands::create_session(self, &inner.name, command, working_directory)
                 .await
                 .map_err(tmux_err_to_status)?
         } else {
-            TmuxCommands::create_session(self, &inner.name, command, working_directory)
+            let args_refs: Vec<&str> = inner.command_args.iter().map(|s| s.as_str()).collect();
+            TmuxCommands::create_session_with_args(self, &inner.name, &args_refs, working_directory)
                 .await
                 .map_err(tmux_err_to_status)?
         };
