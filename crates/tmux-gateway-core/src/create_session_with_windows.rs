@@ -25,7 +25,7 @@ pub async fn create_session_with_windows(
     // Step 2: If window names provided, rename the default window and create additional ones
     if let Some((first, rest)) = window_names.split_first() {
         // Rename the default window (index 0) to the first requested name
-        let default_window_target = WindowTarget::try_from(format!("{}:0", name).as_str())?;
+        let default_window_target = WindowTarget::try_from(format!("{name}:0").as_str())?;
         if let Err(e) = super::rename_window(executor, &default_window_target, first).await {
             // Rollback: kill the session
             let _ = super::kill_session(executor, name).await;
