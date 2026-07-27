@@ -7,11 +7,15 @@ edition = "2024"
 license = "MIT"
 
 [workspace.lints.clippy]
+# Prefer captured identifiers in format strings, e.g. `format!("{x}")`
+# over `format!("{}", x)`. More readable and the modern idiom.
+uninlined_format_args = "warn"
 # Prefer `let ... else { diverge }` over a `match` whose only job is to bind the
 # happy path and return/panic otherwise. Keeps the success binding at the top
 # level instead of nesting it inside a match arm, so the main flow reads top to
 # bottom without indentation for the error case.
 manual_let_else = "warn"
+if_not_else = "warn"
 
 [package]
 name = "tmux-gateway"
