@@ -7,6 +7,9 @@ edition = "2024"
 license = "MIT"
 
 [workspace.lints.clippy]
+# Prefer captured identifiers in format strings, e.g. `format!("{x}")`
+# over `format!("{}", x)`. More readable and the modern idiom.
+uninlined_format_args = "warn"
 # Flag `_` patterns that match a value of the unit type `()`. Writing `()`
 # instead of `_` documents that the matched value carries no information and
 # makes the author's intent explicit. It also guards against silent breakage:
@@ -15,6 +18,7 @@ license = "MIT"
 # blanket `_` would keep swallowing the new value. Set at "warn" to flag
 # without breaking the build.
 ignored_unit_patterns = "warn"
+if_not_else = "warn"
 
 [package]
 name = "tmux-gateway"
