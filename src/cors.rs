@@ -4,7 +4,7 @@ use tracing::info;
 
 pub fn build_cors_layer(http_port: u16) -> anyhow::Result<CorsLayer> {
     let origins_raw = env::var("CORS_ORIGINS")
-        .unwrap_or_else(|_| format!("http://localhost:{},http://localhost:3000", http_port));
+        .unwrap_or_else(|_| format!("http://localhost:{http_port},http://localhost:3000"));
     let raw_entries: Vec<&str> = origins_raw.split(',').map(|s| s.trim()).collect();
     let total = raw_entries.len();
     let mut origins: Vec<http::HeaderValue> = Vec::with_capacity(total);
@@ -20,11 +20,9 @@ pub fn build_cors_layer(http_port: u16) -> anyhow::Result<CorsLayer> {
 
     if origins.is_empty() {
         anyhow::bail!(
-            "No valid CORS origins after parsing CORS_ORIGINS={:?}. \
-             All {} entries failed to parse. \
+            "No valid CORS origins after parsing CORS_ORIGINS={origins_raw:?}. \
+             All {total} entries failed to parse. \
              Fix the CORS_ORIGINS environment variable or remove it to use defaults.",
-            origins_raw,
-            total,
         );
     }
 

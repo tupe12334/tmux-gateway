@@ -125,7 +125,7 @@ async fn list_windows_returns_200() {
     let resp = app
         .oneshot(
             Request::builder()
-                .uri(&format!("/list-windows?session={}", session.name))
+                .uri(format!("/list-windows?session={}", session.name))
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -158,7 +158,7 @@ async fn list_panes_returns_200() {
     let resp = app
         .oneshot(
             Request::builder()
-                .uri(&format!("/list-panes?target={}:0", session.name))
+                .uri(format!("/list-panes?target={}:0", session.name))
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -329,7 +329,7 @@ async fn capture_pane_returns_200() {
     let resp = app
         .oneshot(
             Request::builder()
-                .uri(&format!("/capture-pane?target={}:0.0", session.name))
+                .uri(format!("/capture-pane?target={}:0.0", session.name))
                 .body(Body::empty())
                 .unwrap(),
         )

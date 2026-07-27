@@ -7,10 +7,14 @@ edition = "2024"
 license = "MIT"
 
 [workspace.lints.clippy]
+# Prefer captured identifiers in format strings, e.g. `format!("{x}")`
+# over `format!("{}", x)`. More readable and the modern idiom.
+uninlined_format_args = "warn"
 # Flag functions that return `Result`/`Option` but never actually produce
 # `Err`/`None`. Such wrappers force every caller into needless error handling
 # or unwrapping; the signature should reflect that the value is always present.
 unnecessary_wraps = "warn"
+if_not_else = "warn"
 
 [package]
 name = "tmux-gateway"
