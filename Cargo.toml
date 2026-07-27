@@ -7,6 +7,9 @@ edition = "2024"
 license = "MIT"
 
 [workspace.lints.clippy]
+# Prefer captured identifiers in format strings, e.g. `format!("{x}")`
+# over `format!("{}", x)`. More readable and the modern idiom.
+uninlined_format_args = "warn"
 # Require a trailing semicolon on the final statement of a block when that
 # block returns `()`. Without it, a unit-returning call reads like the block's
 # value, blurring the line between "this expression is the return value" and
@@ -14,6 +17,7 @@ license = "MIT"
 # obvious and guards against a later edit silently turning a statement into a
 # returned value. Set at "warn" to flag without breaking the build.
 semicolon_if_nothing_returned = "warn"
+if_not_else = "warn"
 
 [package]
 name = "tmux-gateway"

@@ -160,15 +160,15 @@ async fn new(
 ) -> Result<(StatusCode, Json<NewSessionResponse>), (StatusCode, String)> {
     let working_directory = body.working_directory.as_deref();
     let session = if let Some(args) = &body.command_args {
-        if !args.is_empty() {
-            let args_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+        if args.is_empty() {
             RestHandler
-                .create_session_with_args(&body.name, &args_refs, working_directory)
+                .create_session(&body.name, body.command.as_deref(), working_directory)
                 .await
                 .map_err(tmux_err_to_http)?
         } else {
+            let args_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
             RestHandler
-                .create_session(&body.name, body.command.as_deref(), working_directory)
+                .create_session_with_args(&body.name, &args_refs, working_directory)
                 .await
                 .map_err(tmux_err_to_http)?
         }

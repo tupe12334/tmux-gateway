@@ -227,6 +227,10 @@ tmux-gateway/
 - [Tokio](https://tokio.rs/) — Async runtime
 - [Prost](https://github.com/tokio-rs/prost) — Protobuf serialization
 
+## Related projects
+
+[moadim](https://moadim.io/) — loop engineering: build, schedule & run agent loops.
+
 ## License
 
 MIT
