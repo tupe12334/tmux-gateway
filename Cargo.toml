@@ -10,6 +10,15 @@ license = "MIT"
 # Prefer captured identifiers in format strings, e.g. `format!("{x}")`
 # over `format!("{}", x)`. More readable and the modern idiom.
 uninlined_format_args = "warn"
+# Flag `_` patterns that match a value of the unit type `()`. Writing `()`
+# instead of `_` documents that the matched value carries no information and
+# makes the author's intent explicit. It also guards against silent breakage:
+# if the matched expression later changes from `()` to a meaningful type, the
+# `()` pattern stops compiling and forces the code to be revisited, whereas a
+# blanket `_` would keep swallowing the new value. Set at "warn" to flag
+# without breaking the build.
+ignored_unit_patterns = "warn"
+if_not_else = "warn"
 
 [package]
 name = "tmux-gateway"
@@ -77,9 +86,6 @@ lto = true
 strip = true
 opt-level = "z"
 codegen-units = 1
-
-[workspace.lints.clippy]
-if_not_else = "warn"
 
 [workspace.metadata.dylint]
 libraries = [

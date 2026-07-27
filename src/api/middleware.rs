@@ -57,7 +57,7 @@ pub async fn rate_limit(
 ) -> Response {
     let ip = addr.ip();
     match state.limiter.check_key(&ip) {
-        Ok(_) => {
+        Ok(()) => {
             let mut response = next.run(request).await;
             let headers = response.headers_mut();
             headers.insert("x-ratelimit-limit", state.limit.into());
