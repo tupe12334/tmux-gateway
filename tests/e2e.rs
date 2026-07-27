@@ -181,7 +181,7 @@ async fn concurrent_session_creation() {
             let app = app.clone();
             let name = session.name.clone();
             tokio::spawn(async move {
-                app.oneshot(json_post("/new", &format!(r#"{{"name":"{}"}}"#, name)))
+                app.oneshot(json_post("/new", &format!(r#"{{"name":"{name}"}}"#)))
                     .await
                     .unwrap()
             })

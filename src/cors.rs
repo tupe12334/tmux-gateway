@@ -22,7 +22,7 @@ pub fn build_cors_layer(http_port: u16) -> anyhow::Result<CorsLayer> {
         anyhow::bail!(
             "No valid CORS origins after parsing CORS_ORIGINS={origins_raw:?}. \
              All {total} entries failed to parse. \
-             Fix the CORS_ORIGINS environment variable or remove it to use defaults."
+             Fix the CORS_ORIGINS environment variable or remove it to use defaults.",
         );
     }
 
