@@ -14,10 +14,7 @@ async fn main() -> anyhow::Result<()> {
 
     let config = preflight::run().await;
 
-    if env::var("EXPORT_SCHEMAS")
-        .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
-        .unwrap_or(false)
-    {
+    if env::var("EXPORT_SCHEMAS").is_ok_and(|v| v.eq_ignore_ascii_case("true") || v == "1") {
         export_schemas::export_all();
     }
 
@@ -146,9 +143,7 @@ async fn main() -> anyhow::Result<()> {
 fn init_tracing() {
     let filter = EnvFilter::from_default_env().add_directive("tmux_gateway=info".parse().unwrap());
 
-    let use_json = env::var("RUST_LOG_FORMAT")
-        .map(|v| v.eq_ignore_ascii_case("json"))
-        .unwrap_or(false);
+    let use_json = env::var("RUST_LOG_FORMAT").is_ok_and(|v| v.eq_ignore_ascii_case("json"));
 
     if use_json {
         tracing_subscriber::fmt()

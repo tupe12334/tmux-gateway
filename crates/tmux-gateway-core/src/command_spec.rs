@@ -23,7 +23,7 @@ impl TmuxCommandSpec {
     /// Returns the tmux sub-command name (first argument), if any.
     #[allow(unknown_lints, no_wrapper_functions)]
     pub fn command_name(&self) -> &str {
-        self.args.first().map(|s| s.as_str()).unwrap_or("")
+        self.args.first().map_or("", |s| s.as_str())
     }
 }
 

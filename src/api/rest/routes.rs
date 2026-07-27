@@ -117,8 +117,7 @@ async fn ls() -> Result<Json<Vec<SessionResponse>>, (StatusCode, String)> {
                 name: s.name,
                 windows: s.windows,
                 created: DateTime::<Utc>::from_timestamp(s.created, 0)
-                    .map(|dt| dt.to_rfc3339())
-                    .unwrap_or_else(|| s.created.to_string()),
+                    .map_or_else(|| s.created.to_string(), |dt| dt.to_rfc3339()),
                 attached: s.attached,
             })
             .collect(),
@@ -186,8 +185,7 @@ async fn new(
             name: session.name,
             windows: session.windows,
             created: DateTime::<Utc>::from_timestamp(session.created, 0)
-                .map(|dt| dt.to_rfc3339())
-                .unwrap_or_else(|| session.created.to_string()),
+                .map_or_else(|| session.created.to_string(), |dt| dt.to_rfc3339()),
             attached: session.attached,
         }),
     ))
@@ -551,8 +549,7 @@ async fn create_session_with_windows(
             name: session.name,
             windows: session.windows,
             created: DateTime::<Utc>::from_timestamp(session.created, 0)
-                .map(|dt| dt.to_rfc3339())
-                .unwrap_or_else(|| session.created.to_string()),
+                .map_or_else(|| session.created.to_string(), |dt| dt.to_rfc3339()),
             attached: session.attached,
         }),
     ))
