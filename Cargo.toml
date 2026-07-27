@@ -10,6 +10,11 @@ license = "MIT"
 # Prefer captured identifiers in format strings, e.g. `format!("{x}")`
 # over `format!("{}", x)`. More readable and the modern idiom.
 uninlined_format_args = "warn"
+# Flag bindings prefixed with `_` (the "intentionally unused" convention)
+# that are then actually read or used. The underscore misleads readers into
+# thinking the value is discarded; rename to a normal binding instead.
+used_underscore_binding = "warn"
+if_not_else = "warn"
 
 [package]
 name = "tmux-gateway"
@@ -77,9 +82,6 @@ lto = true
 strip = true
 opt-level = "z"
 codegen-units = 1
-
-[workspace.lints.clippy]
-if_not_else = "warn"
 
 [workspace.metadata.dylint]
 libraries = [

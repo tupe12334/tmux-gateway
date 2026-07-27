@@ -141,10 +141,10 @@ mod tests {
         let lock = SessionLock::new();
 
         // Acquire and release locks for several sessions
-        let _g1 = lock.acquire("sess-1").await;
-        drop(_g1);
-        let _g2 = lock.acquire("sess-2").await;
-        drop(_g2);
+        let g1 = lock.acquire("sess-1").await;
+        drop(g1);
+        let g2 = lock.acquire("sess-2").await;
+        drop(g2);
 
         // Both entries should exist but be reclaimable
         lock.cleanup().await;
