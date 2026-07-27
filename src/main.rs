@@ -28,12 +28,11 @@ async fn main() -> anyhow::Result<()> {
         .and_then(|v| v.parse::<u64>().ok())
         .unwrap_or(30);
 
-    let swagger_url = format!("http://localhost:{}/swagger-ui", http_port);
-    let graphql_url = format!("http://localhost:{}/graphql", http_port);
-    let grpcui_cmd = format!("grpcui -plaintext localhost:{}", grpc_port);
+    let swagger_url = format!("http://localhost:{http_port}/swagger-ui");
+    let graphql_url = format!("http://localhost:{http_port}/graphql");
+    let grpcui_cmd = format!("grpcui -plaintext localhost:{grpc_port}");
     let ws_url = format!(
-        "https://piehost.com/websocket-tester?url=ws://localhost:{}/ws/pane/{{session}}:{{window}}.{{pane}}?interval_ms=500",
-        http_port
+        "https://piehost.com/websocket-tester?url=ws://localhost:{http_port}/ws/pane/{{session}}:{{window}}.{{pane}}?interval_ms=500"
     );
 
     port_table::print_port_table(&[

@@ -9,11 +9,15 @@ license = "MIT"
 # Shared lint configuration applied to every crate in the workspace via
 # `[lints] workspace = true`.
 [workspace.lints.clippy]
+# Prefer captured identifiers in format strings, e.g. `format!("{x}")`
+# over `format!("{}", x)`. More readable and the modern idiom.
+uninlined_format_args = "warn"
 # Prefer the single-call `map_or`/`map_or_else`/`is_some_and`/`is_ok_and`
 # combinators over `map(..).unwrap_or(..)` / `map(..).unwrap_or_else(..)`.
 # The combined form is shorter, avoids building an intermediate `Option`/
 # `Result`, and reads as one intent instead of two chained operations.
 map_unwrap_or = "warn"
+if_not_else = "warn"
 
 [package]
 name = "tmux-gateway"

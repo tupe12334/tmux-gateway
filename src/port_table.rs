@@ -38,12 +38,7 @@ pub fn format_port_table(ports: &[(&str, u16, &str)]) -> String {
             "in use"
         };
         out.push_str(&format!(
-            "│ {:<12} │ {:<5} │ {:<6} │ {:<width$} │\n",
-            name,
-            port,
-            status,
-            explorer,
-            width = explorer_width
+            "│ {name:<12} │ {port:<5} │ {status:<6} │ {explorer:<explorer_width$} │\n"
         ));
     }
     out.push_str(&separator_bot);
