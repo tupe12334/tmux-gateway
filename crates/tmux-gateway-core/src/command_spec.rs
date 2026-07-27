@@ -17,13 +17,13 @@ impl TmuxCommandSpec {
     /// Returns the command arguments as string slices for passing to an executor.
     #[allow(unknown_lints, no_wrapper_functions)]
     pub fn args(&self) -> Vec<&str> {
-        self.args.iter().map(|s| s.as_str()).collect()
+        self.args.iter().map(std::string::String::as_str).collect()
     }
 
     /// Returns the tmux sub-command name (first argument), if any.
     #[allow(unknown_lints, no_wrapper_functions)]
     pub fn command_name(&self) -> &str {
-        self.args.first().map(|s| s.as_str()).unwrap_or("")
+        self.args.first().map(std::string::String::as_str).unwrap_or("")
     }
 }
 

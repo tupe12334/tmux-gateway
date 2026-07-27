@@ -243,15 +243,15 @@ impl MutationRoot {
     ) -> async_graphql::Result<Session> {
         let wd = working_directory.as_deref();
         let s = if let Some(args) = &command_args {
-            if args.is_empty() {
+            if !args.is_empty() {
+                let args_refs: Vec<&str> = args.iter().map(std::string::String::as_str).collect();
                 GraphqlHandler
-                    .create_session(&name, command.as_deref(), wd)
+                    .create_session_with_args(&name, &args_refs, wd)
                     .await
                     .map_err(|e| async_graphql::Error::new(e.to_string()))?
             } else {
-                let args_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
                 GraphqlHandler
-                    .create_session_with_args(&name, &args_refs, wd)
+                    .create_session(&name, command.as_deref(), wd)
                     .await
                     .map_err(|e| async_graphql::Error::new(e.to_string()))?
             }
