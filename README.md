@@ -61,9 +61,13 @@ graph TD
 ### Build & Run
 
 ```bash
-make build   # compiles + exports schemas to schemas/
+cp .env.example .env   # set required HTTP_PORT / GRPC_PORT (and other options)
+make build             # compiles + exports schemas to schemas/
 cargo run
 ```
+
+`HTTP_PORT` and `GRPC_PORT` are required — the server's preflight checks
+(`src/preflight.rs`) exit with an error if they are unset.
 
 ### Testing & Validation
 
@@ -98,11 +102,24 @@ The server starts two listeners (each available over TCP and optionally a Unix s
 
 ### Configuration
 
-| Variable      | Description                                         | Default |
-| ------------- | --------------------------------------------------- | ------- |
-| `RUST_LOG`    | Logging filter                                      | —       |
-| `HTTP_SOCKET` | Unix socket path for HTTP server (empty = disabled) | —       |
-| `GRPC_SOCKET` | Unix socket path for gRPC server (empty = disabled) | —       |
+| Variable                    | Description                                                     | Default             |
+| --------------------------- | ---------------------------------------------------------------- | ------------------- |
+| `HTTP_PORT`                 | HTTP server port (required)                                       | —                   |
+| `GRPC_PORT`                 | gRPC server port (required)                                       | —                   |
+| `RUST_LOG`                  | Logging filter                                                    | —                   |
+| `RUST_LOG_FORMAT`           | Set to `json` for JSON-formatted logs                              | plain text          |
+| `HTTP_SOCKET`                | Unix socket path for HTTP server (empty = disabled)                | —                   |
+| `GRPC_SOCKET`                | Unix socket path for gRPC server (empty = disabled)                | —                   |
+| `SHUTDOWN_TIMEOUT_SECS`      | Graceful shutdown timeout in seconds                                | `30`                |
+| `TMUX_COMMAND_TIMEOUT_SECS`  | Timeout for individual tmux commands in seconds                    | `30`                |
+| `CORS_ORIGINS`               | Comma-separated allowed CORS origins                                | `http://localhost:3000,http://localhost:<HTTP_PORT>` |
+| `MAX_REQUEST_BODY_BYTES`     | Max HTTP request body size in bytes                                 | `1048576` (1 MB)    |
+| `RATE_LIMIT_RPS`             | Default per-IP rate limit (requests/sec)                            | `100`               |
+| `RATE_LIMIT_READ_RPS`        | Per-IP rate limit for read operations                               | value of `RATE_LIMIT_RPS` |
+| `RATE_LIMIT_WRITE_RPS`       | Per-IP rate limit for write operations                              | value of `RATE_LIMIT_RPS` |
+| `GRAPHQL_MAX_DEPTH`          | Max GraphQL query depth                                             | `15`                |
+| `GRAPHQL_MAX_COMPLEXITY`     | Max GraphQL query complexity                                        | `500`               |
+| `GRAPHQL_INTROSPECTION`      | Set to `false` to disable GraphQL introspection                     | `true`              |
 
 ```bash
 RUST_LOG=tmux_gateway=debug cargo run
