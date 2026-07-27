@@ -7,11 +7,15 @@ edition = "2024"
 license = "MIT"
 
 [workspace.lints.clippy]
+# Prefer captured identifiers in format strings, e.g. `format!("{x}")`
+# over `format!("{}", x)`. More readable and the modern idiom.
+uninlined_format_args = "warn"
 # `dbg!` writes to stderr and is a debugging aid that should never reach
 # production: it pollutes structured log output and leaks internal state to
 # users. Denying it at the workspace level catches stray debug prints before
 # they ship.
 dbg_macro = "deny"
+if_not_else = "warn"
 
 [package]
 name = "tmux-gateway"
@@ -19,6 +23,9 @@ version = "0.1.1"
 edition.workspace = true
 default-run = "tmux-gateway"
 license.workspace = true
+
+[lints]
+workspace = true
 
 [dependencies]
 tmux-gateway-core = { path = "crates/tmux-gateway-core" }
@@ -70,9 +77,6 @@ path = "examples/options.rs"
 
 [package.metadata.cargo-machete]
 ignored = ["prost", "serde_json", "tonic-prost", "utoipa-axum", "hyper-util"]
-
-[lints]
-workspace = true
 
 [profile.release]
 lto = true
