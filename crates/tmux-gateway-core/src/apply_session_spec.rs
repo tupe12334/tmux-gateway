@@ -45,7 +45,7 @@ pub async fn apply_session_spec(
     // Step 2: Set up windows — rename default window to first, create rest
     if let Some((first_window, rest_windows)) = spec.windows.split_first() {
         // Rename the default window to the first window spec's name
-        let default_target = WindowTarget::try_from(format!("{}:0", session_name).as_str())?;
+        let default_target = WindowTarget::try_from(format!("{session_name}:0").as_str())?;
         if let Err(e) = super::rename_window(executor, &default_target, &first_window.name).await {
             let _ = super::kill_session(executor, &session_name).await;
             return Err(e);

@@ -180,6 +180,6 @@ mod tests {
         let content = CapturedContent::new("hello  \n\n\n");
         assert_eq!(content.as_str(), "hello");
         assert_eq!(String::from(content.clone()), "hello");
-        assert_eq!(format!("{}", content), "hello");
+        assert_eq!(format!("{content}"), "hello");
     }
 }
